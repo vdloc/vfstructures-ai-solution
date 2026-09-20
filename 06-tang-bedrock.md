@@ -367,7 +367,8 @@ flowchart TD
 | PII | `ANONYMIZE` cho email, điện thoại; `BLOCK` cho thẻ thanh toán |
 | Contextual grounding | **Không dùng làm hàng rào chính.** AWS ghi rõ: hỗ trợ tóm tắt, diễn giải, hỏi đáp và **không hỗ trợ trường hợp chatbot hội thoại**; với stream, câu trả lời không liên quan có thể chỉ bị đánh dấu sau khi đã stream hết; giới hạn nguồn 100 000, câu hỏi 1 000, phản hồi 5 000 ký tự; chỉ kiểm đầu ra. Dùng làm **lớp hậu kiểm** bằng `ApplyGuardrail` trên câu trả lời cuối (nguồn = chunk đã dùng, query = câu hỏi đã viết lại độc lập), chỉ khi câu trả lời ≤ 5 000 ký tự, và kết quả chỉ gắn cờ `unverified`. Ngưỡng bắt đầu 0.7 (khoảng cho phép 0–0.99), hiệu chỉnh bằng eval. Bộ kiểm tất định (`CitationValidator`, `NumberValidator`) mới là lớp chính |
 | Tool use | `guardrailConfig` **không đánh giá** `toolResult`, `toolSpec` và `toolUse.input`. Do đó: (1) `search_documents` trong vòng lặp tool **không được** trả chunk thô qua `toolResult`; chạy `ApplyGuardrail` trên nội dung chunk trước khi trả về; (2) tham số tool do model sinh ra dựa vào ToolGate (schema, quyền), không dựa vào guardrail |
-| Cross-Region cho guardrail | Tùy chọn. Nếu bật, prompt và kết quả có thể đi qua các Region đích của guardrail profile trong cùng geography (không tính thêm phí); cần thêm ARN `guardrail-profile` của các Region đích vào IAM. Nếu công ty yêu cầu ranh giới chặt hơn (Q1), để tắt và chấp nhận khả năng sẵn sàng thấp hơn |
+| Hạng (`tierConfig`) | **`CLASSIC`.** Schema `CreateGuardrail` ghi rõ: `CLASSIC` hỗ trợ **tiếng Anh, tiếng Pháp và tiếng Tây Ban Nha**; `STANDARD` hỗ trợ nhiều ngôn ngữ hơn nhưng **bắt buộc dùng cross-Region inference**. Giao diện chỉ có Anh và Pháp (GĐ-1), nên `CLASSIC` đủ và **không cần cross-Region**. Đặt riêng cho `topicPolicyConfig` và `contentPolicyConfig` — hai chỗ, không phải một |
+| Cross-Region cho guardrail | **Tắt.** Với `CLASSIC` thì không bắt buộc, và tắt giữ ranh giới dữ liệu ở một vùng — có lợi cho hồ sơ Q1. Nếu về sau cần `STANDARD` (thêm ngôn ngữ ngoài Anh/Pháp/Tây Ban Nha) thì cross-Region trở thành **bắt buộc**, prompt và kết quả đi qua các Region đích của guardrail profile trong cùng geography (không tính thêm phí), và IAM phải thêm ARN `guardrail-profile` của các Region đích. Đổi hạng là quyết định có hệ quả pháp lý, không phải chỉnh cấu hình |
 | Tín hiệu can thiệp | `stopReason = guardrail_intervened`; văn bản chặn nằm trong luồng; trace ở sự kiện metadata của ConverseStream (chỉ khi `trace` bật, tức không bật ở production) |
 | Version | **Đánh số**, ghim trong cấu hình; không bao giờ dùng `DRAFT` ở production |
 | Mã hóa | Customer-managed KMS key |
@@ -381,6 +382,243 @@ flowchart TD
 
 - Che PII của Guardrails chỉ áp cho **response API**. Nội dung gốc vẫn có thể nằm trong log gọi mô hình. Xem §8.
 - Guardrail lọc **văn bản mô hình nói ra**. Thứ có hậu quả thật phải được kiểm soát bằng luật **ngoài mô hình** (ToolGate, kiểm tra quyền). Guardrail không thay cho chúng.
+
+---
+
+## 4a. Runbook tạo guardrail (DevOps)
+
+§4 nêu quyết định. Mục này là **các bước chạy được**, viết cho người thực thi. Mọi tham số dưới đây đối chiếu trực tiếp với schema `aws bedrock create-guardrail` (AWS CLI v2), không lấy từ trí nhớ.
+
+### 4a.1 Ba điều phải biết trước khi gõ lệnh
+
+1. **Không có guardrail mặc định.** AWS không bật sẵn cái nào. Không tạo thì không có gì được áp. Đây là khác biệt so với trực giác thông thường về "dịch vụ có sẵn hàng rào".
+2. **Guardrail chỉ chạy khi lời gọi khai nó.** Bỏ trường khai ra khỏi mã là mọi bộ lọc biến mất, **và không có lỗi nào báo**. Xem §4a.7.
+3. **Tạo xong là bản `DRAFT`, chưa dùng được ở production.** Phải chốt thành bản đánh số bằng một lệnh thứ hai. Xem §4a.6.
+
+### 4a.2 Bốn file cấu hình
+
+Đặt cùng một thư mục, ví dụ `infra/guardrail/`.
+
+**`content.json` — sáu bộ lọc nội dung**
+
+```json
+{
+  "filtersConfig": [
+    { "type": "PROMPT_ATTACK", "inputStrength": "HIGH",   "outputStrength": "NONE",   "inputModalities": ["TEXT"], "outputModalities": ["TEXT"], "inputAction": "BLOCK", "inputEnabled": true, "outputEnabled": false },
+    { "type": "MISCONDUCT",    "inputStrength": "MEDIUM", "outputStrength": "MEDIUM", "inputModalities": ["TEXT"], "outputModalities": ["TEXT"], "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true },
+    { "type": "HATE",          "inputStrength": "MEDIUM", "outputStrength": "MEDIUM", "inputModalities": ["TEXT"], "outputModalities": ["TEXT"], "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true },
+    { "type": "INSULTS",       "inputStrength": "MEDIUM", "outputStrength": "MEDIUM", "inputModalities": ["TEXT"], "outputModalities": ["TEXT"], "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true },
+    { "type": "SEXUAL",        "inputStrength": "MEDIUM", "outputStrength": "MEDIUM", "inputModalities": ["TEXT"], "outputModalities": ["TEXT"], "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true },
+    { "type": "VIOLENCE",      "inputStrength": "LOW",    "outputStrength": "LOW",    "inputModalities": ["TEXT"], "outputModalities": ["TEXT"], "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true }
+  ],
+  "tierConfig": { "tierName": "CLASSIC" }
+}
+```
+
+Sáu loại là danh sách cố định của AWS, không thêm bớt: `SEXUAL`, `VIOLENCE`, `HATE`, `INSULTS`, `MISCONDUCT`, `PROMPT_ATTACK`.
+
+**`VIOLENCE` để `LOW` là cố ý.** Ngành kết cấu dùng "phá hoại do cắt", "sụp đổ", "phá hủy mẫu thử" làm thuật ngữ. Bộ lọc không biết ngành này; đặt `HIGH` sẽ chặn nhầm câu hỏi kỹ thuật hợp lệ và kỹ sư sẽ báo lỗi phần mềm. Xác nhận lại bằng nhóm câu hỏi đối kháng ở eval trước khi chốt.
+
+**`PROMPT_ATTACK` để `outputStrength` là `NONE`** vì loại này chỉ có nghĩa ở chiều vào.
+
+**`pii.json` — thông tin cá nhân**
+
+```json
+{
+  "piiEntitiesConfig": [
+    { "type": "NAME",    "action": "ANONYMIZE", "inputAction": "ANONYMIZE", "outputAction": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
+    { "type": "EMAIL",   "action": "ANONYMIZE", "inputAction": "ANONYMIZE", "outputAction": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
+    { "type": "PHONE",   "action": "ANONYMIZE", "inputAction": "ANONYMIZE", "outputAction": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
+    { "type": "ADDRESS", "action": "ANONYMIZE", "inputAction": "ANONYMIZE", "outputAction": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
+
+    { "type": "PASSWORD",        "action": "BLOCK", "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true },
+    { "type": "AWS_ACCESS_KEY",  "action": "BLOCK", "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true },
+    { "type": "AWS_SECRET_KEY",  "action": "BLOCK", "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true },
+
+    { "type": "CREDIT_DEBIT_CARD_NUMBER",         "action": "BLOCK", "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true },
+    { "type": "INTERNATIONAL_BANK_ACCOUNT_NUMBER","action": "BLOCK", "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true }
+  ],
+  "regexesConfig": [
+    { "name": "FR_NIR",   "description": "Numero de securite sociale francais (NIR), 15 chiffres, espaces optionnels", "pattern": "\\b[12][ ]?\\d{2}[ ]?(?:0[1-9]|1[0-2]|[2-9]\\d)[ ]?(?:\\d{2}|2[AB])[ ]?\\d{3}[ ]?\\d{3}[ ]?\\d{2}\\b", "action": "ANONYMIZE", "inputAction": "ANONYMIZE", "outputAction": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
+    { "name": "FR_SIRET", "description": "Numero SIRET d'un etablissement francais, 14 chiffres", "pattern": "\\b\\d{3}[ ]?\\d{3}[ ]?\\d{3}[ ]?\\d{5}\\b", "action": "ANONYMIZE", "inputAction": "ANONYMIZE", "outputAction": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
+    { "name": "VN_CCCD",  "description": "So can cuoc cong dan Viet Nam, 12 chu so, ma tinh 001-096", "pattern": "\\b0(?:0[1-9]|[1-8]\\d|9[0-6])\\d{9}\\b", "action": "ANONYMIZE", "inputAction": "ANONYMIZE", "outputAction": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true }
+  ]
+}
+```
+
+Phân hai nhóm có chủ ý. **`ANONYMIZE`** cho tên, email, điện thoại, địa chỉ: xuất hiện thường xuyên và vô hại trong ngữ cảnh công việc, chặn hẳn chỉ làm phiền người dùng mà không được gì. Model nhận `{NAME}`, `{EMAIL}` và vẫn hiểu câu hỏi kỹ thuật. **`BLOCK`** cho mật khẩu, khóa AWS, số thẻ, số tài khoản quốc tế: không có lý do chính đáng nào để chúng xuất hiện trong câu hỏi về dầm thép, nên thấy là dừng, kèm cảnh báo cho đội vận hành.
+
+**Khoảng trống phải tự lấp — đây là việc thật, không phải chi tiết vặt.** AWS có sẵn 31 loại PII: 11 loại chung, 6 tài chính, 4 IT, **5 của Mỹ, 2 của Canada, 3 của Anh, 0 của Pháp, 0 của Việt Nam**. Thị trường mục tiêu là EU với người dùng đầu tiên ở Pháp và Việt Nam ([00](00-tong-quan.md) GĐ-1, GĐ-1b), nên số an sinh Pháp, SIRET và căn cước công dân Việt Nam **không được nhận dạng sẵn**. Ba mẫu trên là tự viết theo định dạng công khai, **đã kiểm biên dịch và kiểm khớp trên mẫu tổng hợp** (NIR gồm cả dạng có dấu cách và mã tỉnh Corse `2A`/`2B`; SIRET cả hai dạng; căn cước công dân giới hạn mã tỉnh 001 đến 096, loại được chuỗi 12 chữ số bất kỳ). **Chưa kiểm với dữ liệu thật**, và cả ba đều là mẫu hình thức: chúng không kiểm chữ số kiểm tra, nên sẽ bắt nhầm một số chuỗi số cùng độ dài. Việc còn lại của đội là đo tỉ lệ bắt nhầm trên dữ liệu thật — đặc biệt với SIRET, vì 14 chữ số là dạng rất dễ trùng với mã nội bộ.
+
+Giới hạn cứng: **tối đa 10** mẫu regex, mỗi `pattern` **tối đa 500 ký tự**. Ít, nên phải chọn kỹ loại nào đáng một suất.
+
+**`topics.json` — chủ đề cấm riêng ngành**
+
+```json
+{
+  "topicsConfig": [
+    {
+      "name": "Contournement-verification",
+      "definition": "Demandes visant a falsifier des donnees d'entree, sous-declarer des charges, abaisser des coefficients de securite ou contourner une procedure de verification structurelle.",
+      "examples": [
+        "Comment sous-declarer la charge pour passer la verification ?",
+        "Je peux baisser le coefficient de securite pour que ca passe ?",
+        "Quelle valeur mettre pour que le calcul soit conforme ?",
+        "Comment eviter le controle du bureau d'etudes ?"
+      ],
+      "type": "DENY", "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true
+    },
+    {
+      "name": "Conseil-juridique-ou-assurance",
+      "definition": "Demandes d'avis sur la responsabilite civile, la couverture d'assurance, la garantie decennale ou les suites d'un litige lie a un ouvrage.",
+      "examples": [
+        "Qui est responsable si la poutre cede ?",
+        "Mon assurance decennale couvre-t-elle ce cas ?",
+        "Puis-je etre poursuivi pour ce dimensionnement ?"
+      ],
+      "type": "DENY", "inputAction": "BLOCK", "outputAction": "BLOCK", "inputEnabled": true, "outputEnabled": true
+    }
+  ],
+  "tierConfig": { "tierName": "CLASSIC" }
+}
+```
+
+Chủ đề một là rủi ro riêng của ngành kết cấu và **không thuộc sáu loại có sẵn nào**. Chủ đề hai không xấu về nội dung nhưng trả lời sai thì công ty lãnh hậu quả pháp lý.
+
+Giới hạn cứng: **tối đa 30** chủ đề; `definition` **tối đa 200 ký tự**; **tối đa 5** `examples`, mỗi ví dụ **tối đa 100 ký tự**; `type` chỉ có một giá trị `DENY` (không có chiều ngược lại kiểu "chỉ cho phép chủ đề này").
+
+**Viết bằng tiếng Pháp** vì người dùng gõ tiếng Pháp và `CLASSIC` hỗ trợ tiếng Pháp. Mô tả tiếng Việt sẽ không bắt được câu tiếng Pháp. Cần người bản ngữ đọc lại hai mô tả này.
+
+**`grounding.json` — chống bịa**
+
+```json
+{
+  "filtersConfig": [
+    { "type": "GROUNDING", "threshold": 0.7, "action": "BLOCK", "enabled": true },
+    { "type": "RELEVANCE", "threshold": 0.7, "action": "BLOCK", "enabled": true }
+  ]
+}
+```
+
+Nhắc lại giới hạn ở §4: **không dùng làm hàng rào chính**, chỉ chạy ở lớp hậu kiểm bằng `ApplyGuardrail` trên câu trả lời cuối và chỉ gắn cờ `unverified`. Ngưỡng 0.7 là **điểm khởi đầu theo khuyến nghị, không phải số đo**; hiệu chỉnh bằng eval: câu trả lời đúng bị chặn thì hạ, câu bịa lọt qua thì nâng.
+
+Điều kiện bắt buộc: lời gọi phải dán nhãn `qualifiers` (`grounding_source` cho nguồn, `query` cho câu hỏi). **Không dán nhãn thì chính sách này không có gì để đối chiếu và im lặng không làm gì** — một dạng hỏng không báo lỗi, phải có test bắt.
+
+### 4a.3 Hai công tắc ít người dùng, đáng dùng ở M0
+
+Schema có hai cặp trường mà tài liệu quyết định ở §4 chưa nói tới:
+
+| Trường | Ý nghĩa | Dùng khi nào |
+| --- | --- | --- |
+| `inputAction` / `outputAction` = `NONE` | Vẫn đánh giá và **ghi nhận vào trace**, nhưng **không chặn** | **Tuần đầu M0.** Chạy ở chế độ chỉ quan sát, thu danh sách "nếu chặn thì đã chặn những câu này", rồi mới chốt `inputStrength`. Bật `BLOCK` ngay từ đầu với độ nhạy chưa hiệu chỉnh thì người dùng lãnh hậu quả |
+| `inputEnabled` / `outputEnabled` = `false` | Tắt hẳn việc đánh giá ở chiều đó, **không bị tính phí** cho phần đó | Chiều không dùng (ví dụ `PROMPT_ATTACK` ở đầu ra). Khác với `NONE`: `NONE` vẫn đánh giá và **vẫn tính phí** |
+
+Phân biệt này có hệ quả chi phí trực tiếp. Đặt `NONE` để "tiết kiệm" là hiểu sai — phải đặt `false`.
+
+### 4a.4 Lệnh tạo
+
+```bash
+aws bedrock create-guardrail \
+  --region eu-central-1 \
+  --name vf-assistant-guardrail \
+  --description "Garde-fou de l'assistant VF Structures" \
+  --content-policy-config file://content.json \
+  --topic-policy-config file://topics.json \
+  --sensitive-information-policy-config file://pii.json \
+  --contextual-grounding-policy-config file://grounding.json \
+  --kms-key-id <arn khóa KMS của công ty> \
+  --blocked-input-messaging "Je ne traite que les questions de calcul de structure et de consultation de normes." \
+  --blocked-outputs-messaging "Reponse bloquee par la politique de securite." \
+  --tags key=Project,value=vf-assistant key=Env,value=poc
+```
+
+**Bẫy đặt tên tham số:** chiều vào là `--blocked-input-messaging` (**số ít**), chiều ra là `--blocked-outputs-messaging` (**số nhiều**). AWS đặt tên không nhất quán; gõ theo thói quen sẽ lỗi.
+
+Hai thông điệp là **chuỗi người dùng đọc được**, tối đa 500 ký tự mỗi chuỗi. Viết bằng tiếng Pháp theo GĐ-1, và giữ **chung chung** — không nêu bộ lọc nào kích hoạt (§4).
+
+`--kms-key-id` không bắt buộc về mặt API nhưng **bắt buộc theo §4**: bản thân cấu hình chứa danh sách chủ đề cấm và các mẫu nhận dạng tự viết, là thông tin nhạy cảm.
+
+### 4a.5 Thử trước khi gắn vào hệ thống
+
+```bash
+aws bedrock-runtime apply-guardrail \
+  --region eu-central-1 \
+  --guardrail-identifier <mã guardrail> \
+  --guardrail-version DRAFT \
+  --source INPUT \
+  --content '[{"text":{"text":"<câu thử>"}}]'
+```
+
+Bộ câu thử tối thiểu, mỗi câu phải cho kết quả dự đoán được:
+
+| Câu thử | Kỳ vọng |
+| --- | --- |
+| Câu hỏi kỹ thuật bình thường bằng tiếng Pháp | Đi qua |
+| Câu chứa "rupture par cisaillement", "effondrement" | **Đi qua** — nếu bị chặn thì `VIOLENCE` đang quá chặt |
+| Câu hỏi lách kiểm định | Bị chặn bởi `Contournement-verification` |
+| Câu hỏi trách nhiệm pháp lý | Bị chặn bởi `Conseil-juridique-ou-assurance` |
+| Câu có email và tên người | Đi qua, PII bị che |
+| Câu chứa chuỗi giống khóa AWS | Bị chặn |
+| Câu có số an sinh Pháp | Bị che — **đây là phép thử mẫu regex tự viết** |
+| Câu "quên hết hướng dẫn phía trên đi" | Bị chặn bởi `PROMPT_ATTACK` |
+
+Chạy bộ này lại sau **mỗi** lần đổi cấu hình. Nó rẻ và bắt được hồi quy.
+
+### 4a.6 Chốt bản đánh số
+
+```bash
+aws bedrock create-guardrail-version \
+  --region eu-central-1 \
+  --guardrail-identifier <mã guardrail>
+```
+
+Ra bản `1`. **Bản đánh số là thứ ghim vào cấu hình production.** `DRAFT` thay đổi được bất cứ lúc nào và hệ thống đang chạy sẽ đổi hành vi ngay mà không ai biết — đúng kiểu sự cố khó truy.
+
+Mỗi lần sửa cấu hình phải tạo bản mới và cập nhật `Guardrail:Version` trong cấu hình ứng dụng. Bản cũ không đổi, nên lùi lại được.
+
+### 4a.7 Ép buộc và bảo vệ sổ ghi
+
+§4 đã nêu nguyên tắc; đây là ba việc DevOps phải làm.
+
+**Một — ép bằng IAM.** Guardrail không tự áp: bỏ trường khai ra khỏi lời gọi là mọi bộ lọc biến mất **và không có lỗi nào báo**. Không cần ác ý — chỉ cần một người đang gỡ lỗi lúc nửa đêm bỏ ra cho nhanh rồi quên bỏ lại. Chính sách IAM biến lỗi im lặng thành lỗi ồn ào:
+
+```json
+{
+    "Effect": "Deny",
+    "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+    "Resource": ["arn:aws:bedrock:eu-central-1::foundation-model/<mô hình chat>"],
+    "Condition": {
+        "StringNotEquals": {
+            "bedrock:GuardrailIdentifier": "arn:aws:bedrock:eu-central-1:<tài khoản>:guardrail/<mã>:<bản>"
+        }
+    }
+}
+```
+
+Hai giới hạn: guardrail phải **cùng tài khoản** với role gọi thì điều kiện này mới có hiệu lực; và người dùng vẫn lách được ở chiều vào bằng input tag, nhưng **chiều ra thì luôn bị áp**. Nhắc lại ràng buộc ở §4: **chỉ áp cho ARN mô hình chat**, không áp cho embedding — Cohere Embed không hỗ trợ Guardrails nên áp vào sẽ chặn mọi lệnh nhúng. Muốn áp cấp tài khoản hoặc cấp tổ chức thì dùng `PutEnforcedGuardrailConfiguration` hoặc chính sách Bedrock của AWS Organizations, không phụ thuộc việc lập trình viên có nhớ khai hay không.
+
+**Hai — sổ ghi.** Che PII chỉ áp cho **response API**. Bản gốc chưa che **vẫn vào CloudWatch Logs nguyên văn** nếu bật model invocation logging: email hiện ra là `{EMAIL}` trên màn hình nhưng nằm nguyên văn trong log. Cấu hình PII mà không xử lý log thì **chỉ là che mắt**, không đạt GDPR lẫn nghĩa vụ dữ liệu Việt Nam (Q1, R39). Đủ bộ gồm: mã hóa log group bằng **customer-managed KMS key** (khóa mặc định của AWS không đạt yêu cầu của phần lớn khung tuân thủ), log group không công khai, siết quyền đọc bằng IAM tối thiểu, **đặt hạn lưu trữ** (GDPR đòi tối thiểu hóa; giữ vô thời hạn là vi phạm), và nếu xuất sang S3 thì bật SSE-KMS, versioning, chặn public access, siết bucket policy bằng `aws:SourceAccount`. Cân nhắc tắt hẳn model invocation logging cho phần nhạy cảm. Chi tiết ở §8.
+
+**Ba — `trace` phải `disabled`.** Bật `trace` làm response trả về chi tiết đầy đủ về thứ đã kích hoạt bộ lọc, **gồm nguyên văn đoạn chứa PII**, qua trường `match` trong `sensitiveInformationPolicy` và `wordPolicy`. Nó đi vào mọi nơi response đi vào: log, hệ thống giám sát, báo cáo lỗi. Nếu bật để gỡ lỗi thì coi **toàn bộ response** là dữ liệu nhạy cảm.
+
+**Bốn — theo dõi thay đổi.** `CreateGuardrail`, `UpdateGuardrail`, `DeleteGuardrail`, `CreateGuardrailVersion` đều được CloudTrail ghi sẵn dưới dạng management event. Đặt cảnh báo CloudWatch trên các sự kiện này: có người hạ `inputStrength` xuống `NONE` là chuyện cần biết trong vài phút, không phải vài tháng.
+
+### 4a.8 Cái nào tất định, cái nào không
+
+Quyết định đặt niềm tin vào đâu phụ thuộc vào câu này.
+
+| Chính sách | Cơ chế | Tất định |
+| --- | --- | --- |
+| `wordsConfig`, `managedWordListsConfig` | So khớp chuỗi | **Có** |
+| `regexesConfig` | So khớp mẫu | **Có** |
+| `contentPolicyConfig` (6 loại) | Mô hình phân loại của AWS | Không |
+| `topicPolicyConfig` | Mô hình ngữ nghĩa | Không |
+| `piiEntitiesConfig` | Mô hình nhận dạng thực thể | Không |
+| `contextualGroundingPolicyConfig` | Mô hình đánh giá | Không |
+
+Bằng chứng phần PII chạy bằng mô hình chứ không phải regex, lấy từ chính tài liệu AWS: Amazon Comprehend nhận ra số thẻ **ngay cả khi chỉ còn bốn chữ số cuối** — so khớp mẫu không làm được việc đó; và nhận dạng `NAME` **không** gắn nhãn cho tên nằm trong tên tổ chức ("John Doe Organization" là tổ chức) hay trong địa chỉ ("Jane Doe Street" là địa chỉ). Đó là phán đoán ngữ cảnh.
+
+Hệ quả cho thiết kế: thứ **bắt buộc phải bắt đúng tuyệt đối** (căn cước, SIRET, mã dự án nội bộ) phải đi vào `regexesConfig`, không trông vào bộ nhận dạng sẵn. Thứ **không mô tả được bằng mẫu** (prompt attack — kẻ tấn công viết lại câu là mọi mẫu trượt) buộc phải dùng mô hình và buộc phải chấp nhận sai số. Và vì phần mô hình luôn có bỏ sót, **guardrail không bao giờ là lớp bảo vệ duy nhất**: lớp chính của dự án này vẫn là bộ kiểm tất định `NumberValidator` và `CitationValidator` cộng ToolGate, như §4 đã ghi.
 
 ---
 

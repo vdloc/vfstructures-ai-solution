@@ -273,3 +273,23 @@ Vòng này **không** tự chốt vùng chạy: đó là đánh đổi pháp lý
 Một điểm ghi nhận để dùng về sau, chưa áp dụng: Gateway có `x_amz_bedrock_agentcore_search` để tìm tool theo ngữ nghĩa khi vượt khoảng 100 tool. POC có khoảng 5 tool nên chưa cần.
 
 Kiểm lại sau khi sửa: 14 quyết định AD, 42 rủi ro R, 8 câu hỏi Q; 69 sơ đồ Mermaid render không lỗi; 0 tham chiếu gãy; validator tiếng Việt 0 lỗi.
+
+---
+
+## Vòng đối chiếu 20/09/2026 — Guardrails, schema `CreateGuardrail`
+
+**Lý do chạy:** viết runbook guardrail cho DevOps ([06](06-tang-bedrock.md) §4a) đòi tham số chính xác đến mức gõ được, mà §4 chỉ ghi ở mức quyết định. Đối chiếu `references/guardrails.md` của skill `amazon-bedrock` với schema `aws bedrock create-guardrail` của AWS CLI v2.
+
+**Năm phát hiện, hai cái đổi nội dung tài liệu.**
+
+| # | Phát hiện | Tác động |
+| --- | --- | --- |
+| 1 | `tierConfig.tierName = CLASSIC` hỗ trợ **tiếng Anh, tiếng Pháp và tiếng Tây Ban Nha**; `STANDARD` hỗ trợ thêm ngôn ngữ nhưng **bắt buộc cross-Region inference** | **Đổi tài liệu.** Dòng "Cross-Region cho guardrail: tùy chọn" ở §4 được thay: giao diện chỉ có Anh và Pháp nên `CLASSIC` đủ và **cross-Region để tắt**, giữ ranh giới dữ liệu một vùng — có lợi cho hồ sơ Q1. `tierConfig` đặt riêng ở `topicPolicyConfig` và `contentPolicyConfig` |
+| 2 | Danh sách PII sẵn có gồm **31 loại**: 11 chung, 6 tài chính, 4 IT, 5 của Mỹ, 2 Canada, 3 Anh, **0 của Pháp, 0 của Việt Nam** | **Đổi tài liệu.** NIR, SIRET và căn cước công dân phải đi vào `regexesConfig` tự viết, giới hạn **10 mẫu, mỗi mẫu 500 ký tự**. Trước đó §4 chỉ ghi "PII: ANONYMIZE email, điện thoại" mà không nêu khoảng trống này |
+| 3 | Cặp `inputEnabled` / `outputEnabled` tắt hẳn việc đánh giá và **không bị tính phí**; khác với `inputAction: NONE` vẫn đánh giá, vẫn tính phí, chỉ không chặn | **Bổ sung.** `NONE` thành công cụ chạy chế độ chỉ quan sát ở tuần đầu M0 trước khi chốt `inputStrength` |
+| 4 | Tham số CLI là `--blocked-input-messaging` (số ít) nhưng `--blocked-outputs-messaging` (số nhiều) | **Bổ sung.** Ghi vào runbook như một bẫy gõ lệnh |
+| 5 | Giới hạn `topicPolicyConfig`: 30 chủ đề, `definition` 200 ký tự, 5 ví dụ mỗi 100 ký tự. `automatedReasoningPolicyConfig` tối đa 2 policy ARN | **Xác nhận.** Không mâu thuẫn thiết kế; ghi vào runbook để đội không viết mô tả dài rồi bị từ chối |
+
+**Một điểm làm rõ, không đổi quyết định:** tài liệu AWS xác nhận `piiEntitiesConfig` chạy bằng **mô hình nhận dạng thực thể** chứ không phải so khớp mẫu — bằng chứng là nó nhận ra số thẻ khi chỉ còn bốn chữ số cuối, và **không** gắn nhãn `NAME` cho tên nằm trong tên tổ chức hay trong địa chỉ. Hệ quả đã ghi vào §4a.8: thứ bắt buộc đúng tuyệt đối phải đi vào `regexesConfig`, và guardrail không bao giờ là lớp bảo vệ duy nhất — lớp chính vẫn là `NumberValidator`, `CitationValidator` và ToolGate.
+
+**Ba thứ trong runbook chưa được kiểm chứng và đã ghi rõ là chưa:** ba mẫu regex NIR, SIRET, căn cước công dân là tự viết theo định dạng công khai; ngưỡng 0.7 của contextual grounding là điểm khởi đầu theo khuyến nghị chứ không phải số đo; hai mô tả chủ đề cấm viết bằng tiếng Pháp cần người bản ngữ đọc lại.

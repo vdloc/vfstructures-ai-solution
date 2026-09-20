@@ -256,6 +256,18 @@ Sách Generative AI Tools nêu bảy chiều phải giải cùng lúc, không ch
 
 ---
 
+## 9a. Guardrail: runbook cho DevOps
+
+Các bước tạo, thử, chốt bản đánh số và ép buộc bằng IAM nằm ở [06](06-tang-bedrock.md) §4a, kèm bốn file cấu hình đầy đủ. Ba việc thuộc DevOps và **không** nằm trong phạm vi đội backend:
+
+1. **Tạo guardrail và chốt bản đánh số** trước khi `Assistant.Api` lên môi trường dùng chung. Ứng dụng ghim `Guardrail:Id` và `Guardrail:Version` qua cấu hình; `DRAFT` không bao giờ vào production.
+2. **Chính sách IAM ép buộc** bằng điều kiện `bedrock:GuardrailIdentifier`, chỉ áp cho ARN mô hình chat. Không có nó thì guardrail bị bỏ qua chỉ bằng cách xóa một trường, và **không có lỗi nào báo**.
+3. **Bảo vệ CloudWatch Logs**: customer-managed KMS key, siết quyền đọc, đặt hạn lưu trữ. Che PII chỉ áp cho response; bản gốc vẫn vào log nguyên văn. Đây là điều kiện tuân thủ, không phải tối ưu.
+
+Việc 1 nằm trên đường găng của G0: không có guardrail thì lượt đầu tiên chạy hết đường thật chưa đủ điều kiện nghiệm thu.
+
+---
+
 ## 10. Vận hành trước beta
 
 Bộ tài liệu chưa có phần vận hành. Không bắt buộc cho POC, **bắt buộc trước dark launch và beta** ([11](11-lo-trinh.md) §2):
