@@ -8,10 +8,10 @@ Bộ tài liệu này đề xuất kiến trúc cho trợ lý AI trong ứng d�
 
 | # | Tài liệu | Nội dung | Sơ đồ chính |
 | --- | --- | --- | --- |
-| 00 | [Tổng quan](00-tong-quan.md) | Mục tiêu, phạm vi, giả định, **13 quyết định kiến trúc (AD)**, đối chiếu yêu cầu cuộc họp (§8) | Thang năng lực |
+| 00 | [Tổng quan](00-tong-quan.md) | Mục tiêu, phạm vi, giả định, **22 quyết định kiến trúc (AD)**, đối chiếu yêu cầu cuộc họp (§8) | Thang năng lực |
 | 01 | [Kiến trúc tổng thể](01-kien-truc-tong-the.md) | **Sơ đồ tổng thể**, bản đồ 7 luồng | System context, container, bản đồ luồng |
 | 02 | [Assistant service](02-assistant-service.md) | Một lượt hỏi đáp end-to-end, SSE, định tuyến | Sequence chat, state machine, hợp đồng SSE |
-| 03 | [RAG](03-rag.md) | Nạp tài liệu, cắt đoạn, hybrid retrieval, schema | Pipeline, sequence truy xuất, ERD |
+| 03 | [RAG](03-rag.md) | Nạp tài liệu, cắt đoạn, **truy xuất trên Managed Knowledge Base (AD-17)**, schema | Pipeline, sequence truy xuất, ERD |
 | 04 | [Tool calling](04-tool-calling.md) | Registry, ToolGate, nhóm rủi ro, explain_result | Tool gate, sequence tool, CI registry |
 | 05 | [Case memory](05-case-memory.md) | Ghi nhận tự động khi duyệt, tra tình huống tương tự | Sequence ghi nhận/truy xuất, ERD |
 | 06 | [Tầng Bedrock](06-tang-bedrock.md) | **Thông số AWS đã xác minh**, chịu lỗi, guardrail, cache, IAM, chi phí | Định tuyến mô hình, retry/fallback, guardrail |
@@ -20,16 +20,24 @@ Bộ tài liệu này đề xuất kiến trúc cho trợ lý AI trong ứng d�
 | 09 | [Eval và quan sát](09-eval-quan-sat.md) | Golden set, cổng CI, telemetry, cảnh báo | Pipeline eval, cây span |
 | 10 | [Triển khai](10-trien-khai.md) | Topology, môi trường, credential dev, CI/CD, phát hành | Deployment, CI/CD |
 | 11 | [Lộ trình](11-lo-trinh.md) | Phân vai, Gantt 8 tuần, cổng G0–G3, nghiệm thu | Gantt, cổng quyết định |
-| 12 | [Rủi ro](12-rui-ro.md) | Câu hỏi mở, 43 rủi ro, cạm bẫy, phần chưa kiểm chứng | — |
+| 12 | [Rủi ro](12-rui-ro.md) | Câu hỏi mở, 47 rủi ro, cạm bẫy, phần chưa kiểm chứng | — |
 | 13 | [Đối chiếu skill](13-doi-chieu-skill.md) | Đã đọc gì trong 13 skill sách, áp dụng gì, sửa gì, cố ý bỏ gì | — |
 | 14 | [Giải thích cho người mới](14-giai-thich-cho-nguoi-moi.md) | Mọi công nghệ và thuật ngữ bằng lời đời thường, có ví von và bảng tra | Một sơ đồ đường đi của câu hỏi |
+| 15 | [Hỏi đáp từng bước](15-hoi-dap-tung-buoc.md) | Một lượt hỏi đi qua 6 bước, bám một ví dụ; ghi lại câu hỏi đã đặt và câu trả lời | — |
+| 16 | [Guideline — Backend](16-guideline-backend.md) | Việc thi công theo 6 bước: phải làm, nghiệm thu, rủi ro, ai đang chờ mình | — |
+| 17 | [Guideline — Frontend](17-guideline-frontend.md) | Hợp đồng SSE, luồng giả 4 kịch bản, quy tắc dựng thẻ từ JSON | — |
+| 18 | [Guideline — DevOps AWS](18-guideline-devops.md) | Bốn lệnh gọi thử ngày 1, sáu cấu hình Harness, NAT gateway, quota | — |
+| 19 | [Đặc tả kiến trúc](19-dac-ta-kien-truc.md) | Chỉ kiến trúc, cấu trúc arc42 12 mục: thành phần, hợp đồng, luồng, dữ liệu, cấu hình, AD, rủi ro | C4 mức 1 và 2, state machine, sequence, ERD, deployment |
+| 20 | [Architecture Design Document](20-tai-lieu-thiet-ke-kien-truc.md) | Bản trình duyệt theo chuẩn doanh nghiệp: approver, goals/non-goals, stakeholders và concerns, alternatives, operations, risks, Well-Architected, nhật ký ADR | C4, state machine, sequence, ERD, deployment |
+| 21 | [Kịch bản trình bày](21-kich-ban-trinh-bay.md) | Buổi chung 20 phút, 6 slide: lời thuyết minh từng slide, câu hỏi thủ sẵn, thứ tự gửi tài liệu | Không có |
+| 22 | [Thuyết minh kiến trúc](22-thuyet-minh-toan-bo-kien-truc.md) | 12 phần giải thích cho người không chuyên: khái niệm nền, sáu khối, ba nhánh, validator, state machine, SSE, phân quyền, bảng thuật ngữ | Không có |
 
 ## Tám điều cần công ty quyết định trước khi bắt đầu
 
 1. **Residency, hai khu vực pháp lý:** người dùng ở Việt Nam và Pháp. (a) Sonnet 5 trên `bedrock-runtime` buộc dùng profile `eu.*` (route trong 6 region EU), không có single-region — chấp nhận không? (b) Công ty đặt tại Việt Nam và có người dùng là công dân Việt Nam, nên đưa dữ liệu cá nhân của họ ra nước ngoài cần hồ sơ đánh giá tác động nộp Bộ Công an theo Luật 91/2025/QH15 và Nghị định 356; ai làm, theo lịch nào? ([12](12-rui-ro.md) Q1, [06](06-tang-bedrock.md) §10a)
 2. **Bản quyền tiêu chuẩn:** có quyền ingest NF EN/DTU vào kho nội bộ không? ([12](12-rui-ro.md) Q2)
 3. **Dữ liệu cá nhân:** lưu hội thoại bao lâu, cơ sở pháp lý nào? ([12](12-rui-ro.md) Q3)
-4. **Topology production:** nền tảng chạy container và PostgreSQL có `pgvector`? ([12](12-rui-ro.md) Q4)
+4. **Topology production:** nền tảng chạy container, và assistant dùng chung instance PostgreSQL hay cần instance riêng? ([12](12-rui-ro.md) Q4)
 5. **Tài liệu hướng dẫn sử dụng VF:** có ở dạng nạp được không, phiên bản nào? ([12](12-rui-ro.md) Q5)
 6. **POC 4 hay 8 tuần**, ngày bắt đầu và hạn nghiệm thu ([12](12-rui-ro.md) Q6, [11](11-lo-trinh.md) §10)
 7. **Lưu vết khi có tranh chấp:** giữ bản ghi bất biến cho lượt có phương án được duyệt hay không ([12](12-rui-ro.md) Q7)
@@ -40,7 +48,7 @@ Bộ tài liệu này đề xuất kiến trúc cho trợ lý AI trong ứng d�
 | Tài liệu POC (zip) | Tài liệu này | Vì sao |
 | --- | --- | --- |
 | Backend là route API trong Next.js, dùng Vercel AI SDK | Service .NET 8 mới, gọi Bedrock bằng AWS SDK | Đồng nhất với hệ thống hiện có; engine và permission ở .NET. Rủi ro "AI SDK không hỗ trợ profile EU cho embedding" không còn |
-| Hybrid search và rerank hoãn sau POC | Hybrid trong phạm vi (chỉ là SQL); rerank sau cờ tính năng | Hybrid không thêm hạ tầng; rerank ở `eu-central-1` đo được bằng eval |
+| Hybrid search và rerank hoãn sau POC | Truy xuất chạy trên Bedrock Managed Knowledge Base (AD-17); rerank sau cờ tính năng | Theo tiêu chí ưu tiên dịch vụ có sẵn của AWS. Bốn kiểm chứng chặn V-K2 đến V-K5 hạn hết ngày 3 |
 | Case memory cần kỹ sư ghi nhận thủ công (GĐ-06) | Ghi nhận tự động khi kỹ sư bấm Duyệt | Loại bỏ giả định rủi ro nhất |
 
 ## Quy ước

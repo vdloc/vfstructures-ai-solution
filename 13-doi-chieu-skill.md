@@ -229,7 +229,7 @@ Các thay đổi kèm theo, để quyết định này không thành lời hứa
 | R28, R29, R32, R35 tăng mức tác động; thêm R39 (ba hạ tầng mới trong tuần 1 của bản nén) | [12](12-rui-ro.md) §2 |
 | Bản nén 4 tuần: điểm cắt sớm hơn G0 — V-A1 và V-A6 phải đạt trước hết ngày 3 | [11](11-lo-trinh.md) §10 |
 
-Điều chưa giải quyết: tuần 1 nay gánh 8 xác minh Bedrock, V-K1, đo chi phí mẫu, SSE qua chuỗi thật, khung service và CI, cộng bốn kiểm chứng AgentCore và ba hạ tầng mới. Đây là R39, và nó chưa có biện pháp nào ngoài điểm cắt sớm. Nếu công ty muốn giữ cả AgentCore lẫn bản nén 4 tuần, cần thêm người hoặc bớt việc tuần 1, không có cách thứ ba.
+Điều chưa giải quyết: tuần 1 nay gánh 8 xác minh Bedrock, bốn kiểm chứng Managed KB V-K2 đến V-K5 (AD-17), đo chi phí mẫu, SSE qua chuỗi thật, khung service và CI, cộng bốn kiểm chứng AgentCore và ba hạ tầng mới. Đây là R39, và nó chưa có biện pháp nào ngoài điểm cắt sớm. Nếu công ty muốn giữ cả AgentCore lẫn bản nén 4 tuần, cần thêm người hoặc bớt việc tuần 1, không có cách thứ ba.
 
 Kiểm lại sau khi sửa: 68 sơ đồ Mermaid render không lỗi; 13 quyết định AD, 39 rủi ro R, 7 câu hỏi Q, không có tham chiếu gãy; quét lại toàn bộ 00 đến 14 cho các cụm "sau G1", "không thuộc POC", "chỉ khi Harness" chỉ còn một chỗ hợp lệ (điểm cắt phạm vi ở G1, không liên quan AgentCore); mọi chỗ nhắc "vòng lặp C#" đều ở vai đường thoát.
 
@@ -272,7 +272,7 @@ Vòng này **không** tự chốt vùng chạy: đó là đánh đổi pháp lý
 
 Một điểm ghi nhận để dùng về sau, chưa áp dụng: Gateway có `x_amz_bedrock_agentcore_search` để tìm tool theo ngữ nghĩa khi vượt khoảng 100 tool. POC có khoảng 5 tool nên chưa cần.
 
-Kiểm lại sau khi sửa: 14 quyết định AD, 42 rủi ro R, 8 câu hỏi Q; 69 sơ đồ Mermaid render không lỗi; 0 tham chiếu gãy; validator tiếng Việt 0 lỗi.
+Kiểm lại sau khi sửa: 21 quyết định AD, 47 rủi ro R, 8 câu hỏi Q; 0 tham chiếu gãy; validator tiếng Việt 0 lỗi. Sơ đồ Mermaid: 69 sơ đồ của bản 19/09/2026 render không lỗi; sau AD-15 và AD-16 đã render lại 9 sơ đồ của [19](19-dac-ta-kien-truc.md) và 19 sơ đồ của [02](02-assistant-service.md), [05](05-case-memory.md), [08](08-ux.md) — tất cả không lỗi (mermaid-cli 11.17.0, 20/09/2026).
 
 ---
 

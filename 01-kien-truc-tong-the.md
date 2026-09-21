@@ -65,14 +65,15 @@ flowchart TB
 
   subgraph DATA["Dữ liệu"]
     PGMAIN[("PostgreSQL VFSoftware<br/>hiện có")]
-    PGAI[("PostgreSQL assistant (MỚI)<br/>pgvector + FTS")]
-    OBJ[("S3 / MinIO<br/>tài liệu nguồn")]
+    PGAI[("PostgreSQL assistant (MỚI)<br/>case, tool_run, message, audit<br/>+ pg_trgm tra mã điều khoản")]
+    OBJ[("S3 / MinIO<br/>tệp nguồn + chunk kèm sidecar")]
   end
 
   KC["Keycloak"]
 
   subgraph AWS["AWS eu-central-1"]
-    BRT["Bedrock Runtime<br/>Converse / ConverseStream<br/>InvokeModel (embedding)"]
+    BRT["Bedrock Runtime<br/>Converse / ConverseStream"]
+    MKB["Bedrock Managed KB (MỚI)<br/>embedding + kho vector + Retrieve"]
     BRG["Bedrock Guardrails"]
     BRR["Bedrock Rerank"]
     AGC["AgentCore Harness + Gateway<br/>+ Policy (Cedar)"]
@@ -90,7 +91,7 @@ flowchart TB
   ASSIST -->|"tải tài liệu"| FILE
   ASSIST -->|"đọc/ghi"| PGAI
   WORKER -->|"đọc/ghi"| PGAI
-  WORKER -->|"đọc tệp nguồn"| OBJ
+  WORKER -->|"đọc tệp nguồn, ghi chunk + sidecar"| OBJ
   FILE --> OBJ
   MAIN --> PGMAIN
   AUTHZ --> PGMAIN
@@ -98,19 +99,20 @@ flowchart TB
 
   ASSIST -->|"JWKS validate"| KC
   ASSIST --> BRT
+  ASSIST -->|"Retrieve, filter scope_key + status"| MKB
   ASSIST --> BRG
   ASSIST --> BRR
   ASSIST -->|"InvokeHarness, Bearer JWT"| AGC
   AGC -->|"tool qua Gateway, token đã đổi"| FAC
   FAC -->|"gọi bằng token người dùng"| MAIN
   FAC -->|"ghi tool_run"| PGAI
-  WORKER --> BRT
+  OBJ -->|"managed connector"| MKB
   ASSIST -->|"OTLP"| CW
   WORKER -->|"OTLP"| CW
 
   classDef new fill:#dff5e1,stroke:#2e7d32,color:#000
   classDef old fill:#f0f0f0,stroke:#9e9e9e,color:#333
-  class ASSIST,WORKER,PGAI new
+  class ASSIST,WORKER,PGAI,MKB new
   class MAIN,AUTHZ,PAY,FILE,NOTI,PGMAIN,OBJ,KC old
 ```
 
@@ -194,8 +196,8 @@ flowchart TB
     MW["Middleware: rate limit, auth,<br/>quota, correlation id"]
   end
   subgraph INFRA["Infrastructure"]
-    BEDROCK["BedrockLlmClient, BedrockEmbeddingClient,<br/>BedrockReranker, GuardrailGateway"]
-    PG["EF Core + Npgsql + pgvector<br/>AssistantDbContext"]
+    BEDROCK["BedrockLlmClient, BedrockEmbeddingClient,<br/>BedrockReranker, GuardrailGateway,<br/>ScopedKnowledgeBaseClient"]
+    PG["EF Core + Npgsql<br/>AssistantDbContext"]
     MAINCLIENT["MainApiToolClient<br/>(typed HttpClient)"]
     SCOPE["AccessScopeResolver<br/>(Authorization API, Payment API)"]
     OTEL["OpenTelemetry exporters"]
@@ -206,11 +208,12 @@ flowchart TB
     RAG["RetrievalService"]
     TOOLS["ToolRegistry, ToolGate"]
     CASES["CaseMemoryService"]
+    POST["Hậu kiểm sau stream:<br/>NumberValidator, CitationValidator,<br/>VerificationValidator"]
     PORTS["Cổng: ILlmClient, IEmbeddingClient,<br/>IReranker, IToolExecutor, IAccessScopeResolver"]
   end
   subgraph DOM["Domain"]
     ENT["Conversation, Message, Chunk, Document,<br/>ToolRun, CaseRecord, Citation"]
-    RULES["Quy tắc: RiskGroup, RefusalPolicy,<br/>CitationValidator"]
+    RULES["Quy tắc: RiskGroup, RefusalPolicy"]
   end
 
   API --> APP

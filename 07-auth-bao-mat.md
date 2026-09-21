@@ -1,5 +1,7 @@
 # 07 · Xác thực, phân quyền và bảo mật
 
+> **Đã cập nhật trong `ship/`.** File này ghi thiết kế phân quyền trước lượt rà soát nguồn 21/09/2026 (đặc biệt phần lọc `scope_key`, ACL). Bản đã sửa: `ship/06-bao-mat.md`.
+
 Nguyên tắc: **hàng rào kiểm soát nằm ngoài mô hình**. Câu "chỉ trả lời dựa trên tài liệu được cung cấp" trong prompt là chỉ dẫn, không phải biện pháp kiểm soát. Mọi kiểm soát dưới đây chạy bằng code và cấu hình, độc lập với việc mô hình có làm theo hay không.
 
 ---
@@ -83,7 +85,39 @@ flowchart TD
   H --> DEC["Ghi trừ hạn mức theo token THỰC DÙNG<br/>sau khi lượt kết thúc"]
 ```
 
-Không có Redis, nên bộ đếm hạn mức nằm trong PostgreSQL bằng một câu lệnh nguyên tử (`INSERT ... ON CONFLICT (user_id, day) DO UPDATE SET tokens = usage.tokens + @n`). Rate limit theo cửa sổ dùng bộ giới hạn có sẵn của ASP.NET Core trong bộ nhớ; chính xác theo từng instance, chấp nhận được ở quy mô này.
+### 2a. Ngưỡng và nơi giữ trạng thái (AD-23)
+
+**Mọi bộ đếm nằm trong PostgreSQL, không nằm trong bộ nhớ tiến trình.** Bộ giới hạn có sẵn của ASP.NET Core đếm theo từng instance, nên chạy N task thì giới hạn thật là N lần giới hạn cấu hình — đó là đường denial-of-wallet, không phải chuyện công bằng.
+
+| Cổng | Ngưỡng mặc định | Khóa đếm | Trả về |
+| --- | --- | --- | --- |
+| Burst theo IP (trước xác thực) | 5 request / 10 giây | `ip` | `429` |
+| Cửa sổ trượt theo user | 20 lượt / phút | `user_id` | `429 rate_limited` |
+| **Lượt đang chạy đồng thời** | **1 lượt / user** | `user_id` | `429 concurrent_turn` |
+| Hạn mức token ngày | Chốt ở M0 sau khi đo chi phí mỗi lượt | `user_id`, `org_id` | `429 quota_exceeded` + thời điểm reset |
+
+Hạn mức ngày tính theo **token**, không theo số lượt: một lượt có gọi tool tốn gấp nhiều lần một lượt hỏi thường, nên đếm số lượt là đếm sai thứ đang tốn tiền. Cảnh báo ở 50%, 80% và 100% hạn mức, khớp mốc AWS Budgets.
+
+**Giới hạn lượt đồng thời là lớp mới và là lớp chặn spam thật sự.** Ô nhập khóa ở giao diện ([08](08-ux.md) §3) chỉ khóa trong một tab; mở mười tab là mười lượt song song, mà mười request trong một giây vẫn nằm dưới ngưỡng tính theo phút. Ép ở server bằng một hàng:
+
+```sql
+CREATE TABLE active_turn (
+  user_id    text PRIMARY KEY,
+  message_id uuid NOT NULL,
+  started_at timestamptz NOT NULL
+);
+-- vào lượt
+INSERT INTO active_turn (user_id, message_id, started_at)
+VALUES (@u, @m, now()) ON CONFLICT DO NOTHING;   -- 0 dòng => 429 concurrent_turn
+```
+
+Xóa hàng khi lượt kết thúc theo **mọi** đường, kể cả `aborted`, `Refused`, `Rejected` và lỗi — đặt trong `finally`, không đặt ở đường thành công. Có job quét dọn hàng quá `started_at + timeout` để một tiến trình chết không khóa vĩnh viễn người dùng.
+
+Lượt thứ hai bị **từ chối**, không hủy lượt đang chạy. Hủy lượt cũ tạo đường cho người dùng vô tình mất câu trả lời đang viết dở.
+
+Bộ đếm hạn mức ngày dùng một câu nguyên tử: `INSERT ... ON CONFLICT (user_id, day) DO UPDATE SET tokens = usage.tokens + @n`. Trừ theo token **thực dùng** sau khi lượt kết thúc — với giới hạn một lượt đồng thời thì trừ-sau không còn tạo cửa sổ lách.
+
+**Ma sát đăng ký không áp dụng.** Sách đề xuất mời-theo-lời-mời hoặc CAPTCHA khi người dùng lách hạn mức bằng tài khoản dùng một lần. Ở đây danh tính đến từ Keycloak của khách hàng doanh nghiệp, người dùng không tự đăng ký được, nên đường lách đó không tồn tại.
 
 **Một endpoint mô hình phơi ra Internet không xác thực bị dò quét gần như ngay lập tức.** Xác thực token và TLS đứng trước mọi thứ khác, kể cả ở môi trường dev có địa chỉ công khai.
 

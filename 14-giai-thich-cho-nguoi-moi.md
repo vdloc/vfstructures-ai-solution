@@ -80,7 +80,7 @@ Phần này giải thích “bộ não” mà cả hệ thống dựa vào.
 | **Fine-tuning (dạy thêm)** | Cho bộ não học thêm một cuốn sách riêng để nó thuộc lòng. Tốn công, tốn tiền, và khó cập nhật. | Không làm: dùng RAG để tra sách mỗi lần, vừa rẻ vừa dẫn được nguồn. |
 | **Đa phương thức / vision** | AI nhìn được cả ảnh chứ không chỉ đọc chữ. | Dùng cho các trang có bảng khó đọc. Ảnh chụp màn hình trong tài liệu hướng dẫn nằm ngoài POC. |
 | **Sycophancy (nịnh)** | AI hùa theo người hỏi dù người đó nói sai, như bạn nào cũng “ừ ừ đúng rồi”. | Phải thử ở đánh giá; nội quy dặn không đồng ý bừa ([08](08-ux.md) §11). |
-| **Structured output (đầu ra có cấu trúc)** | Bắt AI trả lời theo mẫu điền ô, không viết tự do. | Dùng cho việc phân loại ý định bằng Haiku; Sonnet 5 không hỗ trợ ([06](06-tang-bedrock.md) §1). |
+| **Structured output (đầu ra có cấu trúc)** | Bắt AI trả lời theo mẫu điền ô, không viết tự do. | Dùng khi phân loại ý định bằng Haiku; Sonnet 5 không hỗ trợ ([06](06-tang-bedrock.md) §1). |
 
 ### 3.2. Tìm tài liệu đúng (RAG)
 
@@ -100,9 +100,9 @@ RAG là “thủ thư đi lấy sách trước, rồi mới trả lời”. Ph�
 | **Vector** | Chính dãy số tọa độ đó. | Lưu trong PostgreSQL. |
 | **Số chiều** | Bản đồ có bao nhiêu hướng đi: nhiều hướng thì mô tả kỹ hơn nhưng nặng hơn. | Chốt trước lần nạp đầu; đổi sau là phải làm lại cả kho ([03](03-rag.md) §4). |
 | **Cosine similarity (độ giống)** | Hai mũi tên chỉ cùng hướng thì giống nhau. Đo góc giữa hai mũi tên. | Cách so hai vector. |
-| **Vector database** | Tủ chuyên cất và tìm nhanh các tọa độ. | Ở đây là PostgreSQL có thêm tiện ích pgvector, không mua tủ riêng. |
-| **pgvector** | Tiện ích cắm thêm cho PostgreSQL để nó biết lưu và tìm vector. | [00](00-tong-quan.md) AD-04, AD-12. |
-| **HNSW** | Mạng đường tắt giữa các điểm để đi tìm hàng xóm gần nhất không phải hỏi từng nhà. | Chỉ mục vector, `m = 16`, `ef_construction = 64` ([03](03-rag.md) §2). |
+| **Vector database** | Tủ chuyên cất và tìm nhanh các tọa độ. | Ở đây **không tự dựng tủ nào**: Bedrock Managed Knowledge Base giữ hộ (AD-17). |
+| **pgvector** | Tiện ích cắm thêm cho PostgreSQL để nó biết lưu và tìm vector. **Không dùng nữa** kể từ AD-17: kho vector nằm ở Managed Knowledge Base. | [00](00-tong-quan.md) AD-04, AD-12. |
+| **HNSW** | Mạng đường tắt giữa các điểm để đi tìm hàng xóm gần nhất không phải hỏi từng nhà. | MKB dùng loại chỉ mục nào là hộp đen, **ta không đặt tham số** ([03](03-rag.md) §2a). |
 | **Index (chỉ mục)** | Mục lục cuối sách để tìm nhanh mà không lật từng trang. | Có chỉ mục vector, chỉ mục từ khóa, chỉ mục trigram. |
 | **Full-text search (tìm theo từ khóa)** | Tìm đúng chữ như Ctrl+F, giỏi khi cần tìm đúng số hiệu như “6.2.2”. | Dùng `tsvector` với `fr_unaccent` cho tiếng Pháp; câu hỏi tiếng Anh dùng cấu hình `english` riêng (R42). |
 | **Bỏ dấu (unaccent)** | Coi “é” và “e” là một khi tìm kiếm. | Áp dụng cho tiếng Pháp, vì người dùng hay gõ thiếu dấu. |
@@ -114,7 +114,7 @@ RAG là “thủ thư đi lấy sách trước, rồi mới trả lời”. Ph�
 | **Ngưỡng (threshold)** | Điểm sàn: mảnh nào giống quá ít thì bỏ, không đem ra trả lời. | Khởi điểm 0,7; nếu không mảnh nào đạt thì hệ thống từ chối thay vì đoán. |
 | **Recall@k (tìm đủ)** | Trong 10 trang đáng lẽ phải lấy, thủ thư lấy được mấy trang? Tìm đủ là quan trọng hơn thừa. | Cổng G1: ≥ 70% ([11](11-lo-trinh.md) §3). |
 | **Precision (tìm đúng)** | Trong những trang thủ thư lấy, có bao nhiêu trang thật sự đúng? | Với từ chối thì ưu tiên chính xác ([09](09-eval-quan-sat.md) §9). |
-| **nDCG** | Điểm cho việc xếp hạng: trang đúng nhất đứng đầu thì điểm cao. | Đo chất lượng xếp hạng ở đánh giá. |
+| **nDCG** | Điểm chấm chất lượng xếp hạng: trang đúng nhất đứng đầu thì điểm cao. | Đo chất lượng xếp hạng ở đánh giá. |
 | **Citation (trích dẫn)** | Ghi rõ “lấy ở sách nào, trang mấy” để người đọc mở ra kiểm. | Bấm được, mở đúng trang và tô sáng đoạn ([08](08-ux.md) §4). |
 | **Bounding box (khung tô sáng)** | Cái khung hình chữ nhật đánh dấu đúng chỗ trên trang. | Lưu cùng chunk để tô sáng khi bấm trích dẫn. |
 | **Parser (bộ đọc tệp)** | Máy đọc tệp PDF và lấy chữ ra. | PdfPig cho PDF; bảng khó thì dùng vision. |
@@ -219,7 +219,7 @@ Trợ lý biết nhớ những tình huống kỹ sư đã duyệt để lần s
 | **Marketplace** | Cửa hàng ứng dụng của AWS; Claude và Cohere được bán qua đây. | Cần quyền và đăng ký ngày đầu ([12](12-rui-ro.md) R21). |
 | **Quota / throttling** | Hạn mức số lần gọi mỗi phút; gọi quá thì bị bảo “chậm lại”. | Xin tăng ngay tuần 1. |
 | **Service tier** | Hạng dịch vụ: thường, ưu tiên, giá rẻ… | Sonnet 5 chỉ có hạng thường. |
-| **Budgets / Cost Explorer / tag** | Báo động chi tiêu, biểu đồ chi tiêu và nhãn dán để biết tiền chi cho việc gì. | Theo dõi chi phí mỗi yêu cầu. |
+| **Budgets / Cost Explorer / tag** | Báo động chi tiêu, biểu đồ chi tiêu và nhãn dán để biết tiền chi vào đâu. | Theo dõi chi phí mỗi yêu cầu. |
 | **EOL (hết vòng đời)** | Ngày một bộ não ngừng được hỗ trợ. | Haiku 4.5 không sớm hơn 16/10/2026 (R23). |
 
 ### 3.6. Phần mềm và cơ sở dữ liệu
@@ -242,7 +242,7 @@ Các mảnh ghép mà đội lập trình dùng.
 | **Schema / bảng / ERD** | Bản vẽ các ngăn kéo và dây nối giữa chúng; ERD là hình vẽ bản vẽ đó. | [03](03-rag.md) §3. |
 | **Transaction (giao dịch)** | Hoặc ghi xong hết, hoặc như chưa ghi gì. | Ghi chunk theo lô trong một giao dịch. |
 | **Queue / job / worker** | Bảng việc cần làm và người thợ làm dần từng việc. | Bảng PostgreSQL với `FOR UPDATE SKIP LOCKED` (AD-11). |
-| **DLQ** | Hộp thư cho việc hỏng nhiều lần để người xem sau. | [10](10-trien-khai.md) §8. |
+| **DLQ** | Hộp thư chứa việc hỏng nhiều lần để người xem sau. | [10](10-trien-khai.md) §8. |
 | **Redis / broker** | Bảng ghi nhớ nhanh và “bưu điện” chuyển tin giữa các dịch vụ. | Cố ý không dùng để bớt thứ phải vận hành. |
 | **Cache / TTL** | Ghi nhớ tạm để khỏi hỏi lại; TTL là thời gian trước khi bị quên. | Cache quyền 60 giây trong bộ nhớ tiến trình. |
 | **Container / Docker / ECR** | Hộp đóng gói sẵn chương trình cho chạy ở đâu cũng được; ECR là kho cất hộp. | Harness kéo hộp từ **kho công cộng** ECR Public mỗi lần mở phiên, nên cần NAT gateway (V-A10). |
@@ -402,15 +402,16 @@ Những cái tên viết bằng chữ liền hoặc có gạch dưới xuất hi
 | **bedrock-mantle** | Cửa phụ của Bedrock chạy đúng một vùng, nhưng không có Guardrails và không có Converse. | Vì vậy không phải lối đi chính ([12](12-rui-ro.md) Q1). |
 | **In-region / single-region** | Chạy trong đúng một thành phố, khác với tuyến đường có thể chuyển qua nhiều thành phố. | Sonnet 5 trên `bedrock-runtime` không có in-region. |
 | **ECS / EKS / EC2** | Ba cách thuê chỗ chạy chương trình của AWS: hộp container tự quản, hệ Kubernetes, và máy ảo trần. | Nền tảng thật của công ty chưa biết (Q4). |
-| **RDS** | Dịch vụ cho thuê PostgreSQL có người của AWS chăm sóc. | Cần xác nhận có `pgvector` (Q4). |
+| **RDS** | Dịch vụ cho thuê PostgreSQL có người của AWS chăm sóc. | Chỉ cần `pg_trgm` và `unaccent`, có sẵn ở mọi phiên bản. |
 | **GHCR** | Kho cất hộp container của GitHub. | Có thể dùng nếu chưa dùng ECR ([10](10-trien-khai.md)). |
 | **HttpClient** | Công cụ .NET để gọi web bằng tay. | Có thể cần để gọi Harness bằng thẻ JWT (V-A1). |
 | **AmazonBedrockRuntimeClient / NpgsqlDataSource** | Hai cây cầu: một sang Bedrock, một sang PostgreSQL. Xây một lần dùng mãi, không xây lại mỗi lượt. | Singleton ([04](04-tool-calling.md) §7). |
 | **ReadableStream** | Ống nước cho trình duyệt hứng chữ chảy về từng mảnh. | Hook stream ở giao diện ([08](08-ux.md) §7). |
 | **FTS** | Viết tắt của full-text search (tìm theo từ khóa). | [03](03-rag.md) §2. |
 | **BM25** | Cách chấm điểm tìm theo từ khóa rất cổ điển mà vẫn khó bị đánh bại. | Dùng làm mức so sánh cho truy xuất ([09](09-eval-quan-sat.md) §9). |
-| **KB (Knowledge Bases)** | Dịch vụ tìm tài liệu làm sẵn của Bedrock. | Không chọn (AD-04), nhưng thử một ngày ở M0 (V-K1). |
-| **hnsw.iterative_scan** | Tùy chọn pgvector: lọc quyền làm thiếu kết quả thì tìm tiếp. | Cần pgvector từ 0.8 ([12](12-rui-ro.md) R22). |
+| **KB (Knowledge Bases)** | Dịch vụ tìm tài liệu làm sẵn của Bedrock: mình đưa tài liệu vào, nó tự nhúng, tự lưu, tự tìm. | **Đã chọn** (AD-17, 20/09/2026), thay cho cách tự xây trên PostgreSQL. Bốn kiểm chứng chặn V-K2 đến V-K5 ở [06](06-tang-bedrock.md). |
+| **Metadata sidecar** | Tệp nhỏ đi kèm mỗi chunk, ghi chunk đó thuộc tiêu chuẩn nào, điều khoản nào, trang nào, ai được đọc. | Không có nó thì không lọc quyền được ([03](03-rag.md) §2a.2). |
+| **hnsw.iterative_scan** | Tùy chọn của pgvector khi lọc quyền làm thiếu kết quả. | **Không dùng nữa** sau AD-17: tham số chỉ mục nằm trong MKB, không chỉnh được. Bù lại bằng `numberOfResults = 40` và đo recall theo scope ([12](12-rui-ro.md) R22). |
 | **output_dimension** | Chọn bản đồ ý nghĩa có bao nhiêu hướng khi dùng Cohere Embed v4. | Ứng viên 1 024 hoặc 1 536. |
 | **embedding_model (cột)** | Ghi mỗi mảnh do bộ não nào vẽ tọa độ, để đổi bộ não khỏi lẫn tọa độ cũ và mới. | [03](03-rag.md) §4. |
 | **license_tag** | Nhãn giấy phép: tài liệu này có được nạp và dùng không. | Kiểm soát việc nạp (R2). |

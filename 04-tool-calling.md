@@ -459,11 +459,11 @@ Gợi ý tốt cần **hai loại chứng cứ khác bản chất**, và không 
 | Chứng cứ tài liệu | "Tiêu chuẩn nói gì, điều kiện áp dụng là gì?" | Đoạn tài liệu đã truy xuất | `[1]`, `[2]` (trích dẫn tới trang và điều khoản) |
 | Kinh nghiệm nội bộ (tùy chọn) | "Trước đây đã làm thế nào?" | Case memory ([05](05-case-memory.md) §4) | Nhãn "Kinh nghiệm nội bộ, không phải tiêu chuẩn" |
 
-**Tìm kiếm ở đâu, bằng gì.** Kiến trúc **không dùng Elasticsearch hay OpenSearch** ([00](00-tong-quan.md) AD-04):
+**Tìm kiếm ở đâu, bằng gì.** Kho chunk nằm ở Bedrock Managed Knowledge Base ([00](00-tong-quan.md) AD-17); kiến trúc **không dùng Elasticsearch hay OpenSearch**:
 
 | Dữ liệu | Cách tìm | Công cụ |
 | --- | --- | --- |
-| Đoạn tài liệu (tiêu chuẩn, hướng dẫn VF) | Tìm lai: vector, từ khóa, trigram, gộp bằng RRF ([03](03-rag.md) §2) | PostgreSQL: `pgvector`, `tsvector`, `pg_trgm` |
+| Đoạn tài liệu (tiêu chuẩn, hướng dẫn VF) | `Retrieve` của MKB, có `filter` trên `scope_key` và `status`; mã điều khoản gõ gần đúng phân giải bằng trigram trước ([03](03-rag.md) §2a) | Bedrock MKB; PostgreSQL `pg_trgm` cho chặng 1 |
 | Kết quả tính toán của dự án | **Không tìm kiếm văn bản.** Đọc theo mã `projectId` và `memberId` (§9) | Main API và engine, qua tool `project.get_member_result` |
 | Tình huống tương tự | Lọc cứng, chấm theo khoảng cách tham số, tie-break bằng vector ([05](05-case-memory.md) §4) | PostgreSQL |
 | Log và trace | Theo dõi vận hành | CloudWatch qua OpenTelemetry ([09](09-eval-quan-sat.md) §4) |

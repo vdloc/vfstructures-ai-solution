@@ -75,7 +75,7 @@ sequenceDiagram
   end
 ```
 
-**Vì sao summary sinh bằng template, không dùng LLM:** case sẽ được đọc lại bởi người khác trong organization. Nếu LLM viết lời tóm tắt, nó có thể đưa vào tên dự án, chi tiết khách hàng hoặc một khẳng định sai. Template chỉ ghép các trường cấu trúc, nên không thể bịa và không lộ thêm gì ngoài tham số.
+**Vì sao summary sinh bằng template, không dùng LLM:** người khác trong organization sẽ đọc lại case. Nếu LLM viết lời tóm tắt, nó có thể đưa vào tên dự án, chi tiết khách hàng hoặc một khẳng định sai. Template chỉ ghép các trường cấu trúc, nên không thể bịa và không lộ thêm gì ngoài tham số.
 
 ---
 
@@ -92,6 +92,8 @@ sequenceDiagram
   participant R as CaseSimilarityScorer
   participant BR as Bedrock (Sonnet 5)
 
+  O->>O: Gom tham số truy vấn: tool_run > pageContext > case_hints (AD-16)
+  O->>O: Giải được < 2 key → hỏi lại, dừng
   O->>S: org_id của user
   S-->>O: org:42
   O->>DB: Lọc cứng: org_id = 42, status = Approved, tool_id / element_type khớp
@@ -109,7 +111,29 @@ sequenceDiagram
 
 **Nguyên tắc trình bày:** case hiển thị **tham số, kết quả, người duyệt, ngày**, kèm nhãn rõ ràng đây là kinh nghiệm của organization chứ không phải căn cứ tiêu chuẩn. Hệ thống **không tự áp dụng** case cũ vào bài toán mới; kỹ sư tự quyết. Case có ngày duyệt cũ hơn phiên bản tiêu chuẩn hiện hành được gắn cảnh báo "có thể theo tiêu chuẩn cũ".
 
-`similarity_keys` là danh sách tham số đo độ tương tự, **khai báo trong `tools.manifest.yaml`** cho từng tool (ví dụ dầm: nhịp, tiết diện, cấp bê tông, tải). Khoảng cách tính trong C# trên tập ứng viên đã lọc nhỏ, nên không cần chỉ mục đặc biệt.
+`similarity_keys` là danh sách tham số đo độ tương tự, **khai báo trong `tools.manifest.yaml`** cho từng tool (ví dụ dầm: nhịp, tiết diện, cấp bê tông, tải), kèm đơn vị bắt buộc và dải giá trị hợp lệ. Khoảng cách tính trong C# trên tập ứng viên đã lọc nhỏ, nên không cần chỉ mục đặc biệt.
+
+### 4a. Tham số truy vấn đến từ đâu (AD-16)
+
+Ba nguồn, xét theo thứ tự:
+
+| Thứ tự | Nguồn | Khi nào có |
+| --- | --- | --- |
+| 1 | `tool_run` của lượt trước trong cùng phiên | Kỹ sư vừa chạy một phép tính |
+| 2 | `pageContext` | Đang mở một cấu kiện trong ứng dụng |
+| 3 | `case_hints` do IntentRouter bóc ra | Kỹ sư gõ thẳng con số trong câu hỏi |
+
+Nguồn trên ghi đè nguồn dưới cho từng key một, không ghi đè cả khối. Giá trị chỉ có ở `case_hints` được đánh dấu `unconfirmed` và hiện thành chip cho kỹ sư xác nhận hoặc sửa trước khi chạy truy vấn.
+
+### 4b. Khoảng cách khi thiếu key
+
+Manifest khai báo `similarity_keys` đầy đủ cho một tool, nhưng một truy vấn thường chỉ giải được vài key. Quy tắc:
+
+- **Chuẩn hóa từng key** về `[0, 1]` theo dải hợp lệ khai báo trong manifest.
+- **Chỉ tính trên tập key giải được ở cả hai phía** (truy vấn và case). Khoảng cách là trung bình trên tập đó.
+- **Phạt theo độ phủ:** điểm cuối `= distance / coverage`, với `coverage` là tỉ lệ key giải được trên tổng `similarity_keys`. Case khớp 4 trên 5 key thắng case khớp 2 trên 5 khi khoảng cách ngang nhau.
+- **Dưới 2 key giải được thì không tra.** Hệ thống hỏi lại tham số thiếu thay vì trả về 5 case yếu. Vector trên summary **không** thay thế được ở bước này, vì nó không xếp hạng được theo độ lớn.
+- Key không có trong manifest bị **loại**, không tính là thiếu — schema router đã chặn từ trước, đây là hàng rào thứ hai.
 
 ---
 

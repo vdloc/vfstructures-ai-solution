@@ -75,6 +75,7 @@ sequenceDiagram
   participant DB as PostgreSQL assistant
   participant BR as Bedrock Runtime
   participant GR as Guardrails
+  participant KB as Bedrock Managed KB
   participant RR as Bedrock Rerank
 
   U->>UI: Nhập câu hỏi (tiếng Pháp)
@@ -90,16 +91,18 @@ sequenceDiagram
     A->>GR: ApplyGuardrail INPUT (prompt attack, denied topics)
     GR-->>A: pass
   and
-    A->>DB: Đọc 6 message gần nhất
+    A->>DB: Đọc 3 lượt gần nhất (AD-22)
     DB-->>A: lịch sử
   end
 
-  A->>BR: Haiku: phân loại ý định + viết lại câu hỏi độc lập
+  A->>BR: Haiku: phân loại ý định + viết lại câu hỏi độc lập (mọi lượt, AD-15)
   BR-->>A: intent=doc_qa, query="..."
-  A->>BR: Embedding câu hỏi (Cohere Embed v4 hoặc Titan V2)
-  BR-->>A: vector
-  A->>DB: Hybrid search (vector + FTS + trigram) lọc scope_key, RRF, top 40
-  DB-->>A: 40 chunk ứng viên
+  opt Câu hỏi có mã điều khoản
+    A->>DB: pg_trgm trên clause_ref, phân giải "6.22" thành "6.2.2"
+    DB-->>A: clause_path đã chuẩn hóa
+  end
+  A->>KB: Retrieve(query, filter scope_key + status [+ clause_path], numberOfResults 40)
+  KB-->>A: 40 chunk ứng viên kèm điểm
   A->>RR: Rerank 40 → 8 (sau cờ tính năng)
   RR-->>A: 8 chunk có điểm
   A-->>UI: SSE retrieval (danh sách nguồn: tài liệu, trang)
@@ -136,17 +139,22 @@ sequenceDiagram
 
 Định tuyến phân biệt hai hình dạng chi phí khác hẳn nhau: tra cứu một bước (1 lần gọi mô hình) và vòng lặp tool (nhiều lần gọi).
 
+**AD-15 (chốt 20/09/2026): luật nhanh không còn ở đường chính.** Bản trước cho luật chạy trước Haiku để tiết kiệm một lần gọi khi câu hỏi chứa mã điều khoản. Luật đó phân loại sai câu hỏi hỗn hợp — *"6.2.2 tôi tính rồi, dầm B12 có đạt không?"* chứa mã điều khoản nhưng ý định là `mixed`, cần gọi engine; luật ép nó thành `doc_qa` và người dùng nhận một đoạn tiêu chuẩn thay vì kết quả kiểm tra. Luật nay **chỉ còn là đường lùi** khi router lỗi hoặc quá thời gian, và lượt đó mang cờ `degraded_routing`.
+
+Hệ quả phải xử lý: (a) mọi lượt cộng 300–500 ms, nên ngân sách ≲3 giây tới chữ đầu tiên phải đo lại ở M0; (b) router thành điểm chết đơn trên một mô hình có mốc EOL trong POC, nên so sánh Nova Lite ở M1 chuyển từ nên làm sang **bắt buộc** (R44); (c) `pageContext` phải mang `hasResult`, `resultKind`, `calcAt`, vì luật `explain_result` dựa vào trạng thái chứ không dựa vào chữ.
+
 **Sơ đồ 2.3 — Luồng định tuyến ý định**
 
 ```mermaid
 flowchart TD
-  Q["Câu hỏi + pageContext"] --> RULE{"Luật nhanh khớp?"}
-  RULE -->|"pageContext có kết quả tính toán<br/>và câu hỏi dạng giải thích"| EXPL["intent = explain_result"]
-  RULE -->|"chứa mã điều khoản<br/>(NF EN 1992-1-1, §6.2.2)"| DOC["intent = doc_qa"]
-  RULE -->|"không khớp"| LLMR["Haiku phân loại<br/>(maxTokens nhỏ, đầu ra một nhãn)"]
+  Q["Câu hỏi + pageContext<br/>(có hasResult, resultKind, calcAt)"] --> LLMR["Haiku phân loại + viết lại + bóc case_hints<br/>(structured output, temperature 0)<br/>prompt nhúng similarity_keys từ manifest"]
+  LLMR -.->|"router lỗi hoặc quá thời gian"| FB["Đường lùi:<br/>luật nhanh, rồi mặc định doc_qa<br/>cờ degraded_routing"]
+  FB --> DOC
+  FB --> EXPL
 
   LLMR --> CLS{"Nhãn"}
-  CLS -->|"doc_qa"| DOC
+  CLS -->|"doc_qa"| DOC["intent = doc_qa"]
+  CLS -->|"explain_result"| EXPL["intent = explain_result"]
   CLS -->|"calc"| CALC["intent = calc"]
   CLS -->|"case_lookup"| CASE["intent = case_lookup"]
   CLS -->|"mixed"| MIX["intent = mixed"]
@@ -160,11 +168,41 @@ flowchart TD
   MIX --> P2
   OPT --> P2
   HELP --> P1
-  CASE --> P3["Tra case, 1 lần gọi Sonnet"]
+  CASE --> HINT{"Đủ ≥ 2 tham số số học?<br/>(tool_run &gt; pageContext &gt; case_hints)"}
+  HINT -->|"có"| P3["Tra case, 1 lần gọi Sonnet"]
+  HINT -->|"không"| ASK["Hỏi lại tham số thiếu"]
   OOS --> P4["Từ chối lịch sự,<br/>gợi ý phạm vi hỗ trợ"]
 ```
 
 **Vì sao đường RAG cố định thay vì để agent tự gọi `search_documents`:** mỗi vòng tool thêm một lần gọi mô hình và làm chậm chữ đầu tiên. Hỏi đáp tài liệu là nhóm câu hỏi chiếm tỉ trọng lớn nhất, nên được tối ưu riêng. Trong vòng lặp tool, `search_documents` và `find_similar_cases` **vẫn là tool** để câu hỏi hỗn hợp ("tính rồi đối chiếu điều khoản") chạy được.
+
+### 4a. Hợp đồng đầu ra của router (AD-16)
+
+Router trả một khối structured output duy nhất. Ngoài nhãn ý định và câu truy vấn đã viết lại, nó bóc luôn tham số số học để nhánh `case_lookup` dùng.
+
+```json
+{
+  "intent": "case_lookup",
+  "search_query": "dầm nhịp 12 m bê tông C30/37",
+  "instruction": "",
+  "needs_clarification": false,
+  "case_hints": {
+    "tool_id": "calc.beam.flexure",
+    "params": [
+      { "key": "span",  "value": 12.0,  "unit": "m" },
+      { "key": "fck",   "value": 30.0,  "unit": "MPa" }
+    ]
+  }
+}
+```
+
+**Ràng buộc schema:** `key` là enum lấy từ `similarity_keys` của tool tương ứng trong `tools.manifest.yaml`; `unit` là enum đơn vị hợp lệ của key đó; `value` là số. Danh sách key, đơn vị và dải giá trị hợp lệ được nhúng vào system prompt của router — không nhúng thì mô hình bịa tên tham số, đây là hành vi mặc định chứ không phải trường hợp biên.
+
+**Thứ tự ưu tiên nguồn tham số:** `tool_run` của lượt trước > `pageContext` > `case_hints`. Hints chỉ lấp chỗ trống. Giá trị nào đến từ hints mà không có nguồn nào khác xác nhận thì giao diện hiển thị chip cho kỹ sư xác nhận hoặc sửa trước khi tra ([08](08-ux.md)).
+
+**`case_hints` không bao giờ vào công thức.** Nó chỉ đi vào mệnh đề lọc SQL và hàm chấm điểm khoảng cách của [05](05-case-memory.md) §4. P1 giữ nguyên: số trong câu trả lời chỉ đến từ `tool_run` hoặc từ chunk tài liệu.
+
+**Giới hạn token:** `MaxTokens` của router đặt 300–400 (khối `case_hints` làm output dài hơn bản chỉ có bốn trường). Sau mỗi lần gọi phải kiểm `stopReason != "max_tokens"`; chạm trần thì JSON đứt giữa chừng, constrained decoding không cứu được, lượt đó rơi về đường lùi kèm cờ `degraded_routing`.
 
 **Viết lại câu hỏi:** câu hỏi thường trộn **lệnh** ("giải thích", "so sánh", "viết ngắn") với **nội dung cần tra** ("hàm lượng cốt thép tối thiểu của dầm chịu uốn"). Truy xuất chỉ dùng phần nội dung, đã viết lại thành câu độc lập từ lịch sử; nếu đưa cả câu lệnh vào embedding và tìm kiếm, kết quả bị nhiễu bởi từ chỉ dẫn. Phần lệnh đi vào prompt sinh câu trả lời.
 
@@ -216,7 +254,7 @@ Giao diện chỉ phụ thuộc vào các sự kiện sau. Đây là hợp đồ
 | Sự kiện | Dữ liệu chính | Khi nào phát | Giao diện làm gì |
 | --- | --- | --- | --- |
 | `status` | `phase`, `text` | Đầu mỗi pha | Dòng trạng thái một dòng ("Đang tìm trong 1 240 tài liệu…") |
-| `retrieval` | danh sách `{docId, title, page, clause}` | Sau truy xuất | Danh sách nguồn cạnh câu trả lời (bấm được) |
+| `retrieval` | danh sách `{docId, title, page, clause}` · Nhánh `case_lookup` thêm `params: [{key, value, unit, source, confirmed}]` (AD-16) | Sau truy xuất, hoặc sau khi gom tham số với `case_lookup` | Danh sách nguồn cạnh câu trả lời (bấm được) |
 | `token` | `text` | Mỗi đoạn sinh | Nối vào bong bóng trả lời |
 | `tool_call` | `toolId`, `version`, `inputs` | Trước khi gọi tool | Thẻ "Đang tính…" hiển thị tham số đầu vào |
 | `tool_result` | `toolRunId`, `outputs`, `units`, `standard` | Sau khi tool xong | Dựng thẻ kết quả **từ JSON**, không từ văn bản của LLM |
@@ -256,7 +294,7 @@ Lịch sử dài làm tăng chi phí và làm loãng ngữ cảnh. Nguyên tắc
 ```mermaid
 flowchart TD
   START["Dựng prompt cho lượt mới"] --> SYS["System prompt + định nghĩa tool<br/>(khối tĩnh, đặt cachePoint sau)"]
-  SYS --> HISTQ{"Lịch sử > 6 lượt?"}
+  SYS --> HISTQ{"Lịch sử > 6 lượt?<br/>(đếm theo lượt, không theo message)"}
   HISTQ -->|"Không"| KEEP["Giữ nguyên"]
   HISTQ -->|"Có"| SUM["Giữ 4 lượt gần nhất<br/>+ bản tóm tắt các lượt cũ (Haiku)"]
   KEEP --> CTX
@@ -271,6 +309,7 @@ flowchart TD
 
 **Quy tắc:**
 
+- **Đơn vị đếm lịch sử là lượt, không phải message** (AD-22). Một lượt có gọi tool mang thêm `tool_call` và `tool_result`, nên đếm theo message làm cửa sổ co giãn theo loại lượt.
 - Chunk truy xuất của lượt trước **không** được đưa lại vào lượt sau; mỗi lượt truy xuất mới theo câu hỏi đã viết lại. Lý do: chunk cũ có thể không còn liên quan, và nó phá tính nhất quán của trích dẫn.
 - Nút **"Phiên mới"** xóa hẳn lịch sử gửi đi. Câu dặn "bỏ qua câu trước" trong prompt không phải biện pháp kiểm soát.
 - Khối tĩnh (system prompt + tool) phải **byte-for-byte giống nhau** giữa các request, để prompt caching có hiệu lực; timestamp và session id đặt sau `cachePoint`.

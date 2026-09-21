@@ -1,5 +1,7 @@
 # 06 · Tầng Amazon Bedrock
 
+> **Đã cập nhật trong `ship/`.** File này chốt thông số AWS trước lượt rà soát nguồn 21/09/2026. Bản đã sửa, có nguồn kèm ngày fetch: `ship/00-thuat-ngu-va-nguon.md` và `ship/05-devops.md`.
+
 Tài liệu này chốt các thông số AWS và mô tả cách Assistant gọi Bedrock: chọn mô hình theo tác vụ, chịu lỗi, guardrail, prompt caching, IAM, mạng, chi phí.
 
 **Nguồn thông số:** tài liệu AWS hiện hành và lệnh `aws bedrock` thực tế, tra ngày 19/09/2026 (bảng §1). Lượt tra thứ hai này đối chiếu lại toàn bộ thông số với model card, trang API và trang hướng dẫn của AWS; các chỗ đã sửa so với bản 18/09 ghi ở [13](13-doi-chieu-skill.md) §Đối chiếu tài liệu AWS. Mọi giá trị ghi "xác minh ở M0" là **chưa kiểm chứng bằng lệnh gọi thật** và không được coi là đã chốt. Không ghi đơn giá trong tài liệu này vì giá thay đổi không báo trước; dùng trang [Bedrock Pricing](https://aws.amazon.com/bedrock/pricing/) khi lập dự toán.
@@ -44,7 +46,7 @@ Tài liệu này chốt các thông số AWS và mô tả cách Assistant gọi 
 | VPC endpoint | `com.amazonaws.<region>.bedrock-runtime`, `com.amazonaws.<region>.bedrock-agent-runtime` (cho Rerank), `bedrock`, `bedrock-agent`, `bedrock-mantle`; hỗ trợ endpoint policy và private DNS | Trang VPC interface endpoints |
 | Application inference profile | `CreateInferenceProfile` với `modelSource` là profile cross-Region hệ thống; gắn `tags`; dùng ARN kết quả làm `modelId`. Embedding không hỗ trợ | Trang Create application inference profile + Inference profiles support |
 | AWS SDK for .NET (v4) | `RetryMode` có `Legacy`, `Standard`, `Adaptive` (**Adaptive ghi là experimental**); mặc định `Legacy` nếu không đặt. Với lệnh async, thuộc tính `Timeout` **không** có tác dụng, phải dùng `CancellationToken` | Trang Retries and timeouts |
-| pgvector trên RDS PostgreSQL | 0.8.x có `hnsw.iterative_scan`: RDS PostgreSQL 15.18+ (0.8.2), 16.6+ (0.8.0), 17.3+ (0.8.0); PostgreSQL 14 chỉ 0.7.4. `unaccent` 1.1 và `pg_trgm` 1.6 có ở mọi phiên bản. Aurora và bản tự quản cần kiểm tra riêng | Trang RDS PostgreSQL extensions |
+| Extension PostgreSQL trên RDS | `unaccent` 1.1 và `pg_trgm` 1.6 có ở mọi phiên bản, nên không có ràng buộc phiên bản. (`pgvector` **không còn dùng** sau AD-17: kho vector nằm ở MKB) | Trang RDS PostgreSQL extensions |
 | Bedrock Agents classic | Không nhận khách hàng mới từ **30/07/2026**, chỉ tài khoản có hoạt động trong 12 tháng gần nhất; không có ngoại lệ; hướng đi mới là AgentCore | Trang Agents classic maintenance mode |
 | IAM Roles Anywhere | Dùng chứng chỉ X.509 từ CA của công ty (trust anchor), profile, role; tài nguyên **theo Region**, tạo cùng tài khoản và Region; ranh giới tin cậy ở mức tài khoản nên phải giới hạn bằng điều kiện trong trust policy của role | Trang Roles Anywhere introduction |
 
@@ -57,9 +59,9 @@ Tài liệu này chốt các thông số AWS và mô tả cách Assistant gọi 
 5. Quota mặc định của tài khoản cho Sonnet 5 và Haiku 4.5 ở `eu-central-1` (TPM, RPM); gửi yêu cầu tăng ngay tuần 1 vì AWS duyệt 1–3 ngày làm việc.
 6. Prompt caching: `cacheWriteInputTokens` > 0 ở lần đầu và `cacheReadInputTokens` > 0 ở lần sau, với `cachePoint` đặt sau `tools` và `system`.
 7. **Quyền dùng mô hình bên thứ ba** cho Claude (Sonnet 5, Haiku 4.5, Opus 5) và Cohere (Embed v4, Rerank): biểu mẫu Anthropic, đăng ký Marketplace, thanh toán, chạy `get-foundation-model-availability`. Đây là điểm chặn có thể xảy ra ngay ngày đầu (R21).
-8. **PostgreSQL đích:** phiên bản, `pgvector` ≥ 0.8.0 (kiểm tra `hnsw.iterative_scan`), `unaccent`, `pg_trgm`, dung lượng bộ nhớ cho HNSW.
+8. **PostgreSQL đích:** `unaccent` và `pg_trgm` bật được, cấu hình FTS `fr_unaccent` tạo được. Không cần kiểm phiên bản cho vector.
 
-Managed Knowledge Base ở `eu-central-1`: chưa xác minh được từ tài liệu; chỉ ghi nhận cho AD-04, không đổi hướng.
+9. **Managed Knowledge Base (AD-17):** MKB chỉ GA ở một tập region, phải tra `bedrock` endpoints cho `eu-central-1` (V-K2); AWS SDK for .NET có `type: MANAGED` và `MANAGED_KNOWLEDGE_BASE_CONNECTOR` hay không (V-K3) — tài liệu AWS chỉ nêu mốc boto3/botocore ≥ 1.43.64 và **không nói gì về .NET**; managed S3 connector đọc `.metadata.json` sidecar và khai được thuộc tính lọc được (V-K4); `overrideSearchType: HYBRID` có dùng được trên kho vector của MKB không (V-K5).
 
 ---
 
@@ -91,7 +93,7 @@ Trên tài khoản chưa bật billing, hạn mức bằng 0 là điều bình t
 
 **Điều đã xác nhận là đúng và không phụ thuộc tài khoản:** mọi mã mô hình trong tài liệu đều tồn tại và ở trạng thái `ACTIVE` trong vùng — `eu.anthropic.claude-sonnet-5`, `eu.anthropic.claude-opus-5`, `eu.anthropic.claude-sonnet-4-6`, `eu.anthropic.claude-haiku-4-5-20251001-v1:0`, `eu.cohere.embed-v4:0`, `cohere.rerank-v3-5:0`. `cohere.rerank-v3-5:0` **không có** profile `eu.*`, đúng như §1 mô tả là phải dùng ARN foundation-model. AgentCore control plane **gọi được** ở `eu-central-1` (`list-harnesses` và `list-gateways` đều trả kết quả), xác nhận vùng của AD-13.
 
-**Việc phải làm trên tài khoản production trước ngày bắt đầu** (R43). Mục "Yêu cầu tăng quota Bedrock" trong Gantt ([11](11-lo-trinh.md) §2) đang là 1 ngày trong tuần 1; nó chỉ đủ cho việc thứ ba, không đủ cho hai việc đầu:
+**Việc phải làm trên tài khoản production trước ngày bắt đầu** (R43). Mục "Yêu cầu tăng quota Bedrock" trong Gantt ([11](11-lo-trinh.md) §2) đang là 1 ngày trong tuần 1; nó chỉ đủ cho đầu việc thứ ba, không đủ cho hai đầu việc đầu:
 
 1. **Chạy lại đúng bốn lệnh gọi trên** vào tài khoản production để biết tài khoản đó đang ở cổng nào. Mất vài phút, và trả lời được câu hỏi mà cả bảng này không trả lời thay được.
 2. Nộp biểu mẫu use case của Anthropic trong console Bedrock nếu chưa nộp — rẻ nhất, nhanh nhất, chờ khoảng 15 phút.
@@ -173,7 +175,7 @@ Tra tài liệu AgentCore ngày 19/09/2026 cho AD-13. Đây là thông số **t�
 
 ## 2. Định tuyến mô hình theo tác vụ
 
-Một mô hình cho mọi việc sẽ hoặc trả tiền oan cho việc rẻ, hoặc làm hỏng độ trễ ở chuỗi nhiều bước.
+Một mô hình cho mọi việc sẽ hoặc trả tiền oan cho phần việc rẻ, hoặc làm hỏng độ trễ ở chuỗi nhiều bước.
 
 **Sơ đồ 6.1 — Phân tầng mô hình**
 
@@ -209,14 +211,14 @@ flowchart LR
 | Tác vụ | Mô hình | `maxTokens` (đặt tường minh) | Thinking | Ghi chú |
 | --- | --- | --- | --- | --- |
 | Phân loại ý định | Haiku 4.5 | ~50 | — | Đầu ra một nhãn; Haiku 4.5 **hỗ trợ structured outputs**, dùng cho nhãn có schema |
-| Viết lại câu hỏi | Haiku 4.5 | ~200 | — | Bỏ qua khi luật nhanh khớp |
+| Viết lại câu hỏi | Haiku 4.5 | ~200 | — | Chạy ở mọi lượt kể từ AD-15 |
 | Trả lời RAG | Sonnet 5 | ~1 500 | **Tắt** | Trả lời bám chunk, không cần suy luận dài; giữ độ trễ |
 | Vòng lặp tool | Sonnet 5 | ~4 000 mỗi vòng (thinking cũng tính vào `maxTokens`) | `adaptive` + `output_config.effort = low` | Chọn tool và lập tham số hưởng lợi từ suy luận; adaptive thinking tự bật interleaved giữa các lần gọi tool |
 | So sánh case | Sonnet 5 | ~1 500 | Tắt | |
 
 **Tham số lấy mẫu:** đường RAG và so sánh case dùng nhiệt độ thấp (khởi điểm 0–0,2) để câu trả lời ổn định giữa các lần chạy; vòng lặp tool cũng thấp. Trang AWS không nêu hạn chế tham số lấy mẫu của Sonnet 5 khi bật thinking; xác minh ở M0.
 
-**Ứng viên rẻ hơn cho định tuyến:** các mô hình Nova (Micro, Lite, 2 Lite) có profile EU và thường rẻ hơn Haiku cho việc phân loại một nhãn. Đưa vào bộ so sánh ở M1 cùng Haiku 4.5, chọn theo độ chính xác phân loại trên câu hỏi tiếng Pháp kỹ thuật, không theo giá.
+**Ứng viên rẻ hơn cho định tuyến (bắt buộc từ AD-15, không còn là tùy chọn):** các mô hình Nova (Micro, Lite, 2 Lite) có profile EU và thường rẻ hơn Haiku khi chỉ phân loại một nhãn. Đưa vào bộ so sánh ở M1 cùng Haiku 4.5, chọn theo độ chính xác phân loại trên câu hỏi tiếng Pháp kỹ thuật, không theo giá.
 
 **Đầu ra có cấu trúc:** Sonnet 5 trên Bedrock **không hỗ trợ tính năng structured outputs** (Haiku 4.5 có hỗ trợ, nên nhãn định tuyến dùng Haiku với schema). Với Sonnet 5, thứ tự kỹ thuật dùng, từ rẻ đến đắt:
 
@@ -857,7 +859,7 @@ Chi phí/tháng = chi phí/lượt × lượt/người dùng/ngày × người d
 
 **Cache theo khóa tự nhiên (tùy chọn):** kết quả sinh tốn kém và ổn định có thể cache theo khóa tự nhiên, ví dụ lời giải thích của một `tool_run` theo `(tool_run_id, locale, prompt_version)`. Không cache nội dung động theo từng request và không cache chéo người dùng.
 
-**Thứ tự giảm chi phí** (áp theo thứ tự, mỗi bước chỉ khi bước trước chưa đủ): rút gọn prompt và bỏ ví dụ few-shot không cần → hạ `maxTokens` về mức đủ dùng → prompt caching cho khối tĩnh → cascade sang mô hình nhỏ cho việc đơn giản → chuyển việc không gấp sang **batch inference** khi mô hình có trong danh sách: theo danh sách hiện hành, **Sonnet 5 và Cohere Embed v4 không hỗ trợ batch**, còn Haiku 4.5, Sonnet 4.6, Opus 5 (qua profile cross-Region gồm `eu-central-1`) và Titan Text Embeddings V2 (in-region) có. Prompt caching không dùng được trong batch. Vì vậy eval nhóm sinh bằng Sonnet 5 chạy on-demand; giám khảo Opus 5 và bước vision khi ingestion (Haiku 4.5 hoặc Sonnet 4.6) có thể chạy batch. Mức khấu trừ xem trang giá → Budgets và Cost Anomaly Detection trước khi tăng lưu lượng.
+**Thứ tự giảm chi phí** (áp theo thứ tự, mỗi bước chỉ khi bước trước chưa đủ): rút gọn prompt và bỏ ví dụ few-shot không cần → hạ `maxTokens` về mức đủ dùng → prompt caching cho khối tĩnh → cascade sang mô hình nhỏ ở phần việc đơn giản → chuyển việc không gấp sang **batch inference** khi mô hình có trong danh sách: theo danh sách hiện hành, **Sonnet 5 và Cohere Embed v4 không hỗ trợ batch**, còn Haiku 4.5, Sonnet 4.6, Opus 5 (qua profile cross-Region gồm `eu-central-1`) và Titan Text Embeddings V2 (in-region) có. Prompt caching không dùng được trong batch. Vì vậy eval nhóm sinh bằng Sonnet 5 chạy on-demand; giám khảo Opus 5 và bước vision khi ingestion (Haiku 4.5 hoặc Sonnet 4.6) có thể chạy batch. Mức khấu trừ xem trang giá → Budgets và Cost Anomaly Detection trước khi tăng lưu lượng.
 
 **Quota người dùng** (chi tiết ở [07](07-auth-bao-mat.md) §5): hạn mức token ngày theo người dùng và theo organization, để một người dùng hoặc một vòng lặp lỗi không đốt hết ngân sách.
 
@@ -905,7 +907,22 @@ Kích thước microVM (1 vCPU, 2 GB) và thời gian mỗi lượt là **giả 
 
 Ngân sách POC = công thức ở §9 điền bằng đơn giá và số token đo ở M0, cộng ingestion. Chi phí mỗi yêu cầu được theo dõi liên tục qua `cost_per_request` ([09](09-eval-quan-sat.md) §4).
 
-**V-K1: thử Bedrock Knowledge Bases cho POC (một ngày, ở M0).** Tiêu chí "ưu tiên dịch vụ có sẵn của AWS" của tài liệu cuộc họp xung đột với AD-04 (truy xuất tự xây). Chưa xác minh: Knowledge Bases có ở `eu-central-1` với mô hình embedding đã chọn; lọc metadata theo `scope_key`; trả về số trang và điều khoản để trích dẫn; xử lý bảng nhiều trang; tìm kiếm lai với tiếng Pháp. Đạt (recall không thấp hơn phương án tự xây trên 30 câu thật, lọc scope hoạt động, có số trang) thì có thể dùng Knowledge Bases cho POC và tiết kiệm M2 và M3; không đạt thì giữ AD-04 và ghi kết quả vào [00](00-tong-quan.md) §5.
+**V-K2 đến V-K5: kiểm chứng Managed Knowledge Base (AD-17).** Bốn kiểm chứng dưới đây **chặn ngang hàng với V-A1 và V-A6, hạn hết ngày 3 (23/09)**, không phải việc của M0.
+
+| Mã | Kiểm | Cách kiểm | Trượt thì |
+| --- | --- | --- | --- |
+| V-K2 | MKB có GA ở `eu-central-1` | Tra trang endpoints của `bedrock`, rồi `create-knowledge-base` thật | Vùng ngoài EU đụng AD-03, AD-14 và R40, nên không phải phương án |
+| V-K3 | AWS SDK for .NET có `type: MANAGED` và `MANAGED_KNOWLEDGE_BASE_CONNECTOR` | Tạo KB và data source **bằng mã .NET**, không bằng CLI | Phải dựng lớp điều khiển riêng, hoặc đưa lại quyết định lên bàn |
+| V-K4 | Lọc metadata chạy đúng | Ba bước, xem dưới | **Không có phương án vòng.** Đưa lại quyết định lên bàn ngay |
+| V-K5 | `overrideSearchType: HYBRID` dùng được trên kho vector của MKB | Gọi `Retrieve` với `HYBRID` và xem có bị từ chối không | Chỉ còn `SEMANTIC`; `pg_trgm` chuyển từ bổ trợ thành bắt buộc |
+
+**V-K4 phải kiểm đủ ba đường hỏng im lặng**, vì cả ba đều trả kết quả trông hợp lệ:
+
+1. Nạp hai chunk khác `scope_key`, `Retrieve` kèm filter → xác nhận **chỉ trả về một**.
+2. Lọc trên một thuộc tính **chưa khai là lọc được** → xác nhận hành vi là rỗng, không phải trả về tất cả.
+3. Thử `startsWith` trên `clause_path` → xác nhận nó bị bỏ qua, để biết mà không bao giờ dùng. `stringContains` và `listContains` cùng nhóm.
+
+Ngoài ra, ba mặc định của `Retrieve` phải đặt tường minh: `numberOfResults` (mặc định **5**, đặt 40), ngưỡng điểm (bắt đầu 0.5, **không** bê 0.7 của pgvector sang), và `filter` (luôn có `scope_key` và `status`). Ngược lại, `overrideSearchType` **để trống** — bỏ trống thì Bedrock tự chọn chiến lược hợp với kho vector, và chỉ đặt tay khi V-K5 đạt.
 
 ---
 

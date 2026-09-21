@@ -33,7 +33,7 @@ flowchart LR
   subgraph BE["Đội Backend"]
     API["Assistant.Api<br/>orchestrator, SSE, validator"]
     FAC["Facade C#<br/>ToolGate, tool_run"]
-    RET["RetrievalService<br/>pgvector, RRF, rerank"]
+    RET["RetrievalService<br/>MKB Retrieve, pg_trgm, rerank"]
   end
   API -->|"InvokeHarness + Bearer JWT (V-A1)"| H
   H --> GW
@@ -48,7 +48,7 @@ flowchart LR
   class API,FAC,RET be
 ```
 
-**Đội DevOps AWS.** Trước ngày bắt đầu, chạy bốn lệnh gọi thử ở [06](06-tang-bedrock.md) §1 trên **tài khoản production** để biết đang vướng cổng nào, rồi gỡ theo thứ tự thời gian chờ giảm dần (R43): (1) thỏa thuận Marketplace cho Claude Sonnet 5 và Opus 5 — chờ lâu nhất, thông báo lỗi chỉ sang liên hệ AWS Sales, nên mở sớm nhất; (2) biểu mẫu use case của Anthropic cho Haiku 4.5 và Sonnet 4.6 — chờ khoảng 15 phút; (3) đọc hạn mức thật và nộp đơn tăng nếu thiếu — thường vài ngày. Cũng trước ngày bắt đầu: đưa Q1 (residency) tới pháp chế và lấy câu trả lời. Tuần 1 ngày 1 đến 3: bật **token exchange RFC 8693 trên Keycloak** và khớp audience (**V-A6**, điều kiện cắt của AD-13); tạo Harness với `CUSTOM_JWT` và `discoveryUrl` của Keycloak. Tuần 1 ngày 3 đến 5: dựng Gateway `vf-tools` với target OpenAPI tới facade (**tạo credential provider trước, target sau**; endpoint facade phải là HTTPS); viết Cedar Policy; nếu bật chế độ VPC thì dựng **NAT gateway** vì Harness kéo container từ ECR Public (V-A10); tách hai role `assistant-runtime` và `assistant-ingest` ([06](06-tang-bedrock.md) §7); **không cấp `InvokeAgentRuntimeCommand` cho bất kỳ ai** (API này chạy lệnh trực tiếp, bỏ qua LLM và `allowedTools`); bật CloudWatch Transaction Search cho tài khoản (không có nó thì V-A3 và V-A4 không đọc được số); dựng VPC endpoint `bedrock-runtime`, `bedrock-agent-runtime`, và thêm `ecr.dkr`, `ecr.api`, `s3` nếu Harness chạy chế độ VPC; chứng minh SSE chạy qua chuỗi thật không bị buffer. Hạ tầng nền: chốt PostgreSQL cho assistant theo Q4, yêu cầu `pgvector` ≥ 0.8.0 nên RDS PostgreSQL phải là 15.18+, 16.6+ hoặc 17.3+ (bản 14 chỉ có 0.7.4, **không đủ**), cộng `unaccent` và `pg_trgm`; chốt topology production; tạo Guardrail và cấp `bedrock:ApplyGuardrail`; KMS cho CloudWatch Logs và Secrets Manager cho chuỗi kết nối; IAM Roles Anywhere nếu dev chạy ngoài AWS ([10](10-trien-khai.md) §3); đưa cấu hình Harness, Gateway và Cedar vào repo cùng **test đọc lại cấu hình sau mỗi lần triển khai** (R30); dashboard, cảnh báo, load test, runbook on-call ([10](10-trien-khai.md) §10).
+**Đội DevOps AWS.** Trước ngày bắt đầu, chạy bốn lệnh gọi thử ở [06](06-tang-bedrock.md) §1 trên **tài khoản production** để biết đang vướng cổng nào, rồi gỡ theo thứ tự thời gian chờ giảm dần (R43): (1) thỏa thuận Marketplace cho Claude Sonnet 5 và Opus 5 — chờ lâu nhất, thông báo lỗi chỉ sang liên hệ AWS Sales, nên mở sớm nhất; (2) biểu mẫu use case của Anthropic cho Haiku 4.5 và Sonnet 4.6 — chờ khoảng 15 phút; (3) đọc hạn mức thật và nộp đơn tăng nếu thiếu — thường vài ngày. Cũng trước ngày bắt đầu: đưa Q1 (residency) tới pháp chế và lấy câu trả lời. Tuần 1 ngày 1 đến 3: bật **token exchange RFC 8693 trên Keycloak** và khớp audience (**V-A6**, điều kiện cắt của AD-13); tạo Harness với `CUSTOM_JWT` và `discoveryUrl` của Keycloak. Tuần 1 ngày 3 đến 5: dựng Gateway `vf-tools` với target OpenAPI tới facade (**tạo credential provider trước, target sau**; endpoint facade phải là HTTPS); viết Cedar Policy; nếu bật chế độ VPC thì dựng **NAT gateway** vì Harness kéo container từ ECR Public (V-A10); tách hai role `assistant-runtime` và `assistant-ingest` ([06](06-tang-bedrock.md) §7); **không cấp `InvokeAgentRuntimeCommand` cho bất kỳ ai** (API này chạy lệnh trực tiếp, bỏ qua LLM và `allowedTools`); bật CloudWatch Transaction Search cho tài khoản (không có nó thì V-A3 và V-A4 không đọc được số); dựng VPC endpoint `bedrock-runtime`, `bedrock-agent-runtime`, và thêm `ecr.dkr`, `ecr.api`, `s3` nếu Harness chạy chế độ VPC; chứng minh SSE chạy qua chuỗi thật không bị buffer. Hạ tầng nền: chốt PostgreSQL cho assistant theo Q4, cần `pg_trgm` và `unaccent` (mọi phiên bản RDS đều có, **không còn ràng buộc phiên bản** vì kho vector đã sang MKB); chốt topology production; tạo Guardrail và cấp `bedrock:ApplyGuardrail`; KMS cho CloudWatch Logs và Secrets Manager cho chuỗi kết nối; IAM Roles Anywhere nếu dev chạy ngoài AWS ([10](10-trien-khai.md) §3); đưa cấu hình Harness, Gateway và Cedar vào repo cùng **test đọc lại cấu hình sau mỗi lần triển khai** (R30); dashboard, cảnh báo, load test, runbook on-call ([10](10-trien-khai.md) §10).
 
 **Đội Backend.** Tuần 1 ngày 1 đến 3: **V-A1**, gọi `InvokeHarness` từ .NET bằng Bearer JWT; SDK ký SigV4 nên khả năng cao phải viết `HttpClient` thô cộng bộ đọc event stream tự viết. Đây là phần khó đoán nhất của tuần 1 và là điều kiện cắt thứ hai của AD-13. Tuần 1 ngày 3 đến 5: dựng **facade C#** `/internal/tools/*` giữ toàn bộ ToolGate vì Harness không hỗ trợ hook (kiểm schema, biên tham số theo manifest, đơn vị, đọc `ApiResult.Code` vì `Forbidden` nằm trong body HTTP 200 mà Gateway và Cedar không thấy, đếm lặp theo `(toolUseId, tên tool, hash tham số)`, `ApplyGuardrail` lên chunk trước khi vào `toolResult`, ghi `tool_run`); chạy **V-A3** và **V-A4**; dựng lớp dịch stream Harness sang hợp đồng SSE ([02](02-assistant-service.md) §8, R33); khung `Assistant.Api`, CI và kết nối PostgreSQL. Phần còn lại giữ nguyên phân vai B1, B2 và F ở bảng trên.
 
@@ -85,8 +85,8 @@ gantt
   Xác minh Bedrock EU (Converse, embed, rerank, cache) :crit, m0a, 2026-09-21, 4d
   SSE qua nginx, gateway, BFF                         :crit, m0b, 2026-09-21, 4d
   Credential dev (Roles Anywhere), audience Keycloak  :m0c, 2026-09-23, 3d
-  Khung Assistant.Api, CI, PostgreSQL pgvector        :m0d, 2026-09-22, 4d
-  Thử Bedrock Knowledge Bases V-K1 và đo chi phí mẫu :crit, m0e, 2026-09-21, 2d
+  Khung Assistant.Api, CI, PostgreSQL (pg_trgm)       :m0d, 2026-09-22, 4d
+  V-K2..V-K5 Managed KB (chặn, hết ngày 3) và đo chi phí mẫu :crit, m0e, 2026-09-21, 3d
   V-A1 JWT + V-A6 token exchange - cắt hết ngày 3 (B2, L) :crit, m0f, 2026-09-21, 2d
   Facade C#, Gateway vf-tools, Cedar trong CI (B2, L) :crit, m0g, 2026-09-23, 3d
   V-A4 độ trễ và chi phí; V-A10 NAT cho VPC (L)       :crit, m0h, 2026-09-24, 2d
@@ -142,7 +142,7 @@ Ngưỡng đặt **trước khi xây**, không phải lúc nghiệm thu. Không 
 
 ```mermaid
 flowchart TD
-  G0["G0 (25/09, cuối tuần 1): M0 xong?"] --> Q0{"Đủ 8 xác minh AWS, V-K1 và đo chi phí mẫu,<br/>SSE chạy qua chuỗi thật,<br/>residency và bản quyền đã trả lời?"}
+  G0["G0 (25/09, cuối tuần 1): M0 xong?"] --> Q0{"Đủ 8 xác minh AWS, V-K2..V-K5 và đo chi phí mẫu,<br/>SSE chạy qua chuỗi thật,<br/>residency và bản quyền đã trả lời?"}
   Q0 -->|"Không"| A0["Dừng nhận việc mới,<br/>giải quyết chặn trước.<br/>SSE bị buffer: escalate tuần này"]
   Q0 -->|"Có"| QA{"AD-13: V-A1 (JWT) và V-A6<br/>(token exchange) đạt?"}
   QA -->|"Không"| AA["Đã cắt từ hết ngày 3 (23/09):<br/>bỏ AgentCore, chạy vòng lặp C# (04 §6).<br/>G0 chỉ ghi nhận, không lùi lịch"]
@@ -223,7 +223,7 @@ flowchart LR
 | --- | --- | --- |
 | 1 | M0, khởi động M1 | Một lệnh gọi thật tới Sonnet 5 EU và embedding; SSE chạy qua chuỗi thật; khung service + CI; **một lượt tool chạy hết đường Harness → Gateway → facade với danh tính người dùng thật**; **AD-13 quyết hết ngày 3 (23/09), G0 ngày 25/09 ghi nhận** |
 
-> **Tuần 1 quá tải (R39).** Sau AD-13, tuần 1 có tám việc chạy song song cho hai người (L và B2): 8 xác minh Bedrock, V-K1 và đo chi phí mẫu, SSE qua chuỗi thật, khung service và CI, bốn kiểm chứng AgentCore, cùng facade, Gateway và Cedar. Thứ tự ưu tiên khi vỡ: (1) V-A1 và V-A6, (2) 8 xác minh Bedrock và SSE, (3) facade và Gateway, (4) khung service và CI. Nếu V-A1 hoặc V-A6 không đạt hết ngày 3 thì m0g bị hủy, không lùi, và hai ngày còn lại của tuần dồn cho khung service và CI.
+> **Tuần 1 quá tải (R39).** Sau AD-13 và AD-17, tuần 1 có chín việc chạy song song cho hai người (L và B2): 8 xác minh Bedrock, V-K1 và đo chi phí mẫu, SSE qua chuỗi thật, khung service và CI, bốn kiểm chứng AgentCore, cùng facade, Gateway và Cedar. Thứ tự ưu tiên khi vỡ: (1) V-A1 và V-A6, (2) 8 xác minh Bedrock và SSE, (3) facade và Gateway, (4) khung service và CI. Nếu V-A1 hoặc V-A6 không đạt hết ngày 3 thì m0g bị hủy, không lùi, và hai ngày còn lại của tuần dồn cho khung service và CI.
 | 2 | M1, M2 | Golden set 50 câu; 20–30 tài liệu **thật** đã nạp; truy vấn được từ dòng lệnh |
 | 3 | M3 | Số recall@k theo nhóm câu; **G1** |
 | 4 | M4 | 50 câu chạy hết; 15 câu ngoài phạm vi đều bị từ chối đúng (orchestrator hoàn tất đầu tuần 5 theo Gantt; M6 khởi động đầu tuần 5, từ 19/10) |
@@ -321,7 +321,7 @@ Tài liệu cuộc họp yêu cầu POC hoàn thành tối đa 1 tháng, chốt 
 
 | Tuần | Nội dung | Yêu cầu phủ |
 | --- | --- | --- |
-| 1 | M0 gỡ rủi ro, V-K1 và đo chi phí mẫu; **V-A1, V-A3, V-A4, V-A6 và dựng facade + Gateway + Cedar (AD-13)**; khởi động golden set; nạp thử tài liệu | Nền tảng |
+| 1 | M0 gỡ rủi ro, V-K2..V-K5 (Managed KB, chặn) và đo chi phí mẫu; **V-A1, V-A3, V-A4, V-A6 và dựng facade + Gateway + Cedar (AD-13)**; khởi động golden set; nạp thử tài liệu | Nền tảng |
 | 2 | Nạp tiêu chuẩn và tài liệu hướng dẫn VF; golden set 50 câu | 1, 2 |
 | 3 | Truy xuất lai, đo recall; **G1**; khởi động Main API endpoint kết quả dự án | 1, 2 |
 | 4 | Sinh câu trả lời có trích dẫn, giao diện tối thiểu, 1 đến 2 tool đọc và 1 tool tính toán cho một module; demo | 1, 2, 3 và 4 ở mức hẹp |
@@ -341,8 +341,8 @@ Tài liệu cuộc họp yêu cầu POC hoàn thành tối đa 1 tháng, chốt 
 | Endpoint kết quả theo dự án và cấu kiện | Xác nhận với chủ Main API **trước hết ngày 3**. Chưa xác nhận được thì bỏ yêu cầu 3 và 4 khỏi POC ngay, không đợi đến G1 |
 | Chốt embedding sớm hơn | E soạn **20 câu đầu tiên của golden set 50 câu** (không phải một bộ thêm) trước 28/09 để chốt embedding sớm; m2a chạy trên tài liệu thử vứt được cho tới khi chốt. Bộ 50 câu (02/10) dùng để xác nhận lại |
 | Đo mô hình trả lời | Cùng 20 câu đó dùng để so Sonnet 5, Sonnet 4.6 và Haiku 4.5 cho `doc_qa` theo chất lượng và chi phí mỗi lượt trước G1; mô hình rẻ hơn đạt chất lượng thì đổi mặc định (đòn bẩy chi phí lớn nhất) |
-| Phân bổ việc tuần 1 | L: Q1, Q2, Q4 với công ty; xác minh Bedrock; xin quota; V-K1 và đo chi phí mẫu. B2: SSE qua nginx, gateway, BFF; khung `Assistant.Api` và CI. B1: script nạp thử và so sánh embedding. E: golden set và mini-set. F: panel với luồng SSE giả |
-| Việc ngày 1 và 2 | Điền đơn giá thật của các mô hình vào công thức ([06](06-tang-bedrock.md) §10); chạy V-K1; đo `cost_per_request` trên khoảng 20 lượt mẫu. Chưa có mẫu số thì chưa hứa tiêu chí chi phí |
+| Phân bổ việc tuần 1 | L: Q1, Q2, Q4 với công ty; xác minh Bedrock; xin quota; V-K2..V-K5 và đo chi phí mẫu. B2: SSE qua nginx, gateway, BFF; khung `Assistant.Api` và CI. B1: script nạp thử và so sánh embedding. E: golden set và mini-set. F: panel với luồng SSE giả |
+| Việc ngày 1 và 2 | Điền đơn giá thật của các mô hình vào công thức ([06](06-tang-bedrock.md) §10); chạy V-K2 đến V-K5; đo `cost_per_request` trên khoảng 20 lượt mẫu. Chưa có mẫu số thì chưa hứa tiêu chí chi phí |
 | Q1 trước ngày bắt đầu | Q1 (residency) phải có câu trả lời **trước ngày bắt đầu**; chưa có thì lùi ngày, không lùi phạm vi ([06](06-tang-bedrock.md) §11). Với AD-13 điều này càng chặt: kiểm chứng AgentCore chạy ngay ngày 1 nên tuần 1 không còn chỗ chờ Q1 |
 | AD-13 trong bản nén | Ba hạ tầng mới (facade, Gateway, Cedar) vào tuần 1 (R39). V-A1 và V-A6 không đạt hết ngày 3 (23/09) thì bỏ AgentCore ngay; G0 ngày 25/09 ghi nhận và kiểm V-A4 |
 

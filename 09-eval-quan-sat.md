@@ -23,7 +23,7 @@ flowchart TD
   G --> D["Nhóm D: Tình huống tương tự<br/>(có case mẫu đã duyệt)"]
   G --> E["Nhóm E: Đối kháng<br/>(prompt injection, chéo tenant, tài liệu độc hại)"]
   G --> F["Nhóm F: Biến thể<br/>(đổi 1 dữ kiện, đổi cách diễn đạt)"]
-  G --> H["Nhóm G: Tài liệu theo scope<br/>(tài liệu của organization và dự án:<br/>kiểm tra lọc quyền kết hợp HNSW)"]
+  G --> H["Nhóm G: Tài liệu theo scope<br/>(tài liệu của organization và dự án:<br/>kiểm tra filter scope_key của MKB)"]
   G --> HH["Nhóm H: Hướng dẫn dùng VF<br/>(có đáp án là bước thao tác; 3 câu về tính năng không tồn tại PHẢI từ chối)"]
   G --> II["Nhóm I: Kết quả dự án và cấu kiện<br/>(đối chiếu với engine; câu của organization khác PHẢI bị chặn)"]
   G --> JJ["Nhóm J: Gợi ý phương án<br/>(mọi nhãn đạt PHẢI khớp tool_run và engine 100%)"]
@@ -113,7 +113,8 @@ flowchart TD
 | Loại thay đổi | Phải chạy eval? | Ghi chú |
 | --- | --- | --- |
 | System prompt, định nghĩa tool, `tools.manifest.yaml` | Có | Đổi prompt mà không eval là cách phổ biến nhất để làm tệ đi trong im lặng |
-| Cắt đoạn, embedding, truy xuất, ngưỡng, rerank | Có (kèm đo recall theo nhóm) | |
+| Cắt đoạn, embedding, truy xuất, ngưỡng, rerank | Có (kèm đo recall theo nhóm) | Kể từ AD-17, đổi **danh sách thuộc tính metadata lọc được** cũng thuộc nhóm này: thuộc tính chưa khai làm bộ lọc trả rỗng mà không báo lỗi (R47) |
+| Đổi `numberOfResults`, `overrideSearchType`, ngưỡng điểm của `Retrieve` | Có | Ba tham số này có mặc định sai với bài toán; đổi chúng là đổi hình dạng truy xuất |
 | Đổi mô hình hoặc version guardrail | Có (đầy đủ) | |
 | Đổi chỉ UI/CSS | Không | |
 | Lịch định kỳ (hằng đêm) | Có (đầy đủ) | Bắt trôi dạt của mô hình/giám khảo |
@@ -197,6 +198,17 @@ Mọi span mang `correlation_id` xuyên từ BFF sang Assistant sang Main API, �
 | Điểm chất lượng eval hằng đêm | Lùi | Trôi dạt |
 
 Cảnh báo `AccessDeniedException` từ Bedrock ở mức cao nhất: thường là lỗi cấu hình IAM/SCP sau khi đổi mô hình hoặc region đích.
+
+---
+
+## 4a. Hai dịch vụ AWS đề xuất dùng thêm (AD-18, AD-21 — Proposed)
+
+| Mã | Đề xuất | Vai trò bên cạnh golden set |
+| --- | --- | --- |
+| AD-18 | **Bedrock Evaluation** chạy song song golden set trong CI | Managed, Claude-as-judge, có chấm responsible-AI. **Không thay** golden set: golden set đo đúng nhóm câu của ngành kết cấu và vẫn là cổng chặn; Bedrock Evaluation bắt phần tổng quát mà golden set không phủ |
+| AD-21 | **Batch inference** (`CreateModelInvocationJob`) khi chạy golden set và chấm hàng loạt | Giảm 50% so với on-demand. Chỉ áp cho phần việc không ai ngồi chờ — **không** dùng trên đường phục vụ người dùng |
+
+Kể từ AD-17, recall phải đo **theo từng scope** chặt hơn trước, vì tham số chỉ mục nay nằm trong hộp đen của MKB: không còn `ef_search` hay `hnsw.iterative_scan` để chỉnh khi bộ lọc quá chọn lọc làm mất ứng viên.
 
 ---
 
@@ -374,7 +386,7 @@ Tham chiếu từ sách Enterprise GenAI, dùng làm điểm khởi đầu và �
 | I | Kết quả dự án và cấu kiện: câu hỏi về kết quả đã lưu, gồm dự án của organization khác | Số khớp engine; chặn đúng câu ngoài quyền |
 | J | Gợi ý phương án: phương án đạt, không đạt, ngoài biên manifest, module chưa có tool | Nhãn đạt khớp `tool_run`; không có phương án đạt mà thiếu kiểm chứng |
 
-Với bộ 50 câu ban đầu, phân bổ khởi điểm gợi ý: 30 câu tiêu chuẩn, 8 câu hướng dẫn VF, 6 câu kết quả dự án, 6 câu gợi ý phương án; tăng dần về sau. Các nhóm đối kháng (E), cách ly scope (G) và 15 câu ngoài phạm vi (B) là **bộ riêng ngoài 50 câu này**. Số câu mỗi nhóm nhỏ, nên kết quả theo nhóm chỉ mang tính hướng chứ chưa có ý nghĩa thống kê ([12](12-rui-ro.md) §6 cho khoảng tin cậy của bộ 50 câu).
+Với bộ 50 câu ban đầu, phân bổ khởi điểm gợi ý: 30 câu tiêu chuẩn, 8 câu hướng dẫn VF, 6 câu kết quả dự án, 6 câu gợi ý phương án; tăng dần về sau. Các nhóm đối kháng (E), cách ly scope (G) và 15 câu ngoài phạm vi (B) là **bộ riêng ngoài 50 câu này**. Số câu mỗi nhóm nhỏ, nên kết quả theo nhóm chỉ để định hướng, chưa có ý nghĩa thống kê ([12](12-rui-ro.md) §6 cho khoảng tin cậy của bộ 50 câu).
 
 | Chủ đề | Nguồn | Áp dụng |
 | --- | --- | --- |

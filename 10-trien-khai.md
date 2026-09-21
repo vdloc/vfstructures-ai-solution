@@ -24,7 +24,7 @@ flowchart TB
 
   subgraph DATA["Dữ liệu"]
     PGM[("PostgreSQL VFSoftware")]
-    PGA[("PostgreSQL assistant + pgvector (MỚI)")]
+    PGA[("PostgreSQL assistant (MỚI)<br/>case, tool_run, audit, clause_ref")]
     S3[("S3 (tài liệu nguồn)")]
   end
 
@@ -64,7 +64,7 @@ flowchart TB
 | BFF (Next.js) | Route handler trả `ReadableStream`, không `await` toàn bộ body; tắt nén cho đường này |
 | Health check | Tách `/health/live` (tiến trình sống) và `/health/ready` (kết nối PostgreSQL, cấu hình Bedrock nạp được); **không** gọi Bedrock trong health check |
 
-**Cấu hình cho PostgreSQL assistant (AD-12, GĐ-5):** extension `vector`, `unaccent`, `pg_trgm`. Instance riêng, dung lượng bộ nhớ đủ để giữ chỉ mục HNSW trong RAM; tham số `maintenance_work_mem` đủ lớn khi build chỉ mục. Sao lưu, mã hóa lưu trữ bằng KMS.
+**Cấu hình cho PostgreSQL assistant (AD-12, GĐ-5):** extension `unaccent` và `pg_trgm`, chỉ mục GIN trigram trên `clause_ref.clause_path`. Instance riêng hay dùng chung là quyết định vận hành theo Q4 — kho vector nằm ở MKB nên không còn yêu cầu bộ nhớ cho chỉ mục vector. Sao lưu, mã hóa lưu trữ bằng KMS.
 
 ---
 
@@ -140,7 +140,7 @@ flowchart TD
   PUSH --> ROLL["Triển khai theo feature flag<br/>(mục 5)"]
 ```
 
-**Migration:** hệ thống hiện chạy migration thủ công. Assistant giữ nguyên quy ước (migration là bước riêng, không tự chạy khi khởi động), nhưng **schema `assistant` độc lập**, nên migration của Assistant không chạm bảng của service khác. Migration đổi số chiều vector hoặc tạo chỉ mục HNSW phải theo quy trình ở [03](03-rag.md) §4.
+**Migration:** hệ thống hiện chạy migration thủ công. Assistant giữ nguyên quy ước (migration là bước riêng, không tự chạy khi khởi động), nhưng **schema `assistant` độc lập**, nên migration của Assistant không chạm bảng của service khác. Đổi mô hình embedding **không** phải là migration của PostgreSQL: đó là tạo Knowledge Base mới rồi nạp lại từ cùng tiền tố S3, theo quy trình ở [03](03-rag.md) §4.
 
 **Quản lý version prompt:** system prompt, cấu hình guardrail và manifest tool nằm trong repo, có version; mỗi `message` ghi `prompt_version`. Đổi prompt là thay đổi code, qua PR và eval.
 
@@ -237,6 +237,25 @@ Trước khi phát hành beta ra ngoài đội, mỗi mục phải có bằng ch
 Sách Generative AI Tools nêu bảy chiều phải giải cùng lúc, không chỉ chất lượng hội thoại: **độ trễ**, **hiệu quả** (chi phí, tài nguyên), **quyền riêng tư**, **khả năng mở rộng**, **giám sát**, **khả năng tương tác** (giao thức và tích hợp với hệ thống hiện có), **trải nghiệm người dùng**. Dùng làm danh mục rà soát cuối tuần 7, mỗi chiều có người chịu trách nhiệm và bằng chứng.
 
 **Cờ tính năng bằng cấu hình** không phân đoạn theo người dùng và cần triển khai lại để đổi (sách AI-Enhanced Web Apps). Chấp nhận được cho MVP vì có allowlist theo organization và kill switch đọc cấu hình động ([10](10-trien-khai.md) §5); nếu cần phân đoạn tinh hơn hoặc thay đổi thường xuyên, chuyển sang dịch vụ quản lý cờ tính năng.
+
+---
+
+## 8a. Ingestion điều phối bằng Step Functions (AD-20 — Proposed)
+
+Kể từ AD-17, pipeline nạp có sáu chặng: parse → cắt đoạn → ghi chunk và sidecar lên S3 → `start-ingestion-job` → poll tới `COMPLETE` → đổi `status` sang `active` và nạp lại. Chặng 4 và 5 là gọi dịch vụ bất đồng bộ, và chặng 6 phải chạy đúng thứ tự sau chặng 5.
+
+**Đề xuất:** Step Functions điều phối, S3 Event Notification kích hoạt khi có tệp nguồn mới. Mỗi chặng tự retry và debug riêng, không phải tự viết máy trạng thái job.
+
+| | Bảng hàng đợi PostgreSQL (AD-11) | Step Functions (AD-20) |
+| --- | --- | --- |
+| Retry từng chặng | Tự viết | Có sẵn |
+| Nhìn được job đang kẹt ở đâu | Tự dựng | Có sẵn |
+| Hạ tầng mới trong POC | Không | Có — cộng vào R39 |
+| Chi phí | Gần bằng không | Theo số lần chuyển trạng thái |
+
+AD-11 **giữ nguyên** cho các job nền khác (dọn retention, tổng hợp eval, tổng hợp chi phí). AD-20 chỉ nhắm vào nhánh ingestion, và đang ở trạng thái **Proposed**.
+
+Ba việc nhỏ không cần thành AD: retry Bedrock bằng cấu hình SDK (`standard` hoặc `adaptive`) chứ không phải vòng `Thread.Sleep` tự viết — retry đồng loạt tạo hiệu ứng bầy đàn và làm throttling nặng thêm; **AWS Budgets và Cost Anomaly Detection bật trước khi tăng lưu lượng**, không phải sau; prompt của router và của câu trả lời tách khỏi mã qua Bedrock Prompt Management (AD-19).
 
 ---
 
