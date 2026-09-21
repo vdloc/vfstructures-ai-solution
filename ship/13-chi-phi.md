@@ -180,7 +180,7 @@ Tám endpoint giả định: `bedrock-runtime`, `bedrock-agent-runtime`, `bedroc
 | # | Đòn bẩy | Tác động | Cái giá |
 | --- | --- | --- | --- |
 | 1 | **Cache phần tĩnh trong tool loop.** Kiểm Harness có dùng prompt caching không; nếu không, vòng lặp C# (đường thoát của AD-13) đặt `cachePoint` được | Khoảng −14% tổng hóa đơn ở kịch bản Một công ty | Cần một kiểm chứng mới về Harness |
-| 2 | **Giới hạn nội dung guardrail soát trên chunk.** 12 chunk bọc `guardContent` tốn khoảng $0,008 mỗi lượt hỏi tài liệu, khoảng $87 mỗi tháng ở kịch bản Một công ty. Cân nhắc chỉ bật content filter (prompt attack) cho phần chunk, bỏ denied topics và PII cho tài liệu đã qua kiểm soát khi nạp | Tới −22% chi phí mỗi lượt hỏi tài liệu | Giảm một lớp phòng thủ prompt injection gián tiếp; cần [06](06-bao-mat.md) đồng ý |
+| 2 | **Soát chunk một lần lúc nạp, không soát lại mỗi lượt.** 12 chunk bọc `guardContent` tốn khoảng $0,008 mỗi lượt hỏi tài liệu, khoảng $87 mỗi tháng ở kịch bản Một công ty, dù nội dung chunk không đổi giữa các lượt. Policy của guardrail áp cho cả lời gọi, không chọn riêng cho từng khối `guardContent`, nên không bật "chỉ content filter cho chunk" trong cùng một lời gọi được. Hướng khả thi: Worker gọi `ApplyGuardrail` trên từng chunk lúc nạp, chunk bị chặn thì không đẩy lên MKB. Skill `amazon-bedrock` cảnh báo: bỏ chunk ra khỏi `guardContent` thì phần lớn filter sẽ không soát nội dung retrieval nữa | Tới −22% chi phí mỗi lượt hỏi tài liệu | Mất lớp soát prompt injection gián tiếp **lúc truy vấn**; chỉ còn lớp lúc nạp. Chỉ làm khi [06](06-bao-mat.md) đồng ý |
 | 3 | **Giữ reranker quản lý sẵn của MKB** (V-K6) | Tránh +$22 mỗi tháng | Chỉ dùng được với embedding `MANAGED` (AD-06) |
 | 4 | **Giảm số vòng tool loop.** Mỗi vòng thêm gửi lại toàn bộ ngữ cảnh | `optimize` 7 vòng tốn gấp 2,86 lần `calc` 3 vòng | Mô tả tool và tham số tốt hơn, không phải nâng trần |
 | 5 | **Giảm số VPC endpoint**, dùng chung endpoint giữa các môi trường cùng VPC | Mỗi endpoint trên 2 AZ tốn khoảng $17,5 mỗi tháng | Phụ thuộc thiết kế mạng |
@@ -227,7 +227,7 @@ Sách *Building Gen AI Applications with Amazon Bedrock* ch06 xếp việc xem h
 | Để trống `MaxTokens` | Bedrock giữ chỗ quota theo trần của mô hình, gây throttling ([05](05-devops.md)) |
 | Mua Provisioned Throughput để thử | Tính tiền liên tục kể cả khi không dùng |
 | Tăng lưu lượng trước khi có Budgets và Cost Anomaly Detection | Không có phanh chi phí |
-| Dựng OpenSearch chỉ để tra case | $495–990 mỗi tháng cho việc Aurora làm được gần như miễn phí ([12](12-tra-case.md)) |
+| Dựng OpenSearch chỉ để tra case | $495–990 mỗi tháng, trong khi Aurora làm được gần như miễn phí ([12](12-tra-case.md)) |
 | Coi con số ở mục 5 là dự toán đã chốt | Đơn giá thật nhưng lưu lượng và kích thước prompt là giả định |
 
 ---

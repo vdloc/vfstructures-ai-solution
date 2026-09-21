@@ -581,7 +581,7 @@ Nhưng buffer response ở bước 1 làm hỏng toàn bộ bước này. Kiểm
 
 Hệ quả cho tranh luận "tự viết vòng lặp C# cho rẻ": **tiết kiệm được 1% hóa đơn, đổi lấy vài trăm dòng mã phải tự bảo trì.** Cân nhắc đúng không nằm ở chi phí hạ tầng mà ở công sức xây dựng và rủi ro V-A1.
 
-**Chưa có con số ngân sách hoàn chỉnh.** Đơn giá của Sonnet 5, Haiku 4.5, Cohere Embed v4 chưa tra được từ trang giá. Điền bằng AWS Pricing Calculator hoặc trang Marketplace **trước khi bắt đầu**, và đo trên lượt thật ngay khi có traffic.
+**Đơn giá đã tra được**, từ AWS Price List Bulk API, xem [13](13-chi-phi.md). Tỉ trọng ở bảng trên chưa tính Guardrails; theo mô hình ở 13, token mô hình chiếm khoảng 85% chi phí biến đổi và Guardrails khoảng 12%. Đơn giá là thật, nhưng lưu lượng và kích thước prompt vẫn là giả định: đo trên lượt thật ngay khi có traffic rồi chạy lại mô hình.
 
 ---
 
@@ -608,4 +608,6 @@ Hệ quả cho tranh luận "tự viết vòng lặp C# cho rẻ": **tiết ki�
 | Thiết kế đầy đủ, view triển khai, quyết định, rủi ro | [01-kien-truc.md](01-kien-truc.md) |
 | Backend đang chờ gì ở mình, và mình chờ gì ở Backend | [03-backend.md](03-backend.md) |
 | Hợp đồng API cần đi qua tầng mạng | [02-hop-dong.md](02-hop-dong.md) |
+| Hạ tầng dưới dạng CDK, khóa KMS, IAM role, alarm, Budgets | [15-chi-tiet-devops.md](15-chi-tiet-devops.md) |
+| Đơn giá thật và các khoản cố định | [13-chi-phi.md](13-chi-phi.md) |
 | Hồ sơ đề xuất cho lãnh đạo/CTO | [kien-truc-day-du.md](../kien-truc-day-du.md) |

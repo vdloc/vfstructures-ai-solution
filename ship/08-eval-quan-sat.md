@@ -465,4 +465,5 @@ Với bộ 50 câu ban đầu, phân bổ khởi điểm gợi ý: 30 câu tiêu
 | Kiến trúc tổng thể, điểm vào của bộ | [01-kien-truc.md](01-kien-truc.md) |
 | Quan sát ở tầng hạ tầng, CloudWatch và trace | [05-devops.md](05-devops.md) bước 5 |
 | Post-validation sinh dữ liệu cho eval | [03-backend.md](03-backend.md) bước 5 |
+| Đơn giá để tính `cost_per_request` | [13-chi-phi.md](13-chi-phi.md) |
 | Mục lục cả bộ | [README.md](README.md) |

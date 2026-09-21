@@ -322,4 +322,7 @@ Ba nhánh, ba khối công việc tách biệt. Có thể chia cho ba người.
 | Hợp đồng SSE, schema request, mã lỗi | [02-hop-dong.md](02-hop-dong.md) |
 | Frontend đang chờ gì ở mình | [04-frontend.md](04-frontend.md) |
 | DevOps đang chờ gì ở mình | [05-devops.md](05-devops.md) |
+| Mã mẫu C#, DDL, test phải có | [14-chi-tiet-backend.md](14-chi-tiet-backend.md) |
+| Case theo AD-28 | [12-tra-case.md](12-tra-case.md) |
+| Chi phí mỗi lời gọi | [13-chi-phi.md](13-chi-phi.md) |
 | Hồ sơ đề xuất cho lãnh đạo/CTO | [kien-truc-day-du.md](../kien-truc-day-du.md) |
