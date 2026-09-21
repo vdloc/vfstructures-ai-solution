@@ -207,8 +207,8 @@ Ba nhánh, ba khối công việc tách biệt. Có thể chia cho ba người.
 
 ### 4B · Nhánh case
 
-- `POST /v1/approvals/{toolRunId}`: dựng case từ `tool_run`, summary bằng **template** (không dùng LLM), `dedupe_key = hash(tool_id, tool_version, input chuẩn hóa)`. **Idempotent** (AD-27): unique index `(org_id, tool_run_id)` và `(org_id, dedupe_key)`; dùng `INSERT ... ON CONFLICT DO NOTHING RETURNING id`, không trúng thì đọc lại `caseId` đã có và trả `200`.
-- `CaseSimilarityScorer`: lọc cứng SQL (`org_id` từ Payment API, `status = Approved`, `element_type`) → ≤200 ứng viên → khoảng cách chuẩn hóa trên `similarity_keys` → top 5 → tie-break vector khi câu hỏi có phần ngôn ngữ tự nhiên.
+- **Ghi case trong facade (AD-28, [12](12-tra-case.md))**: cùng transaction ghi `tool_run`, khi `verdict = pass` và manifest đánh dấu `case_source: true`. `dedupe_key = sha256(tool_id, tool_version, params chuẩn hóa)`; `INSERT … ON CONFLICT (org_id, dedupe_key) DO UPDATE SET use_count = use_count + 1, last_seen_at = now()`. Không `summary`, không embedding, không `POST /v1/approvals`.
+- `CaseSimilarityScorer`: lọc cứng SQL (`org_id` qua RLS, `status = 'active'`, `verdict = 'pass'`, `tool_id` / `element_type`) → ≤200 ứng viên → khoảng cách chuẩn hóa trên `similarity_keys` → top 5 → tie-break `use_count` giảm dần rồi `last_seen_at` giảm dần. Không dùng vector.
 - **Hàm khoảng cách khi thiếu key** ([01](01-kien-truc.md)): chuẩn hóa từng key về `[0,1]` theo dải trong manifest, tính trung bình **trên tập key giải được ở cả hai phía**, chia cho `coverage` để phạt case thiếu key. Dưới 2 key giải được thì **không truy vấn** — phát sự kiện hỏi lại.
 - Thứ tự ưu tiên nguồn tham số, viết ra trong mã (AD-16): `tool_run` lượt trước → `pageContext` → `case_hints`. Ghi đè theo từng key, không theo cả khối. Gắn cờ `unconfirmed` cho key chỉ có nguồn `case_hints`.
 - **Sinh phần manifest nhúng vào prompt router** từ `tools.manifest.yaml`: danh sách `similarity_keys`, đơn vị hợp lệ, dải giá trị. Sinh lúc khởi động, không viết tay trong prompt — manifest đổi mà prompt không đổi là nguồn sai âm thầm.
@@ -270,7 +270,7 @@ Ba nhánh, ba khối công việc tách biệt. Có thể chia cho ba người.
 - Tắt Bedrock giả lập → lượt vẫn trả danh sách nguồn và `done`, không phải 500.
 - `tool_run` trả `verdict.pass = false`, mô hình giả lập viết "la poutre est conforme" → `warning: unverified_verdict`, thẻ kết quả vẫn hiện "không đạt".
 - Giả lập `Retrieve` trả một chunk có `scope_key` của org khác → chunk bị loại, có `audit_event` loại `scope_violation`.
-- Gọi `POST /v1/approvals/{toolRunId}` hai lần → cùng `caseId`, cả hai lần `200`, bảng `case` có một dòng.
+- Cùng cấu hình tính đạt hai lần trong hai lượt → bảng `case` có một dòng, `use_count = 2`. Facade chạy lại cùng `toolUseId` → `use_count` không tăng.
 
 ### Rủi ro
 
@@ -285,8 +285,7 @@ Ba nhánh, ba khối công việc tách biệt. Có thể chia cho ba người.
 ### Phải làm
 
 - Hợp đồng 11 sự kiện **ổn định**. Thay đổi phá vỡ đi vào `/v2`; đường dẫn đã công bố không bị đổi nghĩa.
-- `POST /v1/approvals/{toolRunId}` trả `caseId`.
-- Phát `approval_required` chỉ cho tool nhóm B.
+- Không phát `approval_required` cho case (AD-28). Event và `/v1/approvals` vẫn trong hợp đồng, dành cho tool nhóm C.
 
 ### Rủi ro
 

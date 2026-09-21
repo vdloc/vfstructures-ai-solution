@@ -9,7 +9,7 @@
 | # | File | Ai đọc | Trả lời câu hỏi gì |
 | --- | --- | --- | --- |
 | 00 | [Thuật ngữ và nguồn](00-thuat-ngu-va-nguon.md) | Tất cả | Mỗi từ lạ nghĩa là gì, vì sao hệ thống cần nó, quyết định dựa trên nguồn nào |
-| 01 | [**Kiến trúc tổng thể**](01-kien-truc.md) | Tất cả — **điểm vào của bộ** | Vì sao hệ thống có hình dạng này, nó gồm gì, chạy thế nào, 26 quyết định kiến trúc (mã tới AD-27). Mỗi mục có đường dẫn sang file con giữ chi tiết |
+| 01 | [**Kiến trúc tổng thể**](01-kien-truc.md) | Tất cả — **điểm vào của bộ** | Vì sao hệ thống có hình dạng này, nó gồm gì, chạy thế nào, 27 quyết định kiến trúc (mã tới AD-28). Mỗi mục có đường dẫn sang file con giữ chi tiết |
 | 02 | [Hợp đồng API](02-hop-dong.md) | **Backend + Frontend cùng ký** | Endpoint, schema, 11 SSE event, mã lỗi |
 | 03 | [Thi công Backend](03-backend.md) | Backend | Sáu bước, nghiệm thu từng bước, rủi ro phải canh |
 | 04 | [Thi công Frontend](04-frontend.md) | Frontend | Dựng UI từ 11 event, trạng thái phải xử lý |
@@ -20,6 +20,10 @@
 | 09 | [Triển khai](09-trien-khai.md) | DevOps | Topology, môi trường, CI/CD, phát hành |
 | 10 | [Rủi ro và câu hỏi mở](10-rui-ro.md) | Tất cả | Cái gì có thể hỏng, cái gì chưa ai biết |
 | 11 | [Thuyết minh](11-thuyet-minh.md) | Người không chuyên | Toàn bộ hệ thống giải thích bằng lời thường |
+| 12 | [Tra case](12-tra-case.md) | Backend, DevOps, Frontend | Case là cấu hình JSON đã tính đạt (AD-28); tra thế nào; vì sao không dùng OpenSearch |
+| 13 | [Chi phí](13-chi-phi.md) | Lãnh đạo, DevOps, Backend | Đơn giá thật ở Frankfurt, chi phí một lượt, ba kịch bản, đòn bẩy giảm chi phí |
+| 14 | [Chi tiết cài đặt Backend](14-chi-tiet-backend.md) | Backend | Cấu trúc solution, mã mẫu cho từng lời gọi AWS, SQL |
+| 15 | [Chi tiết cài đặt DevOps](15-chi-tiet-devops.md) | DevOps AWS | Hạ tầng dưới dạng CDK, IAM, KMS, mạng, quan sát, chi phí |
 | — | [Hồ sơ đề xuất cho lãnh đạo/CTO](../kien-truc-day-du.md) | Ban lãnh đạo, CTO, Giám đốc Kỹ thuật | Vì sao xây, vận hành thế nào, chi phí và rủi ro — hồ sơ trình duyệt đầu tư, song song bộ này |
 
 **Thứ tự đọc lần đầu**

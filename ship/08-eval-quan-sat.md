@@ -64,7 +64,7 @@ flowchart TD
  G["Golden set (JSONL, có version trong repo)"] --> A["Nhóm A: Hỏi đáp tài liệu<br/>(có đáp án, chỉ rõ tài liệu và điều khoản)"]
  G --> B["Nhóm B: Ngoài phạm vi kho<br/>(15 câu: PHẢI từ chối, không được đoán)"]
  G --> C["Nhóm C: Tính toán qua tool<br/>(đầu vào → kết quả engine đã biết)"]
- G --> D["Nhóm D: Tình huống tương tự<br/>(có case mẫu đã duyệt)"]
+ G --> D["Nhóm D: Tình huống tương tự<br/>(có case mẫu đã tính đạt)"]
  G --> E["Nhóm E: Đối kháng<br/>(prompt injection, chéo tenant, tài liệu độc hại)"]
  G --> F["Nhóm F: Biến thể<br/>(đổi 1 dữ kiện, đổi cách diễn đạt)"]
  G --> H["Nhóm G: Tài liệu theo scope<br/>(tài liệu của organization và dự án:<br/>kiểm tra filter scope_key của MKB)"]
@@ -444,7 +444,7 @@ Tham chiếu từ sách Enterprise GenAI, dùng làm điểm khởi đầu và �
 | I | Kết quả dự án và cấu kiện: câu hỏi về kết quả đã lưu, gồm dự án của organization khác | Số khớp engine; chặn đúng câu ngoài quyền |
 | J | Gợi ý phương án: phương án đạt, không đạt, ngoài biên manifest, module chưa có tool | Nhãn đạt khớp **verdict** của `tool_run`, không chỉ khớp tham số; không có phương án đạt mà thiếu kiểm chứng; câu có engine báo không đạt phải có trong nhóm (AD-24) |
 | K | Ấn bản tài liệu: cùng câu hỏi ở chế độ hiện hành và chế độ theo dự án dùng ấn bản cũ; tiêu chuẩn có phụ lục quốc gia | Chế độ hiện hành không trích bản `superseded`; chế độ theo dự án trích đúng ấn bản dự án kèm `standard_version_mismatch` nếu có bản mới hơn (AD-26) |
-| L | Ngắt kết nối và chạy lại: đóng kết nối giữa stream; gọi approvals hai lần; lặp `toolUseId` | Không có lời gọi Bedrock sau khi ngắt ≤ 2 giây; một case; engine chạy một lần (AD-25, AD-27). Nhóm này là test tích hợp, không cần giám khảo |
+| L | Ngắt kết nối và chạy lại: đóng kết nối giữa stream; lặp `toolUseId` | Không có lời gọi Bedrock sau khi ngắt ≤ 2 giây; một dòng case và `use_count` không tăng khi lặp `toolUseId`; engine chạy một lần (AD-25, AD-27). Nhóm này là test tích hợp, không cần giám khảo |
 
 Với bộ 50 câu ban đầu, phân bổ khởi điểm gợi ý: 30 câu tiêu chuẩn, 8 câu hướng dẫn VF, 6 câu kết quả dự án, 6 câu gợi ý phương án; tăng dần về sau. Các nhóm đối kháng (E), cách ly scope (G) và 15 câu ngoài phạm vi (B) là **bộ riêng ngoài 50 câu này**. Số câu mỗi nhóm nhỏ, nên kết quả theo nhóm chỉ để định hướng, chưa có ý nghĩa thống kê ([10](10-rui-ro.md) cho khoảng tin cậy của bộ 50 câu).
 

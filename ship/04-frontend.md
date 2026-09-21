@@ -67,7 +67,7 @@ Bốn kịch bản mock stream là đủ:
 | Kịch bản | Chuỗi sự kiện |
 | --- | --- |
 | Hỏi tài liệu | `status` → `retrieval` → `token`×n → `citation` → `done` |
-| Có tính toán | `status` → `status` → `tool_call` → `tool_result` → `approval_required` → `token`×n → `citation` → `done` |
+| Có tính toán | `status` → `status` → `tool_call` → `tool_result` → `token`×n → `citation` → `done` (từ AD-28 không còn `approval_required`) |
 | Bị từ chối | `status` → `refusal` → `done` — **không có `token` nào** |
 | Lỗi giữa chừng | `status` → `retrieval` → `token`×3 → `error` |
 
@@ -255,15 +255,15 @@ Nếu FE parse số từ chữ, toàn bộ công sức post-validation ở bư�
 
 `citation` mang `docId`, `page`, `clause` và — với chunk có `bbox` — vùng trên trang. Bấm `[1]` mở tài liệu đúng trang và **highlight vùng**. Citation không mở được thì người dùng không có cách kiểm, và nhãn "có citation" trở thành trang trí.
 
-### Nút Duyệt và nhãn bắt buộc
+### Thẻ case và nhãn bắt buộc (AD-28)
 
-`approval_required` xuất hiện khi kết quả có thể vào kho kinh nghiệm. Bấm Duyệt → `POST /v1/approvals/{toolRunId}`.
+Không còn nút Duyệt: case tự ghi khi engine tính đạt ([12](12-tra-case.md)). Code xử lý `approval_required` giữ nguyên, vì event vẫn nằm trong hợp đồng, nhưng không giả định nó xuất hiện.
 
-Thẻ case khi tra cứu **bắt buộc** mang nhãn:
+Thẻ case khi tra cứu hiện `params`, `result`, `verdict`, **số lần dùng** (`use_count`), lần gần nhất, tiêu chuẩn đã dùng, và **bắt buộc** mang nhãn:
 
-> **Kinh nghiệm nội bộ, không phải căn cứ tiêu chuẩn**
+> **Cấu hình đã từng tính đạt trong công ty, không phải khuyến nghị**
 
-Và case duyệt trước phiên bản tiêu chuẩn hiện hành mang thêm cảnh báo **"có thể theo tiêu chuẩn cũ"**. Thiếu cảnh báo này thì case trở thành đường lan truyền một cách làm đã lỗi thời.
+Và case tính trước phiên bản tiêu chuẩn hiện hành mang thêm cảnh báo **"có thể theo tiêu chuẩn cũ"**. Thiếu cảnh báo này thì case trở thành đường lan truyền một cách làm đã lỗi thời.
 
 ### Rủi ro
 

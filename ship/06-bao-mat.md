@@ -304,7 +304,7 @@ flowchart TD
 | Loại dữ liệu | Retention khởi điểm | Ghi chú |
 | --- | --- | --- |
 | `message`, `retrieval_log`, `tool_run` | Cấu hình được (đề xuất 90 ngày) | Công ty và DPO quyết định con số cuối |
-| `case` (đã duyệt) | Theo vòng đời organization | Xóa cứng khi organization yêu cầu ([01](01-kien-truc.md)) |
+| `case` (cấu hình đã tính đạt, AD-28) | Theo vòng đời organization | Xóa cứng khi organization yêu cầu ([01](01-kien-truc.md)) |
 | `audit_event` | Dài hơn, **không chứa nội dung câu hỏi** | Ghi ai, làm gì, khi nào, tool nào, guardrail nào can thiệp |
 | `feedback` | Gắn với message; xóa cùng message | Bản ẩn danh có thể giữ cho bộ eval nếu đã gỡ định danh |
 
@@ -380,7 +380,7 @@ Sách Using Amazon Bedrock khuyến nghị dựng mô hình đe dọa STRIDE **t
 | --- | --- | --- |
 | **S**poofing (giả mạo) | Giả token, giả `org_id` từ client | Validate JWT + audience; `org_id` lấy từ Payment API |
 | **T**ampering (sửa đổi) | Sửa `pageContext`, sửa tham số tool, sửa tài liệu nguồn | Engine tính lại; ToolGate schema; `sha256` và versioning tài liệu; kho nguồn chỉ vai trò `Assistant.Curate` ghi |
-| **R**epudiation (chối bỏ) | Kỹ sư chối đã duyệt case | `case_approval` có danh tính, thời điểm; `audit_event` chỉ-thêm |
+| **R**epudiation (chối bỏ) | Tranh cãi case nào đã sinh từ lần tính nào | `first_tool_run_id`, `tool_version`, `use_count` trên case; `audit_event` chỉ-thêm ghi mỗi lần ghi và rút case |
 | **I**nformation disclosure (lộ thông tin) | Chéo tenant, lộ PII trong log, model inversion | Lọc `scope_key`; che PII ở biên; log Bedrock chỉ metadata; rate limit chống truy vấn lặp một thực thể |
 | **D**enial of service (từ chối dịch vụ) | Spam, vòng lặp tool, tệp tải lên lớn | Rate limit, quota, giới hạn vòng, xử lý tải lên nền và giới hạn kích thước |
 | **E**levation of privilege (nâng quyền) | Mô hình gọi tool vượt quyền, role IAM rộng | Chuyển tiếp token người dùng; role IAM tách và có ARN cụ thể; không dùng `AmazonBedrockFullAccess` |

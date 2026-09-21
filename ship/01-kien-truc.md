@@ -43,7 +43,7 @@ Có tranh cãi về "hệ thống phải như thế nào", tài liệu này th�
 | --- | --- |
 | F1 | Hỏi đáp tiêu chuẩn có citation (RAG) |
 | F2 | Tính toán qua engine hiện có (tool calling) |
-| F3 | Tra tình huống nội bộ đã duyệt (case memory) |
+| F3 | Tra cấu hình đã tính đạt tương tự (case, AD-28, [12](12-tra-case.md)) |
 | F4 | Nạp và phát hành tài liệu nguồn |
 | F5 | Giải thích kết quả tính toán đang mở trên trang |
 | F6 | Post-validation số, citation và nhãn kết luận |
@@ -186,7 +186,7 @@ Sinh bản vẽ; ký hồ sơ; thay thế phán đoán kỹ sư; sinh SQL bằng
 | --- | --- | --- |
 | Hỏi đáp tài liệu | Retrieval qua Bedrock Managed Knowledge Base, đường cố định 1 lần gọi mô hình. Worker chunking theo điều khoản và ghi chunk ra S3 kèm metadata | AD-17 |
 | Tính toán | Tool calling vào engine .NET hiện có, không để mô hình tính | AD-08, P2 |
-| Tra kinh nghiệm | Lọc cứng SQL rồi chấm điểm khoảng cách số học, vector chỉ tie-break | AD-09, AD-16 |
+| Tra case | Lọc cứng SQL rồi chấm điểm khoảng cách số học; tie-break bằng số lần dùng, không dùng vector | AD-28, AD-16 |
 | Tool loop | AgentCore Harness; ToolGate chuyển ra facade C# vì Harness không có hook | AD-13 |
 | Routing | Một lần gọi Haiku cho mọi lượt; luật chỉ là fallback | AD-15 |
 | Chống bịa | Post-validation sau stream, gắn cờ thay vì xóa chữ | F6 |
@@ -536,12 +536,12 @@ sequenceDiagram
  ghi đè theo từng key, không theo cả khối
  key chỉ có nguồn case_hints → cờ unconfirmed
  < 2 key giải được → hỏi lại, dừng
-1. Lọc cứng SQL: org_id, status = 'Approved', tool_id / element_type
+1. Lọc cứng SQL: org_id (RLS), status = 'active', verdict = 'pass', tool_id / element_type
  → ≤ 200 ứng viên
 2. Chấm điểm: khoảng cách chuẩn hóa trên similarity_keys
  điểm = distance / coverage
  → top 5
-3. Tie-break: vector của summary, chỉ khi câu hỏi có phần ngôn ngữ tự nhiên
+3. Tie-break: use_count giảm dần, rồi last_seen_at giảm dần (AD-28, không dùng vector)
 4. Sonnet: so sánh và diễn giải 5 case
 ```
 
@@ -663,58 +663,23 @@ sequenceDiagram
 | Truy vấn tìm căn cứ dựng bằng mã | `standards.find_basis(toolRunId)` dựng truy vấn từ `standardRef` và điều khoản mà engine đã kiểm, không để mô hình tự viết truy vấn. Nhóm J của eval so hai cách ([08](08-eval-quan-sat.md)) |
 | Ghi rõ là đề xuất | Thẻ và lời văn ghi đây là đề xuất; kỹ sư chịu trách nhiệm quyết định (P1) |
 
-### 6.10 Vòng đời và ghi nhận case (F3)
+### 6.10 Ghi case (F3, AD-28)
 
-Case chỉ sinh từ một `tool_run` nhóm B khi kỹ sư bấm Duyệt. Mô hình không tự ghi case (P1). Nguồn dữ liệu là input và output của tool đã qua validate, nên chất lượng cấu trúc không phụ thuộc vào kỷ luật nhập tay.
+> **Chi tiết đầy đủ ở [12](12-tra-case.md).** Mục này chỉ giữ phần các file khác cần biết.
 
-```mermaid
-stateDiagram-v2
- [*] --> Proposed: tool_run nhóm B xong, approval_required
- Proposed --> Approved: kỹ sư bấm Duyệt
- Proposed --> Dismissed: kỹ sư bấm Bỏ qua hoặc để trôi
- Approved --> Withdrawn: người duyệt hoặc quản trị organization rút lại
- Dismissed --> [*]
- Withdrawn --> [*]
-```
+**Case là bộ thông số JSON hợp lệ của một cấu kiện sau khi engine đã tính và kết luận đạt.** Không có bước duyệt. AD-28 thay AD-09.
 
-Chỉ case `Approved` xuất hiện khi tra cứu.
+Tool facade ghi case trong **cùng transaction** với `tool_run`, khi và chỉ khi: tool thuộc nhóm B và manifest đánh dấu `case_source: true`; ToolGate lớp 6 đọc `ApiResult.Code` hợp lệ; `verdict = pass` theo trường khai trong manifest (AD-24); đủ `element_type` và các `similarity_keys` bắt buộc. Ghi bằng `INSERT … ON CONFLICT (org_id, dedupe_key) DO UPDATE SET use_count = use_count + 1, last_seen_at = now()`.
 
-```mermaid
-sequenceDiagram
- autonumber
- actor U as Kỹ sư
- participant A as Assistant.Api
- participant S as AccessScopeResolver
- participant DB as PostgreSQL assistant
- U->>A: POST /v1/approvals/{toolRunId}
- A->>DB: Đọc tool_run (input, output, tool_version)
- A->>A: tool_run thuộc user này và thuộc lượt của họ?
- A->>S: org_id của user
- A->>A: Kiểm output nằm trong khoảng hợp lý theo manifest
- A->>A: Dựng case từ tool_run, summary bằng template, tính dedupe_key
- alt Đã có case Approved cùng dedupe_key trong org
- A->>DB: Ghi thêm một dòng case_approval
- A-->>U: 200, caseId đã có
- else Chưa có
- A->>DB: INSERT case (Approved, org_id, approved_by, approved_at) + case_approval + audit_event
- A-->>U: 200, caseId mới
- end
-```
+Mô hình không tự ghi case (P1 giữ nguyên): case chỉ sinh từ output của engine, không từ câu chữ của mô hình hay từ `case_hints`.
 
-**Bảng dữ liệu kèm theo:** `case_standard` (`case_id`, `standard_code`, `edition`, `clause`) giữ căn cứ tiêu chuẩn của case; `case_approval` (`case_id`, `user_id`, `at`, `action` là `approve` hoặc `withdraw`) giữ mọi lần duyệt và rút. Case lưu `project_id` (định danh), không lưu tên dự án. Dự án bị xóa ở Main API thì case đánh dấu `project_deleted` và xóa theo retention.
+Case là **bản sao**, không phải view trên `tool_run`: `tool_run` bị xóa theo retention của hội thoại, case sống theo vòng đời organization. Không còn `summary`, không còn vector, không còn bảng `case_approval`. Rút case (`status = withdrawn`) ghi `audit_event`.
 
-**Chống đầu độc kho case (R26):**
+Trạng thái `AwaitingApproval` trong state machine §6.1 và event `approval_required` **không còn dùng cho case**. Hai thứ này giữ lại trong hợp đồng cho tool nhóm C sau này; đường dẫn `/v1/approvals` giữ nguyên nghĩa đã công bố nhưng không còn được gọi.
 
-| Rủi ro | Điều khiển |
-| --- | --- |
-| Case sai được duyệt rồi kéo lệch các câu trả lời sau | Chỉ người có quyền trong organization duyệt được; case gắn người duyệt, thời điểm, phiên bản tool; kiểm khoảng hợp lý của output khi ghi; nút Rút lại; quản trị organization rút hàng loạt được |
-| Case lỗi thời so với tiêu chuẩn | Ngày duyệt cũ hơn ấn bản hiện hành thì thẻ case mang cảnh báo "có thể theo tiêu chuẩn cũ"; hết hạn sau một thời gian cấu hình được |
-| Lưu quá nhiều | Chỉ lưu case đã duyệt, không lưu mọi tương tác. `dedupe_key` chặn trùng chính xác; gộp case gần trùng để sau beta (§11.3) |
-| Xóa theo yêu cầu | Xóa cứng theo `org_id`, ghi `audit_event` bản xóa |
+**Đã chốt: vector của `summary`.** Mâu thuẫn cũ giữa tie-break bằng vector và việc PostgreSQL không cần `pgvector` được đóng bằng cách bỏ `summary` và bỏ tie-break bằng vector. PostgreSQL **không** cần `pgvector`. Không dùng OpenSearch hay Elasticsearch để tra case; lý do và phép so chi phí ở [12](12-tra-case.md) §6.
 
-Theo phân loại bộ nhớ CoALA (sách *AI Agents on AWS* ch03): kho tài liệu là bộ nhớ ngữ nghĩa (scope `public`, `org:*`, `project:*`); kho case là bộ nhớ episodic, scope `org:{id}` và không bao giờ rộng hơn; bộ nhớ thủ tục chưa có.
-
-**Chưa chốt: vector của summary nằm ở đâu.** §6.5 dùng vector của summary để tie-break, nhưng §7 ghi PostgreSQL không cần `pgvector` vì vector store của tài liệu đã sang MKB. Hai dòng này mâu thuẫn. Hai cách xử lý: (1) bật `pgvector` chỉ cho bảng `case`, tức thêm một extension và một lời gọi embedding khi duyệt; (2) bỏ tie-break bằng vector, chỉ giữ chấm khoảng cách số học. Chốt bằng nhóm D của eval: tie-break không làm tăng độ đúng thì chọn (2).
+Theo phân loại bộ nhớ CoALA (sách *AI Agents on AWS* ch03): kho tài liệu là bộ nhớ ngữ nghĩa; kho case là bộ nhớ có cấu trúc dài hạn, scope `org:{id}` và không bao giờ rộng hơn.
 
 ---
 
@@ -780,13 +745,13 @@ erDiagram
  message ||--o{ citation : "dẫn"
  citation }o--|| chunk : "trỏ tới"
  message ||--o{ tool_run : "sinh"
- tool_run ||--o| case : "duyệt thành"
+ tool_run ||--o| case : "tính đạt thành"
  message ||--o{ audit_event : "ghi"
 
  document { uuid id string standard string family_key string edition date effective_from date effective_to uuid supersedes_document_id string scope_key string status }
  chunk { uuid id uuid document_id int chunk_index string clause_path int page string s3_uri string status }
  clause_ref { uuid id uuid document_id string clause_path string raw_ref }
- case { uuid id string org_id string tool_id string dedupe_key jsonb inputs jsonb outputs string approved_by date approved_at }
+ case { uuid id string org_id string tool_id string tool_version string element_type jsonb params jsonb result string verdict string dedupe_key int use_count date last_seen_at string status }
  tool_run { uuid id string tool_id string tool_version jsonb inputs jsonb outputs string units }
  audit_event { uuid id uuid message_id string kind jsonb payload }
 ```
@@ -959,7 +924,7 @@ Retry ở tầng hạ tầng là chuyện bình thường: Gateway hết timeout
 | Đường | Lặp thì sao | Quy tắc |
 | --- | --- | --- |
 | Tool `calc.*`, `search_documents`, `find_similar_cases` | Chỉ đọc hoặc tính, nên không hỏng dữ liệu. Chỉ tốn thêm tiền và sinh thêm `tool_run` | Facade dùng `toolUseId` của Harness làm khóa: cùng `toolUseId` thì trả lại kết quả `tool_run` đã có, không gọi engine lần hai. Khác `toolUseId` mà cùng tham số là mô hình tự gọi lặp, do ToolGate lớp 05 xử lý |
-| `POST /v1/approvals/{toolRunId}` | Ghi. Bấm hai lần hoặc client retry có thể sinh hai case | Unique `(org_id, tool_run_id)` và unique `(org_id, dedupe_key)`. Gọi lại trả `caseId` đã có với `200`, không trả lỗi |
+| Upsert case trong facade (AD-28) | Ghi. Facade chạy lại cùng `toolUseId` có thể đếm trùng | `tool_run` unique theo `tool_use_id` chặn lần chạy lại trước khi tới case; case unique `(org_id, dedupe_key)`, `ON CONFLICT` chỉ tăng `use_count` cho lần tính mới |
 | `POST /v1/chat` | Mỗi lượt đều tốn tiền | BFF **không** tự retry. Nút Thử lại ở giao diện tạo lượt mới có chủ ý. `active_turn` chặn hai lượt chạy song song (AD-23) |
 | Tool ghi trong tương lai (nhóm C, hiện bị loại) | Hỏng dữ liệu thật | Chỉ được đăng ký vào manifest khi phía ghi nhận khóa idempotency (`toolUseId`) và ép bằng unique constraint. Thiếu điều kiện này thì review manifest từ chối |
 
@@ -1044,7 +1009,7 @@ Frontend chỉ biết 11 sự kiện ở [02](02-hop-dong.md) §4. Harness phát
 | `token` | `contentBlockDelta` mang `text` | |
 | `tool_call` | `contentBlockDelta` có `delta.toolUse` | Thực tế lệch tài liệu thì suy ra từ bản ghi `tool_run` của facade |
 | `tool_result` | **Không lấy từ stream.** Facade ghi `tool_run` kèm `toolUseId`; `Assistant.Api` đọc theo `toolUseId` rồi phát | Thẻ kết quả dựng từ JSON của engine. Kênh phụ này là mã mới, dễ lệch hợp đồng (R33) |
-| `approval_required` | `Assistant.Api`, sau `tool_result`, nếu manifest đánh dấu tool cần duyệt | Không phụ thuộc Harness |
+| `approval_required` | Không phát cho case kể từ AD-28; giữ cho tool nhóm C sau này | Không phụ thuộc Harness |
 | `refusal` hoặc `warning` | `messageStop` có `stopReason = guardrail_intervened` | |
 | `warning: truncated` | `stopReason` là `max_iterations_exceeded`, `max_output_tokens_exceeded` hoặc `timeout_exceeded` | Không trình bày kết quả dở dang như câu trả lời hoàn chỉnh |
 | `citation`, `warning` của validator | Validator chạy sau khi stream kết thúc bình thường | Như đường cố định |
@@ -1070,7 +1035,7 @@ Frontend chỉ biết 11 sự kiện ở [02](02-hop-dong.md) §4. Harness phát
 | AD-06 | Mô hình embedding chốt bằng đo trên bộ 50 câu, trước khi tạo KB. Nhánh A `embeddingModelType: MANAGED`; nhánh B `CUSTOM` + `embeddingModelArn` nếu nhánh A không đạt | Chọn theo cảm tính | Không đổi được sau khi tạo KB ở cả hai nhánh; đổi ý là tạo KB mới và ingest lại. Nhánh B thêm quyền `bedrock:InvokeModel` cho role của KB và **làm mất managed reranker** (chỉ còn rerank riêng hoặc không rerank) |
 | AD-07 | Streaming bằng SSE, BFF chuyển tiếp nguyên dạng | SignalR; WebSocket | Phải kiểm qua chuỗi nginx + gateway production |
 | AD-08 | Tool registry trong tiến trình, sinh từ OpenAPI rồi chỉnh tay | MCP server riêng; AI sinh SQL | Manifest phải review như code |
-| AD-09 | Case memory ghi nhận tự động khi duyệt | Form ghi nhận thủ công | Kho case phụ thuộc thói quen bấm Duyệt |
+| AD-09 | ~~Case memory ghi nhận tự động khi duyệt~~ **Thay bằng AD-28** | Form ghi nhận thủ công | — |
 | AD-10 | Guardrails ép bằng IAM condition key | Chỉ dặn trong prompt | Hai role tách riêng. **Xác nhận (fetch 21/09/2026, đọc trực tiếp bằng trình duyệt):** `bedrock:GuardrailIdentifier` áp dụng cho `Converse`, `ConverseStream`, `InvokeModel`, `InvokeModelWithResponseStream` — đúng bốn API dự án dùng. Cơ chế chuẩn của AWS là cặp Allow + Deny tường minh (`StringNotEquals`), không phải một điều kiện Allow đơn. Hai giới hạn quan trọng: (1) role đã gắn điều kiện này **không được** dùng thêm để gọi API đa bước nội bộ như `RetrieveAndGenerate`, `InvokeAgent`, `InvokeInlineAgent` — các API đó tự gọi `InvokeModel` nhiều lần bên trong, có lần không kèm guardrail, gây `AccessDenied` dù request gốc có guardrail (dự án này không gọi các API đó nên chưa bị, nhưng phải nhớ khi mở rộng); (2) guardrail input tag có thể bị lách ở phía prompt, nhưng **guardrail luôn áp cho response** bất kể input có bị lách hay không |
 | AD-11 | Job nền bằng bảng PostgreSQL `FOR UPDATE SKIP LOCKED` | RabbitMQ / Kafka / SQS | Không có retry và DLQ sẵn của broker |
 | AD-12 | Logical database `assistant` riêng; không dùng Aurora DSQL | Dùng chung schema với VFSoftware | Instance vật lý riêng nay là tùy chọn: lý do cũ là tải của chỉ mục HNSW, mà vector store đã sang MKB. **Xác nhận đúng hướng, lý do mạnh hơn (fetch 21/09/2026):** Aurora DSQL không hỗ trợ PL/pgSQL (chỉ SQL function), **một transaction chỉ sửa được tối đa 3 000 dòng** bất kể có bao nhiêu index phụ, DDL và DML phải tách thành hai transaction riêng, mỗi cluster chỉ có đúng một database tên `postgres`, và dùng optimistic concurrency control (xung đột trả lỗi serialization, phải tự viết retry thay vì chờ lock). Bất kỳ lý do nào ở trên cũng đủ loại Aurora DSQL khỏi vai trò lưu `message`/`tool_run`/`case` của dự án này, không chỉ vì HNSW |
@@ -1090,6 +1055,7 @@ Frontend chỉ biết 11 sự kiện ở [02](02-hop-dong.md) §4. Harness phát
 | AD-25 | **Lượt gắn với kết nối.** Client ngắt thì hủy lượt: một `CancellationToken` cho mỗi lượt, nối `RequestAborted` với timeout, truyền xuống mọi lời gọi ra ngoài; BFF truyền `request.signal`; ghi `aborted` kèm phần đã sinh | Cho lượt chạy tiếp rồi cho nối lại stream (`Last-Event-ID`) | Rớt mạng giữa lượt thì mất phần còn lại, phải hỏi lại. Harness phía AWS có thể chưa dừng (V-A11); thiệt hại tối đa bị chặn bởi `maxIterations` và `timeoutSeconds` |
 | AD-26 | **Phiên bản tài liệu theo ngày hiệu lực.** `document` thêm `family_key`, `effective_from`, `effective_to`, `supersedes_document_id`; sidecar mang ngày dạng `NUMBER`; hai chế độ retrieval hiện hành và theo dự án; chuyển ấn bản bằng một ingestion job; `ScopedKnowledgeBaseClient` loại trùng ấn bản cùng `active` | Chỉ dựa vào `status`; luôn trả bản mới nhất kèm warning | Worker và kỹ sư tri thức phải điền ngày hiệu lực khi nạp. Thêm ba thuộc tính sidecar, mỗi thuộc tính là một chỗ có thể hỏng im lặng (R47) |
 | AD-27 | **Chạy lại an toàn.** Facade khử trùng theo `toolUseId`; approvals unique theo `(org_id, tool_run_id)` và `(org_id, dedupe_key)`; BFF không tự retry `/v1/chat`; tool ghi chỉ được đăng ký khi có khóa idempotency | Để retry sinh bản ghi trùng rồi gộp sau | Thêm hai unique index. Chưa biết Gateway có chuyển `toolUseId` không (V-A12) |
+| AD-28 | **Case là cấu hình JSON đã tính đạt, tự ghi, không duyệt.** Tool facade upsert case cùng transaction với `tool_run` khi `verdict = pass`; `dedupe_key` gộp cấu hình trùng và đếm `use_count`; tra bằng lọc cứng SQL + RLS rồi chấm `distance / coverage` trong C#; tie-break bằng `use_count`, `last_seen_at`. Chi tiết ở [12](12-tra-case.md) | Giữ bước Duyệt (AD-09); OpenSearch Serverless hoặc Elasticsearch k-NN; `pgvector` trên vector `summary` | Cấu hình chạy thử cũng thành case nếu đạt, chỉ bớt được bằng `use_count` và quyền rút case; không còn chữ ký "người duyệt" trên case; cần kỹ sư E khai `case_source` cho từng tool. Chưa có nguồn case từ các phép tính kỹ sư tự làm trong ứng dụng (R35) |
 
 **Ràng buộc kèm theo AD-15:** `pageContext` phải mang `hasResult`, `resultKind`, `calcAt`.
 
@@ -1123,7 +1089,7 @@ Mục tiêu chất lượng nằm ở §1.2. Mục này là các kịch bản ch
 | Hai ấn bản cùng `active` | Đang chuyển ấn bản, ingestion job chưa xong | Giữ bản mới hơn; `audit_event` loại `edition_conflict`; cảnh báo vận hành (§6.8) |
 | Chunk ngoài scope lọt qua filter | Lỗi filter hoặc sidecar | Loại chunk trước khi vào ngữ cảnh; `audit_event` loại `scope_violation`; cảnh báo mức cao nhất (§8.9) |
 | Gọi lặp cùng `toolUseId` | Gateway retry sau timeout | Trả lại kết quả `tool_run` đã có, không gọi engine lần hai (§8.11) |
-| Duyệt hai lần | Bấm đúp hoặc client retry | Trả `caseId` đã có, `200` (§8.11) |
+| Cùng cấu hình tính đạt hai lần | Kỹ sư tính lại, hoặc facade chạy lại | Một dòng case, `use_count` tăng đúng một lần cho mỗi `tool_run` mới (§8.11, AD-28) |
 | Mọi đường kết thúc | Bất kỳ | Ghi `message` và `audit_event`, kể cả khi lỗi |
 
 ---
@@ -1169,7 +1135,7 @@ V-A1 hoặc V-A6 trượt thì rơi về tool loop C# ngay.
 | --- | --- | --- | --- |
 | R9 | `ApiResult.Code = Forbidden` nằm trong HTTP 200; Gateway không thấy body | C | C |
 | R12 | Prompt injection từ chunk tài liệu bên thứ ba | V | C |
-| R26 | Đầu độc kho case qua thao tác Duyệt | C | V |
+| R26 | Kho case chứa cấu hình chạy thử hoặc tính theo phiên bản engine cũ (AD-28) | C | V |
 | R23 | Haiku 4.5 đã công bố mốc EOL | C | V |
 | R27 | Harness không có hook nên ToolGate phải ra facade | C | C |
 | R29 | Có thể phải tự viết bộ đọc event stream cho Bearer JWT | V | C |
@@ -1219,7 +1185,7 @@ X = xác suất, T = tác động. T/V/C = thấp/vừa/cao. Bảng đầy đủ
 | `scope_key` | Khóa phân quyền của chunk: `public`, `org:<id>` hoặc `project:<id>` |
 | RRF | Reciprocal Rank Fusion, hợp nhất nhiều bảng xếp hạng theo thứ hạng |
 | `tool_run` | Bản ghi một lần chạy engine: tool, phiên bản, tham số vào, kết quả ra, đơn vị |
-| `case` | Một `tool_run` đã được kỹ sư duyệt, thuộc một `org_id` |
+| `case` | Bộ thông số JSON của một cấu kiện đã được engine tính đạt, thuộc một `org_id` (AD-28) |
 | `similarity_keys` | Danh sách tham số đo độ tương tự của một tool, khai báo trong `tools.manifest.yaml` |
 | `case_hints` | Khối tham số số học do IntentRouter bóc từ câu hỏi (AD-16) |
 | `dedupe_key` | `hash(tool_id, tool_version, input đã chuẩn hóa)` |
@@ -1257,5 +1223,9 @@ X = xác suất, T = tác động. T/V/C = thấp/vừa/cao. Bảng đầy đủ
 | 09 | [Triển khai](09-trien-khai.md) | DevOps |
 | 10 | [Rủi ro và câu hỏi mở](10-rui-ro.md) | Tất cả |
 | 11 | [Thuyết minh](11-thuyet-minh.md) | Người không chuyên |
+| 12 | [Tra case](12-tra-case.md) | Backend, DevOps, Frontend — case theo AD-28, vì sao không dùng OpenSearch |
+| 13 | [Chi phí](13-chi-phi.md) | Lãnh đạo, DevOps, Backend — đơn giá thật, mô hình chi phí, ba kịch bản |
+| 14 | [Chi tiết cài đặt Backend](14-chi-tiet-backend.md) | Đội Backend |
+| 15 | [Chi tiết cài đặt DevOps](15-chi-tiet-devops.md) | Đội DevOps AWS |
 | — | [README của bộ](README.md) | Tất cả — thứ tự đọc, nguyên tắc không nhượng bộ |
 | — | [Hồ sơ đề xuất cho lãnh đạo/CTO](../kien-truc-day-du.md) | Ban lãnh đạo, CTO |

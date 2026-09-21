@@ -507,13 +507,13 @@ Bước 0 ── Gom tham số từ ba nguồn, theo thứ tự ưu tiên cố �
           Khóa nào chỉ có nguồn case_hints → đánh dấu "chưa xác nhận"
           Gom chưa đủ 2 khóa → hỏi lại người dùng, dừng
 
-Bước 1 ── Lọc cứng bằng SQL: đúng công ty, đã duyệt, đúng loại cấu kiện
+Bước 1 ── Lọc cứng bằng SQL: đúng công ty, đã tính đạt, đúng loại cấu kiện
           → còn khoảng 200 ứng viên
 
 Bước 2 ── Chấm điểm theo khoảng cách tham số, chuẩn hóa rồi chia cho độ phủ
           → lấy 5 cái đầu
 
-Bước 3 ── Hòa điểm thì mới dùng vector, và chỉ khi câu hỏi có phần diễn đạt tự do
+Bước 3 ── Hòa điểm thì ưu tiên cấu hình được dùng nhiều lần hơn, rồi cấu hình dùng gần đây hơn
 
 Bước 4 ── Đưa 5 tình huống đó cho Sonnet để so sánh và diễn giải
 ```
@@ -524,11 +524,9 @@ Lý do bắt buộc phải có chip: nếu mô hình bóc sai một tham số, c
 
 ### Case sinh ra từ đâu
 
-Chỉ một nguồn duy nhất: **kỹ sư bấm nút Duyệt** trên một kết quả tính có thật.
+Chỉ một nguồn duy nhất: **engine tính một cấu kiện và kết luận đạt**. Không có nút Duyệt. Case là bộ thông số JSON của cấu kiện đó, không có đoạn tóm tắt nào, nên không có gì để mô hình bịa.
 
-Phần tóm tắt của case sinh bằng **khuôn mẫu ghép các trường có cấu trúc, không bao giờ bằng mô hình**. Khuôn mẫu thì không thể bịa, và không lộ thêm gì ngoài đúng những tham số đã có. Đây là một ràng buộc bảo mật chứ không phải lựa chọn phong cách — case được người khác trong tổ chức đọc lại.
-
-Có một khóa chống trùng, băm từ tên hàm, phiên bản hàm và bộ tham số đã chuẩn hóa. Duyệt lại một bài giống hệt thì tăng số lần duyệt, không tạo bản ghi mới.
+Có một khóa chống trùng, băm từ tên hàm, phiên bản hàm và bộ thông số đã chuẩn hóa. Tính lại một cấu hình giống hệt thì tăng **số lần dùng**, không tạo bản ghi mới. Cấu hình được tính đạt nhiều lần là cấu hình công ty đang thật sự dùng.
 
 Và một ranh giới tuyệt đối: **case không bao giờ đi qua biên giới công ty khách hàng**. Không có case công khai. Mã công ty lấy từ hệ thống thanh toán của mình, **không bao giờ tin mã do trình duyệt gửi lên**.
 
@@ -616,7 +614,7 @@ Hợp đồng gồm **11 loại sự kiện**, đóng băng ngay từ bản đ�
 | `token` | Một mẩu chữ |
 | `tool_call` | Sắp gọi hàm nào, với tham số gì |
 | `tool_result` | Kết quả engine trả về, dạng JSON |
-| `approval_required` | Kết quả này có thể vào kho kinh nghiệm |
+| `approval_required` | Dành cho thao tác cần duyệt sau này; không còn dùng cho case |
 | `citation` | Danh sách trích dẫn đã kiểm |
 | `refusal` | Từ chối, kèm gợi ý phạm vi |
 | `warning` | Validator trượt |
@@ -827,7 +825,7 @@ Ba thứ đầu là lý do có một danh sách kiểm chứng phải chạy **t
 | **Validator** | Mã tất định kiểm lại câu trả lời sau khi mô hình viết xong |
 | **Fallback** | Đường dự phòng khi thành phần chính hỏng |
 | **Scope** | Phạm vi dữ liệu một người dùng được đọc |
-| **Case** | Một kết quả tính toán đã được kỹ sư duyệt, thành kinh nghiệm dùng lại |
+| **Case** | Bộ thông số của một cấu kiện đã được engine tính đạt, tra lại được khi gặp bài toán tương tự |
 | **TPM / RPM** | Hạn mức của AWS: token mỗi phút / request mỗi phút, tính chung cho tài khoản |
 | **Burndown** | Hệ số AWS quy đổi token viết ra thành token trừ khỏi hạn mức tốc độ |
 | **Application inference profile** | Nhãn AWS gắn vào lời gọi mô hình để tách chi phí theo sản phẩm trong Cost Explorer |

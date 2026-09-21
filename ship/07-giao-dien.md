@@ -22,7 +22,7 @@ Tài liệu này trả lời ba câu:
 2. Điểm vào
 3. Trạng thái của giao diện
 4. Kiểm chứng trích dẫn
-5. Cổng duyệt
+5. Thẻ kết quả và thẻ case (AD-28)
 6. Từ chối và lỗi
 7. Streaming phía client
 8. Ngôn ngữ và đa ngôn ngữ
@@ -81,7 +81,7 @@ flowchart LR
  BODY["Nội dung + số trích dẫn [n]"]
  CARD["Thẻ kết quả tool (tham số, kết quả, đơn vị)"]
  SRC["Danh sách nguồn (tài liệu, trang, phiên bản)"]
- ACT["Duyệt · Tốt/Xấu · Thử lại"]
+ ACT["Tốt/Xấu · Thử lại"]
  end
  INPUT["Ô nhập + gợi ý câu hỏi"]
  CTX["Chip ngữ cảnh: trang hiện tại, dự án"]
@@ -194,23 +194,13 @@ Khi ý định là `case_lookup` và một giá trị số **chỉ** đến từ
 
 Lý do có bước này: bóc sai tham số không để lại dấu vết trong câu trả lời (R45), nên chỗ duy nhất bắt được là trước khi truy vấn chạy.
 
-## 5. Cổng duyệt
+## 5. Thẻ kết quả và thẻ case (AD-28)
 
-**Sơ đồ 8.5 — Luồng duyệt kết quả tool**
+Không còn cổng duyệt. Case tự ghi khi engine tính đạt ([12](12-tra-case.md)), nên thẻ kết quả tính **không có** nút Duyệt, Bỏ qua hay hộp xác nhận lưu vào kho.
 
-```mermaid
-flowchart TD
- R["Thẻ kết quả hiển thị"] --> SHOW["Hiện: tham số đầu vào, kết quả, đơn vị,<br/>căn cứ tiêu chuẩn, phiên bản tool"]
- SHOW --> DEC{"Kỹ sư quyết định"}
- DEC -->|"Duyệt"| CONF["Hộp xác nhận nêu rõ:<br/>Lưu vào kho kinh nghiệm của organization X:<br/>dầm 300x600, C30/37, MEd 250 kNm → As 12,4 cm²"]
- CONF -->|"Xác nhận"| SAVE["POST /v1/approvals → case Approved"]
- CONF -->|"Hủy"| SHOW
- DEC -->|"Bỏ qua"| DISM["Không lưu"]
- DEC -->|"Không làm gì"| TIMEOUT["Hết phiên: coi như Bỏ qua"]
- SAVE --> DONE["Hiện: Đã lưu · Rút lại"]
-```
+Thẻ kết quả vẫn hiện đủ: tham số đầu vào, kết quả, đơn vị, căn cứ tiêu chuẩn, phiên bản tool, và `verdict` do engine trả.
 
-Hộp xác nhận nêu **nội dung thao tác** (lưu gì, vào đâu, thay cho gì), không phải câu hỏi chung. Có nút **Rút lại** sau khi lưu.
+Thẻ case khi tra cứu hiện `params`, `result`, `verdict`, số lần dùng, lần gần nhất, tiêu chuẩn đã dùng, nhãn **"Cấu hình đã từng tính đạt trong công ty, không phải khuyến nghị"**. Quản trị organization có nút **Rút case**.
 
 ---
 
@@ -287,7 +277,7 @@ sequenceDiagram
 | --- | --- | --- |
 | Tỉ lệ bấm trích dẫn | Kỹ sư có đang kiểm chứng không (quá thấp kéo dài = dấu hiệu tin mù quáng) | Sự kiện UI |
 | Tỉ lệ Tốt/Xấu | Chất lượng cảm nhận | `feedback` |
-| Tỉ lệ Duyệt trên thẻ kết quả | Giá trị của case memory | `case` |
+| Tỉ lệ lượt `case_lookup` có kỹ sư mở ít nhất một thẻ case | Giá trị của kho case | `audit_event` |
 | Thời gian tới chữ đầu tiên (p50, p95) | Độ trễ cảm nhận | `message.latency_first_token_ms` |
 | Tỉ lệ từ chối | Hệ thống có đang từ chối quá tay không | `message.status` |
 | Lượng câu hỏi theo tuần | **Tăng vọt rồi giảm dần sau một thời gian ngắn** thường là dấu hiệu chất lượng kém hoặc chờ lâu, không phải "hào hứng ban đầu lắng xuống"; xem log và đánh giá trước khi kết luận | `message` |
@@ -344,9 +334,9 @@ R10 ([10](10-rui-ro.md)) đã nêu rủi ro kỹ sư tin mù quáng; mục này 
 
 | Cơ chế | Cách làm | Ghi chú |
 | --- | --- | --- |
-| **Phát hiện duyệt qua loa** | Đo thời gian từ lúc thẻ kết quả hiện đến lúc bấm Duyệt, và có mở trích dẫn/tham số hay không; Duyệt rất nhanh mà không mở gì thì gắn cờ trong báo cáo tổng hợp theo organization | Ngưỡng thời gian (khởi điểm 3 giây) là giả định, chỉnh theo dữ liệu beta. Nhắc nhẹ, không chặn: chặn sinh ra hành vi né |
-| **Đọc tỉ lệ ghi đè cùng tỉ lệ duyệt** | Ghi đè (chỉnh tham số, bỏ qua) đã vào audit ([06](06-bao-mat.md)). Sách coi tỉ lệ can thiệp giảm dần là dấu hiệu tốt; ở đây giảm quá nhanh kèm duyệt qua loa lại là dấu hiệu xấu | Hai chỉ số đọc cùng nhau, không đọc riêng |
-| **Ma sát đặt đúng chỗ** | Cổng Duyệt (nơi kết quả đi vào bộ nhớ case) hiện tham số đầu vào và phiên bản tiêu chuẩn; không đặt Duyệt làm nút mặc định nổi bật hơn Bỏ qua | [07](07-giao-dien.md) |
+| **Phát hiện dùng case thiếu kiểm tra** | Sau AD-28 không còn bước duyệt. Đo lượt `case_lookup` mà kỹ sư đưa thông số của case vào form tính rồi chạy engine lại, so với lượt chỉ xem rồi đóng | Tín hiệu để đọc, không chặn |
+| **Đọc tỉ lệ ghi đè** | Ghi đè (chỉnh tham số, bỏ qua) đã vào audit ([06](06-bao-mat.md)). Sách coi tỉ lệ can thiệp giảm dần là dấu hiệu tốt; ở đây giảm quá nhanh, kèm việc không bao giờ tính lại thông số lấy từ case, lại là dấu hiệu xấu | Đọc cùng chỉ số ở dòng trên, không đọc riêng |
+| **Ma sát đặt đúng chỗ** | Thẻ case hiện nhãn "đã từng tính đạt, không phải khuyến nghị", `tool_version` và phiên bản tiêu chuẩn; hệ thống không tự điền case vào form tính (AD-28) | [12](12-tra-case.md) |
 | **Làm quen có ví dụ sai** | Buổi giới thiệu 15–30 phút cho nhóm beta, có ví dụ AI sai thật và cách nhận ra | Con số là ước tính, không phải yêu cầu đã kiểm chứng. Thuộc phần "thiên lệch người dùng" của kiểm toán AI (Interpretable AI) |
 
 ---

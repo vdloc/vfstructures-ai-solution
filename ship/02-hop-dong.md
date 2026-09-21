@@ -2,6 +2,8 @@
 
 **Phiên bản v1.1 · chưa ký lại.** Đổi breaking đi vào `/v2`, đường dẫn đã công bố không đổi nghĩa. Thêm field hoặc thêm mã mới là thay đổi cộng thêm, được phép trong `/v1`; đổi nghĩa hoặc bỏ field đã công bố thì không.
 
+**Thay đổi v1.2 (không phá hợp đồng):** AD-28 tự ghi case, nên backend **không phát** `approval_required` và FE **không gọi** `/v1/approvals` cho case. 11 event và mọi đường dẫn giữ nguyên nghĩa; chỉ tần suất phát của một event đổi về 0. Chi tiết ở [12](12-tra-case.md).
+
 **Thay đổi so với v1 (đều là cộng thêm):** endpoint `/v1/admin/corpus/*` (§1); mã `warning` mới `unverified_verdict` và luật xử lý mã lạ (§5); khối `outputs.verdict` trong `tool_result` (§5); `/v1/approvals` idempotent (§1); message có `status: "aborted"` khi đọc lại conversation, và luật ngắt kết nối cho BFF (§7). Hai đội ký lại trước khi FE dựng các trạng thái này.
 
 Đây là file **hai đội cùng ký**. Frontend dựng mock stream theo đúng file này và hoàn thiện toàn bộ UI trước khi Backend có endpoint nào chạy — nên Backend phát hành bản nháp ngay khi ký được, không đợi bản hoàn chỉnh.
@@ -29,7 +31,7 @@ Thiết kế đằng sau hợp đồng ở [01](01-kien-truc.md).
 | --- | --- | --- | --- |
 | `/v1/chat` | POST | Gửi một lượt, mở SSE stream | `text/event-stream` |
 | `/v1/conversations/{id}` | GET | Đọc lại lịch sử một conversation | JSON |
-| `/v1/approvals/{toolRunId}` | POST | Approve một `tool_run` thành case. **Idempotent**: gọi lại cùng `toolRunId`, hoặc duyệt một `tool_run` khác có cùng `dedupe_key`, trả `caseId` đã có với `200` | `{ caseId }` |
+| `/v1/approvals/{toolRunId}` | POST | **v1.2: không còn được gọi cho case** — AD-28 tự ghi case khi engine tính đạt ([12](12-tra-case.md)). Đường dẫn giữ nguyên nghĩa đã công bố, dành cho tool nhóm C sau này. Nghĩa cũ: approve một `tool_run` thành case. **Idempotent**: gọi lại cùng `toolRunId`, hoặc duyệt một `tool_run` khác có cùng `dedupe_key`, trả `caseId` đã có với `200` | `{ caseId }` |
 | `/v1/feedback` | POST | Chấm tốt/xấu một message | `204` |
 | `/v1/sources/{docId}` | GET | Presigned URL + trang cần highlight cho source viewer. **Kiểm lại scope** | JSON |
 | `/v1/capabilities` | GET | Model đang dùng, tool khả dụng, version corpus, trạng thái kill switch | JSON |
@@ -100,7 +102,7 @@ Khung SSE tách bằng dòng trống. Backend flush sau mỗi event.
 | `token` | `{ text }` | Mỗi delta chữ | Nối vào bubble |
 | `tool_call` | `{ toolId, version, inputs }` | Trước khi chạy tool | Thẻ "Đang tính B12…" kèm input. Không phải spinner câm |
 | `tool_result` | `{ toolRunId, outputs, units, standard }` | Sau khi tool xong | **Dựng thẻ kết quả từ JSON này** |
-| `approval_required` | `{ toolRunId, summary }` | Kết quả có thể vào case store | Nút Approve / Bỏ qua |
+| `approval_required` | `{ toolRunId, summary }` | **v1.2: không phát cho case** (AD-28). Giữ trong hợp đồng cho tool nhóm C | Nút Approve / Bỏ qua. FE giữ code xử lý, không giả định event này có mặt |
 | `citation` | `[{ n, docId, page, clause, quote, bbox? }]` | Sau `CitationValidator` | `[n]` bấm được, mở đúng trang, highlight `bbox` |
 | `refusal` | `{ reason, suggestion }` | Không đủ căn cứ, hoặc `out_of_scope` | Thẻ refusal kèm suggestion. Không hiện mã lỗi thô |
 | `warning` | `{ code }` | Validator trượt | Banner chèn lên câu trả lời **đã hiện xong** |
