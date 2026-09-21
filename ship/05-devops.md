@@ -574,14 +574,16 @@ Nhưng buffer response ở bước 1 làm hỏng toàn bộ bước này. Kiểm
 
 ## Chi phí: cái gì chiếm bao nhiêu
 
-| Khoản | Tỉ trọng ước tính |
+Bảng dưới **chỉ so hai khoản với nhau**: token mô hình và hạ tầng AgentCore. Nó không tính Guardrails, Knowledge Base, rerank hay hạ tầng cố định, nên không phải cơ cấu của cả hóa đơn. Cơ cấu đầy đủ ở [13](13-chi-phi.md) §1.
+
+| Khoản (chỉ so hai khoản này) | Tỉ trọng ước tính |
 | --- | --- |
 | Token mô hình | ~98% |
 | Hạ tầng AgentCore | **1–2%** |
 
 Hệ quả cho tranh luận "tự viết vòng lặp C# cho rẻ": **tiết kiệm được 1% hóa đơn, đổi lấy vài trăm dòng mã phải tự bảo trì.** Cân nhắc đúng không nằm ở chi phí hạ tầng mà ở công sức xây dựng và rủi ro V-A1.
 
-**Đơn giá đã tra được**, từ AWS Price List Bulk API, xem [13](13-chi-phi.md). Tỉ trọng ở bảng trên chưa tính Guardrails; theo mô hình ở 13, token mô hình chiếm khoảng 85% chi phí biến đổi và Guardrails khoảng 12%. Đơn giá là thật, nhưng lưu lượng và kích thước prompt vẫn là giả định: đo trên lượt thật ngay khi có traffic rồi chạy lại mô hình.
+**Đơn giá đã tra được**, từ AWS Price List Bulk API, xem [13](13-chi-phi.md). Tính trên toàn bộ chi phí biến đổi, mô hình ở 13 cho token mô hình khoảng 85%, Guardrails khoảng 12%, Knowledge Base cộng rerank khoảng 2%, AgentCore khoảng 0,25%. Hai con số 98% và 85% không mâu thuẫn: khác mẫu số. Đơn giá là thật, nhưng lưu lượng và kích thước prompt vẫn là giả định: đo trên lượt thật ngay khi có traffic rồi chạy lại mô hình.
 
 ---
 

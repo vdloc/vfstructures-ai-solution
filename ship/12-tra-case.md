@@ -80,7 +80,18 @@ Tool facade C#
      DO UPDATE SET use_count = case.use_count + 1, last_seen_at = now()
 ```
 
-**Vì sao ghi ở facade, trong cùng transaction.** Facade là chỗ duy nhất đã có đủ ba thứ: input đã qua ToolGate, output của engine, và mã lỗi thật. Ghi cùng transaction thì không có trạng thái "có `tool_run` nhưng mất case". `ON CONFLICT` làm lần ghi này idempotent: facade chạy lại theo `toolUseId` (AD-27) thì `use_count` chỉ tăng khi đó là lần tính mới, vì bản ghi `tool_run` trùng `tool_use_id` đã bị chặn trước.
+**Vì sao ghi ở facade, trong cùng transaction.** Facade là chỗ duy nhất đã có đủ ba thứ: input đã qua ToolGate, output của engine, và mã lỗi thật. Ghi cùng transaction thì không có trạng thái "có `tool_run` nhưng mất case".
+
+**Chống đếm trùng nằm ở `tool_run`, không nằm ở `ON CONFLICT`.** Hai cơ chế làm hai việc khác nhau:
+
+| Cơ chế | Chặn cái gì |
+| --- | --- |
+| `tool_run.tool_use_id` UNIQUE, facade kiểm **trước** khi gọi engine (AD-27) | Hạ tầng chạy lại cùng một lời gọi tool. Facade trả kết quả cũ, không tới bước ghi case, nên `use_count` không tăng |
+| `ON CONFLICT (org_id, dedupe_key)` | Hai lần tính **mới, khác nhau** nhưng cùng cấu hình. Gộp thành một dòng và `use_count + 1`, đúng ý nghĩa "cấu hình này được dùng lại" |
+
+Chỉ có `ON CONFLICT` thì mỗi lần chạy lại đều làm `use_count` tăng sai.
+
+**Phụ thuộc V-A12.** Gateway không chuyển `toolUseId` xuống facade thì khóa chống chạy lại thay bằng hash của `(messageId, toolId, tham số đã chuẩn hóa)` ([14](14-chi-tiet-backend.md)). Thiếu cả hai thì `use_count` phình lên mà không báo lỗi.
 
 **Case là bản sao, không phải view trên `tool_run`.** `tool_run` theo retention của hội thoại và bị xóa cứng khi hết hạn ([06](06-bao-mat.md) §6). Case sống theo vòng đời organization. Case chỉ đọc từ `tool_run` lúc ghi; sau đó hai bảng độc lập.
 

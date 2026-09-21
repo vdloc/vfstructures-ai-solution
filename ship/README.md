@@ -45,6 +45,8 @@ Tranh cãi về "hệ thống phải như thế nào" thì **01 thắng**. Tranh
 
 **Chưa có dòng code nào chạy.** Tài khoản AWS hiện có là tài khoản đăng ký trải nghiệm, chưa bật billing, nên **chưa có số đo nào**. Mọi con số về latency và chi phí trong bộ này là dự toán hoặc lấy từ tài liệu AWS.
 
+**Ngoại lệ duy nhất: đơn giá.** [13](13-chi-phi.md) có đơn giá thật của mọi dịch vụ ở `eu-central-1`, tải từ AWS Price List Bulk API. Lưu lượng, kích thước prompt và số vòng tool loop trong file đó vẫn là giả định, nên tổng tiền vẫn là dự toán.
+
 Bộ tài liệu ghi rõ chỗ nào là số đo, chỗ nào là ước lượng, và chỗ nào chưa kiểm chứng. Xem [00 · phần "Chưa kiểm chứng được"](00-thuat-ngu-va-nguon.md).
 
 ---
