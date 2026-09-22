@@ -608,10 +608,10 @@ const STEP = {
   "6a": {
     title: "Bước 6a · Tìm tài liệu",
     detail: [
-      "<b>Chuẩn hoá mã điều khoản</b> — ClauseResolver tách số hiệu điều khoản trong câu hỏi rồi tìm mã chuẩn trong bảng clause_ref, chỉ trong các tài liệu người dùng được đọc. Không có mã khớp đúng thì so theo dãy chữ số, nên '6.22' gõ tắt vẫn ra '6.2.2'. Ra đúng một mã thì mã đó thành filter clause_path cho lần tìm tiếp theo; ra nhiều mã hoặc không ra mã nào thì hỏi lại người dùng kèm vài mã gợi ý chứ không đoán. Câu hỏi không có mã thì bỏ qua việc này.",
+      "<b>Chuẩn hoá mã điều khoản</b> — ClauseResolver tách số hiệu điều khoản trong câu hỏi rồi tìm mã chuẩn trong bảng clause_ref, chỉ trong các tài liệu người dùng được đọc. Không có mã khớp đúng thì so theo dãy chữ số, nên '6.22' gõ tắt vẫn ra '6.2.2'. Ra đúng một mã thì mã đó thành filter clause_path cho lần tìm tiếp theo; ra nhiều mã hoặc không ra mã nào thì hỏi lại người dùng kèm tối đa năm mã gần nhất theo khoảng cách chỉnh sửa, chứ không đoán. Câu hỏi không có mã thì bỏ qua việc này.",
       "<b>Tìm rộng trong đúng phạm vi</b> — Gọi Retrieve trên Bedrock Knowledge Base để lấy 40 đoạn gần nghĩa nhất, chỉ trong phạm vi tài liệu người dùng được đọc và đúng ấn bản tiêu chuẩn: câu hỏi chung lấy bản đang có hiệu lực, còn lượt gắn dự án lấy đúng ấn bản dự án đó áp dụng. Lấy dư để không bỏ sót.",
       "<b>Chọn hẹp bằng Rerank</b> — Rerank chấm lại 40 đoạn theo độ liên quan và giữ 8 đoạn sát nhất. Bước tìm lo không bỏ sót, bước chấm lại lo đúng trọng tâm.",
-      "<b>Áp ngưỡng, thiếu căn cứ thì từ chối</b> — Đoạn điểm cao nhất vẫn dưới ngưỡng (khởi điểm 0.5) nghĩa là không có tài liệu nào thật sự khớp; hệ thống từ chối thay vì trả lời không có căn cứ.",
+      "<b>Áp ngưỡng, thiếu căn cứ thì từ chối</b> — Đoạn điểm cao nhất vẫn dưới ngưỡng (khởi điểm 0.5) nghĩa là không có tài liệu nào thật sự khớp; hệ thống từ chối thay vì trả lời không có căn cứ. Lượt đang lọc theo một mã điều khoản cũng đi đúng đường này, không lặng lẽ bỏ filter để tìm rộng hơn.",
       "<b>Bổ sung đoạn liền kề rồi gửi nguồn</b> — Lấy thêm đoạn liền trước và liền sau trong cùng tài liệu để trích dẫn không cụt ý, ghi lại những gì đã tra, rồi gửi danh sách nguồn về giao diện để người dùng biết câu trả lời dựa trên đâu."
     ],
     why: [
@@ -619,7 +619,8 @@ const STEP = {
       "Tách tìm rộng và chọn hẹp: Retrieve ưu tiên không bỏ sót, Rerank ưu tiên chính xác, hai bước riêng thì được cả hai.",
       "Mọi lời gọi Retrieve đi qua một ScopedKnowledgeBaseClient với scope bắt buộc, để không thể quên lọc quyền; thiếu filter thì code vẫn chạy nhưng trả tài liệu của mọi organization.",
       "Lượt gắn dự án lấy ấn bản mà dự án áp dụng từ Main API chứ không từ pageContext, vì dự án thiết kế theo bản cũ mà nhận đoạn trích của bản mới là sai về chuyên môn: kỹ sư đang kiểm hồ sơ theo đúng bản cũ đó.",
-      "Mã điều khoản so theo dãy chữ số vì so khớp chuỗi gần đúng như pg_trgm bỏ qua dấu chấm: với nó '6.2.2', '6.2' và '2.6' giống hệt nhau. Nhiều ứng viên thì hỏi lại chứ không đoán, vì đoán sai thì filter khoá việc tìm vào đúng điều sai rồi mô hình trả lời trôi chảy về điều đó."
+      "Mã điều khoản so theo dãy chữ số vì so khớp chuỗi gần đúng như pg_trgm bỏ qua dấu chấm: với nó '6.2.2', '6.2' và '2.6' giống hệt nhau. Nhiều ứng viên thì hỏi lại chứ không đoán, vì đoán sai thì filter khoá việc tìm vào đúng điều sai rồi mô hình trả lời trôi chảy về điều đó.",
+      "Lọc theo mã mà không đủ điểm thì từ chối chứ không bỏ filter tìm lại, vì kết quả tìm rộng khi đó là đoạn của điều khác, trích ra dưới tên điều người dùng hỏi."
     ],
     mermaid: [
       "flowchart LR",
@@ -628,7 +629,8 @@ const STEP = {
       "CR --> RT[Retrieve 40 chunk]",
       "RT --> RK[Rerank giữ 8]",
       "RK --> TH[Áp ngưỡng 0.5]",
-      "TH --> NB[Mở rộng lân cận]",
+      "TH -->|dưới ngưỡng| RF[Từ chối · không nới filter]",
+      "TH -->|đạt| NB[Mở rộng lân cận]",
       "NB --> OUT[8 chunk tới bước 7]"
     ],
   },
@@ -998,7 +1000,7 @@ const CITE = {
   "2":   [["b-web-rl"], ["b-web-rl", "aspnet-rl"], ["internal"], ["burndown"]],
   "3+4": [["ms-async"], ["ac-policy", "b-rag-ac"], ["internal"], ["b-aws-agents-3", "chroma"]],
   "5":   [["internal"], ["b-bedrock-router"], ["card-haiku", "card-sonnet5"], ["structured", "burndown"]],
-  "6a":  [["kb-api", "kb-config"], ["b-rag-2stage", "kb-build"], ["b-rag-ac"], ["internal"], ["pg-trgm", "b-ui-correct"]],
+  "6a":  [["kb-api", "kb-config"], ["b-rag-2stage", "kb-build"], ["b-rag-ac"], ["internal"], ["pg-trgm", "b-ui-correct"], ["internal"]],
   "6b":  [["harness", "harness-hooks", "b-bedrock-priv"], ["internal"], ["ac-policy"], ["guard-converse"]],
   "6c":  [["b-vecdb", "b-staron"], ["internal"], ["b-vecdb", "internal"], ["pg-rls"]],
   "7":   [["guard-converse"], ["caching", "card-sonnet5"], ["card-sonnet5", "b-bedrock-fallback"], ["guard-stream"]],
