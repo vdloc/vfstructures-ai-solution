@@ -24,13 +24,13 @@
 | 13 | [Chi phí](13-chi-phi.md) | Lãnh đạo, DevOps, Backend | Đơn giá thật ở Frankfurt, chi phí một lượt, ba kịch bản, đòn bẩy giảm chi phí |
 | 14 | [Chi tiết cài đặt Backend](14-chi-tiet-backend.md) | Backend | Cấu trúc solution, mã mẫu cho từng lời gọi AWS, SQL |
 | 15 | [Chi tiết cài đặt DevOps](15-chi-tiet-devops.md) | DevOps AWS | Hạ tầng dưới dạng CDK, IAM, KMS, mạng, quan sát, chi phí |
-| — | [Hồ sơ đề xuất cho lãnh đạo/CTO](../kien-truc-day-du.md) | Ban lãnh đạo, CTO, Giám đốc Kỹ thuật | Vì sao xây, vận hành thế nào, chi phí và rủi ro — hồ sơ trình duyệt đầu tư, song song bộ này |
+| — | [Hồ sơ đề xuất cho lãnh đạo/CTO](kien-truc-day-du.md) | Ban lãnh đạo, CTO, Giám đốc Kỹ thuật | Vì sao xây, vận hành thế nào, chi phí và rủi ro — hồ sơ trình duyệt đầu tư, song song bộ này |
 
 **Thứ tự đọc lần đầu**
 
 | Bạn là | Đọc theo thứ tự |
 | --- | --- |
-| Lãnh đạo, CTO — cần quyết định đầu tư | [Hồ sơ đề xuất](../kien-truc-day-du.md) |
+| Lãnh đạo, CTO — cần quyết định đầu tư | [Hồ sơ đề xuất](kien-truc-day-du.md) |
 | Quản lý, không chuyên kỹ thuật | 11 → 10 mục 1 |
 | Backend | 01 mục 1–5 → 02 → 03 → 06 |
 | Frontend | 11 → 02 → 04 → 07 |

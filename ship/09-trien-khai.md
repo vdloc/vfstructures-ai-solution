@@ -289,16 +289,16 @@ Sách Generative AI Tools nêu bảy chiều phải giải cùng lúc, không ch
 
 Kể từ AD-17, pipeline nạp có sáu chặng: parse → cắt đoạn → ghi chunk và sidecar lên S3 → `start-ingestion-job` → poll tới `COMPLETE` → đổi `status` sang `active` và nạp lại. Chặng 4 và 5 là gọi dịch vụ bất đồng bộ, và chặng 6 phải chạy đúng thứ tự sau chặng 5.
 
-**Đề xuất:** Step Functions điều phối, S3 Event Notification kích hoạt khi có tệp nguồn mới. Mỗi chặng tự retry và debug riêng, không phải tự viết máy trạng thái job.
+**Đề xuất:** Step Functions điều phối; kích hoạt qua **S3 → EventBridge → Step Functions** khi có tệp nguồn mới. Lưu ý (WebFetch https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html + https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html, 22/09/2026): đích trực tiếp của S3 Event Notification chỉ gồm SNS, SQS, Lambda, EventBridge — **Step Functions không phải đích trực tiếp**, phải qua EventBridge (Step Functions là target của EventBridge rule). Mỗi chặng tự retry và debug riêng, không phải tự viết máy trạng thái job.
 
 | | Bảng hàng đợi PostgreSQL (AD-11) | Step Functions (AD-20) |
 | --- | --- | --- |
 | Retry từng chặng | Tự viết | Có sẵn |
 | Nhìn được job đang kẹt ở đâu | Tự dựng | Có sẵn |
-| Hạ tầng mới trong giai đoạn đầu | Không | Có — cộng vào R39 |
+| Hạ tầng mới trong giai đoạn đầu | Không | Có (Step Functions + EventBridge) — cộng vào R39 |
 | Chi phí | Gần bằng không | Theo số lần chuyển trạng thái |
 
-AD-11 **giữ nguyên** cho các job nền khác (dọn retention, tổng hợp eval, tổng hợp chi phí). AD-20 chỉ nhắm vào nhánh ingestion, và đang ở trạng thái **Proposed**.
+AD-11 **giữ nguyên** cho các job nền khác (dọn retention, tổng hợp eval, tổng hợp chi phí). AD-20 chỉ nhắm vào nhánh ingestion, và đang ở trạng thái **Proposed**. Cơ chế **S3 → EventBridge → Step Functions đã xác minh 22/09/2026** (S3 Event Notification không gọi trực tiếp Step Functions — xem [00](00-thuat-ngu-va-nguon.md)); vẫn cần thử dựng thực tế trước khi chốt rời khỏi AD-11.
 
 Ba việc nhỏ không cần thành AD: retry Bedrock bằng cấu hình SDK (`standard` hoặc `adaptive`) chứ không phải vòng `Thread.Sleep` tự viết — retry đồng loạt tạo hiệu ứng bầy đàn và làm throttling nặng thêm; **AWS Budgets và Cost Anomaly Detection bật trước khi tăng lưu lượng**, không phải sau; prompt của router và của câu trả lời tách khỏi mã qua Bedrock Prompt Management (AD-19).
 

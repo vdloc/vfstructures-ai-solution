@@ -841,4 +841,4 @@ Ba thứ đầu là lý do có một danh sách kiểm chứng phải chạy **t
 
 [01](01-kien-truc.md) kiến trúc đầy đủ · [02](02-hop-dong.md) hợp đồng API và SSE · [03](03-backend.md) thi công Backend · [04](04-frontend.md) thi công Frontend · [05](05-devops.md) thi công DevOps · [06](06-bao-mat.md) bảo mật và phân quyền · [08](08-eval-quan-sat.md) đánh giá chất lượng và quan sát vận hành · [09](09-trien-khai.md) triển khai · [10](10-rui-ro.md) rủi ro và câu hỏi mở · [00](00-thuat-ngu-va-nguon.md) thuật ngữ và nguồn
 
-Bản trình bày cho lãnh đạo/CTO (hồ sơ đề xuất đầu tư, không thay thế tài liệu này): [kien-truc-day-du.md](../kien-truc-day-du.md).
+Bản trình bày cho lãnh đạo/CTO (hồ sơ đề xuất đầu tư, không thay thế tài liệu này): [kien-truc-day-du.md](kien-truc-day-du.md).

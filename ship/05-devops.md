@@ -612,4 +612,4 @@ Hệ quả cho tranh luận "tự viết vòng lặp C# cho rẻ": **tiết ki�
 | Hợp đồng API cần đi qua tầng mạng | [02-hop-dong.md](02-hop-dong.md) |
 | Hạ tầng dưới dạng CDK, khóa KMS, IAM role, alarm, Budgets | [15-chi-tiet-devops.md](15-chi-tiet-devops.md) |
 | Đơn giá thật và các khoản cố định | [13-chi-phi.md](13-chi-phi.md) |
-| Hồ sơ đề xuất cho lãnh đạo/CTO | [kien-truc-day-du.md](../kien-truc-day-du.md) |
+| Hồ sơ đề xuất cho lãnh đạo/CTO | [kien-truc-day-du.md](kien-truc-day-du.md) |

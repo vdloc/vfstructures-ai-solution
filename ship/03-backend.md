@@ -325,4 +325,4 @@ Ba nhánh, ba khối công việc tách biệt. Có thể chia cho ba người.
 | Mã mẫu C#, DDL, test phải có | [14-chi-tiet-backend.md](14-chi-tiet-backend.md) |
 | Case theo AD-28 | [12-tra-case.md](12-tra-case.md) |
 | Chi phí mỗi lời gọi | [13-chi-phi.md](13-chi-phi.md) |
-| Hồ sơ đề xuất cho lãnh đạo/CTO | [kien-truc-day-du.md](../kien-truc-day-du.md) |
+| Hồ sơ đề xuất cho lãnh đạo/CTO | [kien-truc-day-du.md](kien-truc-day-du.md) |

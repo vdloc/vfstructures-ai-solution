@@ -10,9 +10,9 @@
 
 | Loại số | Nguồn | Độ tin cậy |
 | --- | --- | --- |
-| **Đơn giá** | AWS Price List Bulk API, `eu-central-1`, on-demand, USD, trước thuế. Bản công bố: mô hình nền 11/09/2026, AgentCore và Knowledge Base 15/09/2026, Bedrock (Guardrails, Rerank) 17/09/2026 | Đã kiểm chứng. Tải lại bằng [`../cong-cu/fetch_prices.py`](../cong-cu/fetch_prices.py) |
+| **Đơn giá** | AWS Price List Bulk API, `eu-central-1`, on-demand, USD, trước thuế. Bản công bố: mô hình nền 11/09/2026, AgentCore và Knowledge Base 15/09/2026, Bedrock (Guardrails, Rerank) 17/09/2026 | Đã kiểm chứng. Tải lại bằng [`cong-cu/fetch_prices.py`](cong-cu/fetch_prices.py) |
 | **Kích thước prompt, số vòng tool loop, tỉ trọng loại câu hỏi, số kỹ sư** | Giả định, ghi rõ ở mục 2 | **Chưa đo.** Thay bằng số thật đọc từ `usage` của event `done` và từ Cost Explorer ngay khi có traffic |
-| **Tổng tiền** | Tính bằng [`../cong-cu/cost_model.py`](../cong-cu/cost_model.py) từ hai loại trên | Đúng bằng độ đúng của giả định |
+| **Tổng tiền** | Tính bằng [`cong-cu/cost_model.py`](cong-cu/cost_model.py) từ hai loại trên | Đúng bằng độ đúng của giả định |
 
 Mọi phép tính chạy bằng script, không tính tay. Đổi một giả định thì chạy lại script, không sửa số trong file này bằng tay.
 

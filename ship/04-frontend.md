@@ -306,4 +306,4 @@ Hệ quả kỹ thuật: `locale` của câu hỏi được gửi lên và quy�
 | Hợp đồng SSE đầy đủ, payload từng sự kiện, mã lỗi | [02-hop-dong.md](02-hop-dong.md) |
 | Thiết kế đầy đủ, state machine, quyết định | [01-kien-truc.md](01-kien-truc.md) |
 | Backend đang làm gì ở bốn bước giữa | [03-backend.md](03-backend.md) |
-| Hồ sơ đề xuất cho lãnh đạo/CTO | [kien-truc-day-du.md](../kien-truc-day-du.md) |
+| Hồ sơ đề xuất cho lãnh đạo/CTO | [kien-truc-day-du.md](kien-truc-day-du.md) |

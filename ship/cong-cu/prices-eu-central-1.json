@@ -1,0 +1,29 @@
+{
+  "_nguon": "AWS Price List Bulk API, pricing.us-east-1.amazonaws.com/offers/v1.0/aws/<service>/current/eu-central-1/index.json. Gia on-demand cong khai, USD, chua gom thue, khong phan anh chiet khau rieng.",
+  "_ngay_cong_bo": {
+    "AmazonBedrockFoundationModels": "2026-09-11",
+    "AmazonBedrock": "2026-09-17",
+    "AmazonBedrockAgentCore": "2026-09-15"
+  },
+  "_quy_uoc": "Profile eu.* dung dong gia 'Standard' / 'Regional' / 'cross-region-geo', khong dung dong 'Global'.",
+  "model_per_1M_tokens": {
+    "sonnet_5":   {"input": 2.20, "output": 11.00, "cache_read": 0.22, "cache_write_5m": 2.75,  "cache_write_1h": 4.40},
+    "haiku_4_5":  {"input": 1.10, "output": 5.50,  "cache_read": 0.11, "cache_write_5m": 1.375, "cache_write_1h": 2.20},
+    "sonnet_4_6": {"input": 3.30, "output": 16.50, "cache_read": 0.33, "cache_write_5m": 4.125, "cache_write_1h": 6.60},
+    "opus_5":     {"input": 5.50, "output": 27.50, "cache_read": 0.55, "batch_input": 2.75, "batch_output": 13.75}
+  },
+  "embedding_per_1M_tokens": {"cohere_embed_v4": 0.12, "titan_embed_v2": 0.20},
+  "rerank_per_query": {"cohere_rerank_3_5": 0.002, "amazon_rerank_1_0": 0.001, "mkb_managed": 0.0},
+  "guardrails_per_1K_text_units": {"content_filter": 0.15, "denied_topics": 0.15, "sensitive_info_paid": 0.10, "word_filter": 0.0, "contextual_grounding": 0.10},
+  "guardrails_text_unit_chars": 1000,
+  "knowledge_base": {"retrieve_per_query": 0.001, "agentic_retrieve_per_query": 0.004, "storage_per_GB_month": 5.00},
+  "agentcore": {"runtime_vcpu_hour": 0.0895, "runtime_GB_hour": 0.00945, "gateway_per_invocation": 0.000005, "gateway_search_per_invocation": 0.000025},
+  "aurora_postgresql": {"serverless_v2_ACU_hour": 0.14, "serverless_v2_io_optimized_ACU_hour": 0.19, "storage_GB_month": 0.119, "io_per_1M": 0.22, "backup_GB_month": 0.023, "db_t4g_medium_hour": 0.085},
+  "opensearch_serverless": {"search_OCU_hour": 0.339, "indexing_OCU_hour": 0.339},
+  "kms": {"key_month": 1.00, "per_10K_requests": 0.03},
+  "cloudwatch": {"logs_ingest_GB": 0.63, "logs_storage_GB_month": 0.0324, "metric_month": 0.30, "alarm_month": 0.10},
+  "vpc": {"interface_endpoint_hour_per_AZ": 0.012, "endpoint_data_GB": 0.01},
+  "secrets_manager": {"secret_month": 0.40, "per_10K_calls": 0.05},
+  "fargate": {"x86_vcpu_hour": 0.04656, "x86_GB_hour": 0.00511, "arm_vcpu_hour": 0.03725, "arm_GB_hour": 0.00409},
+  "hours_per_month": 730
+}

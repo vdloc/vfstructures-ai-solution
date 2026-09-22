@@ -280,4 +280,4 @@ Thứ tự ưu tiên nguồn tham số, cố định: **`tool_run` > `pageContex
 | Cài phía Backend | [03-backend.md](03-backend.md) |
 | Cài phía Frontend | [04-frontend.md](04-frontend.md) |
 | Tầng mạng phải cho stream đi qua | [05-devops.md](05-devops.md) |
-| Hồ sơ đề xuất cho lãnh đạo/CTO | [kien-truc-day-du.md](../kien-truc-day-du.md) |
+| Hồ sơ đề xuất cho lãnh đạo/CTO | [kien-truc-day-du.md](kien-truc-day-du.md) |

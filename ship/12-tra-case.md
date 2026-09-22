@@ -204,7 +204,7 @@ Bảng `case_standard` giữ nguyên (`case_id`, `standard_code`, `edition`, `cl
 
 ### 6.2 Chi phí so sánh
 
-Tính bằng [`../cong-cu/cost_model.py`](../cong-cu/cost_model.py) trên giá on-demand `eu-central-1` từ AWS Price List Bulk API. OCU của OpenSearch Serverless $0,339/giờ cho search và cho indexing; lưu trữ Aurora $0,119/GB-tháng.
+Tính bằng [`cong-cu/cost_model.py`](cong-cu/cost_model.py) trên giá on-demand `eu-central-1` từ AWS Price List Bulk API. OCU của OpenSearch Serverless $0,339/giờ cho search và cho indexing; lưu trữ Aurora $0,119/GB-tháng.
 
 | Phương án | USD/tháng |
 | --- | --- |
