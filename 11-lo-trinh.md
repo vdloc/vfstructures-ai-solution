@@ -1,5 +1,7 @@
 # 11 · Lộ trình 8 tuần, phân vai và cổng quyết định
 
+> **Đã cập nhật trong `ship/`.** File này ghi lộ trình trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/README.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`. Harness có lifecycle hook, nhưng ToolGate vẫn đặt ở facade: xem `ship/01-kien-truc.md` §8.5.
+
 Ngày bắt đầu giả định: **thứ Hai 21/09/2026**, kết thúc **thứ Sáu 13/11/2026**. Đội tự ánh xạ sang lịch thực tế; mốc là **đơn vị công việc tuần tự** kết thúc bằng một thứ xem được và chạy được, không phải cam kết theo ngày.
 
 ---

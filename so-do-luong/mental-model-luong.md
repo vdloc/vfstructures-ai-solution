@@ -61,7 +61,7 @@ Nguồn: `/home/vdloc/Downloads/vfstructures-ai-assistant (1)/vfstructures-ai-as
 │         "tăng lên 700 thì sao" → "kiểm tra cắt dầm B12 với h = 700 mm"
 │    5.3  Tách phần lệnh ("giải thích ngắn") khỏi phần cần tra
 │    5.4  Các thông số đọc được từ câu hỏi (nhịp, cấp bê tông...)
-│              AI nhỏ lỗi → dùng luật đơn giản thay thế
+│              AI nhỏ lỗi → báo lỗi, người dùng bấm thử lại
 │                                                     ✗ lạc đề → từ chối
 │
 ├─ Hỏi tài liệu ──────────────────────────────────────────────────────┐
@@ -96,15 +96,15 @@ Nguồn: `/home/vdloc/Downloads/vfstructures-ai-assistant (1)/vfstructures-ai-as
 │    6b.7  AI chính xem kết quả: cần tính thêm → quay lại 6b.2       │
 │                                đủ rồi → viết câu trả lời           │
 │          ✗ quá vòng / quá giờ / lỗi 2 lần → trả những gì đã có     │
-│          ⏸ kết quả cần kỹ sư duyệt → chờ bấm Duyệt hoặc Bỏ qua     │
+│          ✓ tính đạt → ghi case luôn, không chờ duyệt               │
 │                                                                    │
 ├─ Tra trường hợp cũ ────────────────────────────────────────────────┤
-│  6c. TRA TRƯỜNG HỢP ĐÃ DUYỆT                                       │
+│  6c. TRA TRƯỜNG HỢP ĐÃ TÍNH ĐẠT                                    │
 │    6c.1  Gom thông số, tin theo thứ tự:                            │
 │          lần tính trước > màn hình > đọc từ câu hỏi                │
 │          Số chỉ đọc từ câu hỏi → hiện cho kỹ sư xác nhận           │
 │    6c.2  Có ít nhất 2 thông số không?    ✗ → hỏi lại người dùng    │
-│    6c.3  Lọc: đúng công ty, đã được duyệt, đúng loại cấu kiện      │
+│    6c.3  Lọc: đúng công ty, đã tính đạt, đúng loại cấu kiện        │
 │    6c.4  So bằng con số (nhịp, bê tông, tải...), không so chữ      │
 │          Giữ 5 trường hợp gần nhất                                 │
 │          Gắn nhãn "kinh nghiệm nội bộ, không phải tiêu chuẩn"      │

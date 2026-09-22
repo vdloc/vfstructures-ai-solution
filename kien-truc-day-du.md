@@ -1,5 +1,7 @@
 # Hồ sơ đề xuất giải pháp CNTT — VF Structures AI Assistant
 
+> **Đã cập nhật trong `ship/`.** File này ghi hồ sơ đề xuất bản 1.0 trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/kien-truc-day-du.md` (bản 1.1). Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`. Harness có lifecycle hook, nhưng ToolGate vẫn đặt ở facade: xem `ship/01-kien-truc.md` §8.5.
+
 **Phiên bản:** 1.0 · **Ngày:** 21/09/2026
 **Đối tượng đọc:** CTO, Giám đốc Kỹ thuật, Giám đốc Kỹ thuật Công trình, Ban lãnh đạo công ty
 **Mục đích:** hồ sơ trình duyệt đầu tư — trình bày kiến trúc tổng thể, mô hình vận hành, chi phí và rủi ro để ra quyết định xây dựng hệ thống trợ lý AI kỹ thuật cho VF Structures.

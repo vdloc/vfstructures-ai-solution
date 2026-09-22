@@ -27,12 +27,12 @@ Assistant.Api · ChatOrchestrator
 5.3 KIỂM ĐẦU RA                                 Assistant.Api · IntentRouter
 │  Làm gì:     Chắc chắn JSON không bị cắt giữa chừng
 │  Làm thế nào: Kiểm stopReason khác "max_tokens"
-│              ✗ lỗi, quá thời gian, hoặc JSON bị cắt → fallback
+│              ✗ lỗi, quá thời gian, hoặc JSON bị cắt → báo lỗi (5.4)
 ▼
-5.4 FALLBACK  (chỉ khi 5.2 hoặc 5.3 hỏng)       Assistant.Api · IntentRouter
-│  Làm gì:     Vẫn cho lượt chạy tiếp
-│  Làm thế nào: Luật đơn giản, không chắc thì mặc định doc_qa
-│              Gắn cờ degraded_routing
+5.4 BÁO LỖI   (chỉ khi 5.2 hoặc 5.3 hỏng)       Assistant.Api · IntentRouter
+│  Làm gì:     Dừng lượt, không đoán nhãn
+│  Làm thế nào: Lỗi tạm thời đã được SDK thử lại tối đa 2 lần
+│              Vẫn lỗi → event error có retryable, giao diện hiện nút Thử lại
 ▼
 5.5 RẼ NHÁNH                                    Assistant.Api · ChatOrchestrator
    doc_qa, app_help                        → 6a  RetrievalService
@@ -138,22 +138,14 @@ Assistant.Api · ChatOrchestrator
 - Vì sao: Thiếu ba trường này thì nhãn `explain_result` không bao giờ xuất hiện. `pageContext` là dữ liệu untrusted, không dùng làm căn cứ phân quyền hay input của engine.
 - Nguồn: `ship/02-hop-dong.md` §3 · `02-assistant-service.md` §4
 
-**Fallback và degraded_routing**
-<!-- alias: degraded_routing -->
-- Là gì: Đường chạy thay thế khi router không dùng được: luật đơn giản, không chắc thì mặc định `doc_qa`. Lượt đó mang cờ `degraded_routing`, giao diện hiện "Lượt này chạy ở chế độ giảm".
-- Ở kiến trúc này: Chỉ chạy khi Haiku lỗi, quá thời gian, hoặc JSON bị cắt.
-- Vì sao: Từ AD-15, router nằm trên đường chính của mọi lượt. Router hỏng mà không có fallback thì cả hệ thống dừng.
-- Nguồn: `02-assistant-service.md` §4 · `ship/02-hop-dong.md` §5
-
 **AD-15**
 <!-- alias: AD-15 -->
 - Là gì: Quyết định kiến trúc số 15, chốt 20/09/2026: bỏ luật nhanh khỏi đường chính, mọi lượt đều qua IntentRouter.
 - Ở kiến trúc này: Luật nhanh cũ phân loại sai câu hỏi hỗn hợp. "6.2.2 tôi tính rồi, dầm B12 có đạt không?" có mã điều khoản nên bị ép thành `doc_qa`, trong khi ý định là `mixed`.
-- Vì sao: Cái giá là mọi lượt chậm thêm 300–500 ms, và router thành điểm chết đơn (R44). Vì vậy phải so Haiku với Nova Lite ở mốc M1.
+- Vì sao: Cái giá là mọi lượt chậm thêm 300–500 ms, và router thành điểm chết đơn (R44). Router hỏng thì lượt báo lỗi chứ không đoán nhãn, vì đoán `doc_qa` sẽ đưa câu hỏi tính toán sang RAG rồi trả lời trôi chảy về sai việc. Vì vậy phải so Haiku với Nova Lite ở mốc M1.
 - Nguồn: `19-dac-ta-kien-truc.md` AD-15 · `02-assistant-service.md` §4
 
 ## Chưa rõ trong tài liệu
 
 - Tài liệu không ghi router dùng `Converse` hay `ConverseStream`. Router cần cả khối JSON mới dùng được, nên nhiều khả năng là `Converse`.
 - `06-tang-bedrock.md` §2 vẫn tách hai lần gọi: phân loại `maxTokens ~50` và viết lại `~200`. `02-assistant-service.md` §4a (AD-16, mới hơn) gộp thành một lần gọi, trần 300–400.
-- Fallback mặc định `doc_qa`. Câu hỏi cần tính mà rơi vào `doc_qa` thì người dùng nhận một đoạn tiêu chuẩn thay vì kết quả tính. Tài liệu chưa đo tỉ lệ này.

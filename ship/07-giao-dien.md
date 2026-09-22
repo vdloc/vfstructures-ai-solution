@@ -130,7 +130,7 @@ stateDiagram-v2
  ToolRunning --> ResultCard: nhận tool_result
  ResultCard --> Streaming: nhận token diễn giải
  Streaming --> Cited: nhận citation
- Cited --> AwaitingApproval: nhận approval_required
+ Cited --> AwaitingApproval: nhận approval_required (tool nhóm C, chưa có trong v1)
  Cited --> Done: nhận done
  AwaitingApproval --> Done: Duyệt hoặc Bỏ qua
  Streaming --> Warned: nhận warning (trích dẫn/số không khớp)

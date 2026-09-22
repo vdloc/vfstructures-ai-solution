@@ -1,5 +1,7 @@
 # 04 · Tool calling (F2)
 
+> **Đã cập nhật trong `ship/`.** File này ghi thiết kế tool calling trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/01-kien-truc.md` §5.4, §8.5 và `ship/03-backend.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`. Harness có lifecycle hook, nhưng ToolGate vẫn đặt ở facade: xem `ship/01-kien-truc.md` §8.5.
+
 Tool calling là ranh giới giữa trợ lý hỏi đáp và hệ thống dùng được trong công việc kỹ thuật. Đồng thời đây là **cơ chế kiểm soát an toàn quan trọng nhất**: AI chỉ hành động qua tập tool đã đăng ký, mỗi tool là một điểm kiểm soát.
 
 Lợi thế của VFSoftware: repository tính toán là **hàm thuần** và đã có Swagger, nên tool chỉ là lớp bọc mỏng quanh endpoint hiện có. Công thức chỉ nằm ở một nơi (.NET); LLM không bao giờ tự tính.

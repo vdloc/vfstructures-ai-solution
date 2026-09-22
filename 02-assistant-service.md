@@ -1,5 +1,7 @@
 # 02 · Assistant service (.NET 8)
 
+> **Đã cập nhật trong `ship/`.** File này ghi thiết kế Assistant service trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/01-kien-truc.md` §6 và `ship/03-backend.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`.
+
 Tài liệu mô tả **một lượt hỏi đáp từ đầu đến cuối** trong `VFSoftware.Assistant.Api`: nhận request, định tuyến, chạy đường RAG hoặc vòng lặp tool, phát trực tiếp (stream) kết quả, ghi nhận. Chi tiết truy xuất ở [03](03-rag.md), tool ở [04](04-tool-calling.md), guardrail và chịu lỗi ở [06](06-tang-bedrock.md).
 
 ---

@@ -1,5 +1,7 @@
 # 17 · Hướng dẫn triển khai — đội Frontend
 
+> **Đã cập nhật trong `ship/`.** File này ghi hướng dẫn triển khai trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/04-frontend.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`.
+
 Tài liệu thi công, viết theo sáu bước của một lượt hỏi. Frontend chỉ xuất hiện ở bước 1 và bước 6, nhưng bốn bước ở giữa quyết định giao diện phải xử lý những trạng thái nào.
 
 Thiết kế gốc ở [02](02-assistant-service.md) §6 (hợp đồng SSE) và [08](08-ux.md). Giải thích bằng lời thường ở [15](15-hoi-dap-tung-buoc.md).

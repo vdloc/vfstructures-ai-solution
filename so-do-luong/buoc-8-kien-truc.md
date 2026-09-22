@@ -112,7 +112,7 @@ Câu trả lời:  "Theo EN 1992-1-1 §6.2.2 [1], VRd,c tối thiểu là 0,035 
 
 **warning**
 <!-- alias: warning -->
-- Là gì: Event SSE báo câu trả lời có điểm chưa kiểm chứng được. Mã: `unverified_number`, `unverified_citation`, `standard_version_mismatch`, `degraded_retrieval_only`, `degraded_routing`, `truncated`.
+- Là gì: Event SSE báo câu trả lời có điểm chưa kiểm chứng được. Mã: `unverified_number`, `unverified_citation`, `standard_version_mismatch`, `degraded_retrieval_only`, `truncated`.
 - Ở kiến trúc này: Luôn đến **sau** chữ. Giao diện chèn banner lên câu trả lời đã đầy đủ.
 - Vì sao: Xóa chữ giữa chừng làm người dùng mất niềm tin vào cả những lượt đúng. Hệ thống chọn nói rõ "phần này chưa kiểm được".
 - Nguồn: `ship/02-hop-dong.md` §5 · `22-thuyet-minh-toan-bo-kien-truc.md`

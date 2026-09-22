@@ -1,5 +1,7 @@
 # 10 · Triển khai, môi trường và CI/CD
 
+> **Đã cập nhật trong `ship/`.** File này ghi thiết kế triển khai trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/09-trien-khai.md`.
+
 > **Cảnh báo về độ chắc chắn:** tài liệu hiện trạng chỉ mô tả Docker, cổng, máy chủ dev (192.168.1.7/8) và pipeline GHCR. **Nền tảng chạy production (ECS, EC2 hay nền tảng khác) chưa được ghi rõ.** Sơ đồ 10.1 vì vậy mô tả ở **mức container và ranh giới mạng**, không chọn ECS hay EKS. Khi topology được chốt (GĐ-7), cập nhật tài liệu này và chọn tùy chọn quan sát phù hợp ([09](09-eval-quan-sat.md) §4).
 
 ---

@@ -216,7 +216,7 @@ flowchart LR
 | **Dữ liệu client giả** | `pageContext.outputs` bị sửa | Căn cứ là kết quả engine tính lại; lệch thì báo | [01](01-kien-truc.md) |
 | **Lạm dụng chi phí** | Vòng lặp tool, spam | Giới hạn vòng, rate limit, quota ngày, cảnh báo Budgets, trần mỗi lượt ([01](01-kien-truc.md) §8.12) | §2, [01](01-kien-truc.md) |
 | **Đốt tiền bằng lượt bỏ dở** | Mở câu hỏi dài rồi đóng tab, lặp lại | Client ngắt thì hủy mọi lời gọi của lượt; trừ quota theo phần đã dùng (AD-25). Harness phía AWS có thể chạy tiếp tới trần (V-A11) | [01](01-kien-truc.md) §6.7 |
-| **Đầu độc bộ nhớ qua hội thoại** | Người dùng khẳng định sai ("dự án dùng thép loại X") để mô hình ghi nhớ | Không có bộ nhớ dài hạn do mô hình ghi: case chỉ sinh từ `tool_run` qua Duyệt có danh tính, summary bằng template; tóm tắt lịch sử (AD-22) chỉ sống trong một conversation và không là nguồn số | [01](01-kien-truc.md) §8.10 |
+| **Đầu độc bộ nhớ qua hội thoại** | Người dùng khẳng định sai ("dự án dùng thép loại X") để mô hình ghi nhớ | Không có bộ nhớ dài hạn do mô hình ghi: case chỉ sinh từ `tool_run` khi engine kết luận đạt, không có summary (AD-28); tóm tắt lịch sử (AD-22) chỉ sống trong một conversation và không là nguồn số | [01](01-kien-truc.md) §8.10 |
 | **Kết luận trái engine** | Engine báo không đạt, mô hình viết "đạt" | Nhãn trên thẻ lấy từ verdict của `tool_run`; `VerificationValidator` so nhãn trong văn bản với verdict (AD-24) | [01](01-kien-truc.md) §8.6 |
 | **Ảo giác có trích dẫn** | Trích dẫn chunk không tồn tại | `CitationValidator` tất định | [02](02-hop-dong.md) |
 | **Số liệu do LLM bịa** | Con số trông hợp lý nhưng sai | Số chỉ đến từ tool; `NumberValidator` | [01](01-kien-truc.md) |

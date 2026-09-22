@@ -1,6 +1,6 @@
 # 16 · Hướng dẫn triển khai — đội Backend
 
-> **Đã cập nhật trong `ship/`.** File này ghi hướng dẫn trước lượt rà soát nguồn 21/09/2026. Bản đã sửa: `ship/03-backend.md`.
+> **Đã cập nhật trong `ship/`.** File này ghi hướng dẫn trước lượt rà soát nguồn 21/09/2026. Bản đã sửa: `ship/03-backend.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`.
 
 Tài liệu thi công, viết theo sáu bước của một lượt hỏi. Mỗi bước có: việc phải làm, tiêu chí nghiệm thu, rủi ro phải canh, và thứ mà đội khác đang chờ ở mình.
 

@@ -34,7 +34,7 @@ flowchart TB
   S5 -->|"case_lookup"| C1
 
   subgraph RAG["6a · Đường RAG — Retrieving"]
-    R0["pg_trgm giải mã điều khoản<br/>nếu câu hỏi có mã"] -.-> R1
+    R0["ClauseResolver giải mã điều khoản<br/>nếu câu hỏi có mã"] -.-> R1
     R1["Tìm rộng: Bedrock MKB Retrieve<br/>40 chunk, lọc scope_key + status"]
     R2["Chọn hẹp: Bedrock Rerank<br/>→ 8 chunk tốt nhất"]
     R3{"điểm ≥ ngưỡng?"}
@@ -55,14 +55,11 @@ flowchart TB
   end
 
   subgraph CASE["6c · Case memory"]
-    C1["CaseMemoryService<br/>tra tình huống đã duyệt, RLS trên PostgreSQL"]
+    C1["CaseMemoryService<br/>tra tình huống đã tính đạt, RLS trên PostgreSQL"]
   end
 
   R3 -->|"đủ căn cứ"| S7
-  T4 --> TAPP{"kết quả cần duyệt?"}
-  TAPP -->|"có"| AWAIT["AwaitingApproval<br/>kỹ sư duyệt hoặc bỏ qua"]
-  TAPP -->|"không"| S7
-  AWAIT --> S7
+  T4 -->|"verdict pass thì ghi case"| S7
   T4 -.->|"quá vòng/thời gian<br/>hoặc tool lỗi 2 lần"| DEG
   C1 --> S7
 
@@ -120,7 +117,7 @@ flowchart TB
 
 `Received → Routing → {Retrieving | ToolLoop | CaseLookup} → Generating → Validating → Completed`
 
-Nhánh phụ: `Rejected`, `Refused`, `AwaitingApproval`, `Degraded`, `CompletedUnverified`.
+Nhánh phụ: `Rejected`, `Refused`, `AskBack`, `Degraded`, `CompletedUnverified`, `Aborted`.
 
 ---
 
@@ -157,7 +154,7 @@ Lớp 4 và 6 nguy hiểm hơn bốn lớp còn lại: cả hai đều là đi�
 | --- | --- | --- | --- |
 | F1 | Kỹ sư gửi câu hỏi | Hỏi đáp có dẫn chứng (RAG) | `02`, `03` |
 | F2 | Gửi câu hỏi / bấm "Hỏi AI" trên trang tính toán | Vòng lặp tool tính toán | `04` |
-| F3 | Bấm "Duyệt" trên thẻ kết quả | Ghi nhận + tra tình huống (case memory) | `05` |
+| F3 | Engine tính đạt một cấu kiện | Tự ghi case + tra tình huống (case memory) | `ship/12` |
 | F4 | Kỹ sư tri thức tải tài liệu | Nạp và cập nhật kho tài liệu | `03` |
 | F5 | Chấm tốt/xấu | Phản hồi → bổ sung bộ eval | `09` |
 | F6 | Pull request đổi prompt/retrieval/tool | Eval gate trong CI, chặn merge khi chất lượng lùi | `09` |

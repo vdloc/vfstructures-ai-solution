@@ -1,6 +1,6 @@
 # Hồ sơ đề xuất giải pháp CNTT — VF Structures AI Assistant
 
-**Phiên bản:** 1.0 · **Ngày:** 21/09/2026
+**Phiên bản:** 1.1 · **Ngày:** 22/09/2026
 **Đối tượng đọc:** CTO, Giám đốc Kỹ thuật, Giám đốc Kỹ thuật Công trình, Ban lãnh đạo công ty
 **Mục đích:** hồ sơ trình duyệt đầu tư — trình bày kiến trúc tổng thể, mô hình vận hành, chi phí và rủi ro để ra quyết định xây dựng hệ thống trợ lý AI kỹ thuật cho VF Structures.
 **Nguồn:** toàn bộ nội dung kỹ thuật trong tài liệu này lấy từ bộ tài liệu kỹ thuật (13 file, bản chính thức đã bàn giao), đã đối chiếu trực tiếp với tài liệu AWS và sách chuyên ngành trong đợt rà soát gần nhất (21/09/2026). Tài liệu này là bản trình bày lại cho đối tượng đọc doanh nghiệp — khi có xung đột về chi tiết kỹ thuật, bộ tài liệu kỹ thuật là nguồn đúng.
@@ -54,7 +54,7 @@ Ba việc này không tạo ra giá trị kỹ thuật mới — chúng chỉ l�
 | --- | --- | --- |
 | F1 | Hỏi đáp tiêu chuẩn có trích dẫn | Thay tra cứu thủ công bằng câu trả lời có dẫn nguồn kiểm chứng được |
 | F2 | Tính toán qua engine hiện có | Kỹ sư hỏi bằng lời, hệ thống gọi đúng engine đang chạy, không đoán số |
-| F3 | Tra tình huống nội bộ đã duyệt | Biến kinh nghiệm cá nhân rải rác thành tài sản tri thức dùng chung |
+| F3 | Tra tình huống nội bộ đã tính đạt | Biến kinh nghiệm cá nhân rải rác thành tài sản tri thức dùng chung |
 | F4 | Nạp và phát hành tài liệu nguồn | Kho tài liệu luôn cập nhật, không phụ thuộc một người giữ file |
 | F5 | Giải thích kết quả đang mở trên trang | Kỹ sư không phải soạn lại lời giải thích mỗi lần |
 | F6 | Kiểm lại số, trích dẫn và nhãn kết luận sau khi sinh | Chặn sai số và trích dẫn ảo trước khi tới tay người dùng |
@@ -93,7 +93,7 @@ Sáu khối chính: bốn khối phần mềm công ty tự phát triển hoặc
 | Panel AI | Giao diện hội thoại, đặt trong ứng dụng tính toán hiện có — không phải một trang riêng biệt |
 | `Assistant.Api` | Service điều phối trung tâm: nhận câu hỏi, kiểm quyền, phân loại, gọi mô hình, kiểm lại kết quả |
 | `Assistant.Worker` | Tiến trình nền, tách khỏi lượt hỏi đáp, chuẩn bị và cập nhật kho tài liệu |
-| PostgreSQL | Lưu hội thoại, bản ghi mỗi lần chạy engine, và kho tình huống đã duyệt |
+| PostgreSQL | Lưu hội thoại, bản ghi mỗi lần chạy engine, và kho tình huống đã tính đạt |
 | Amazon Bedrock | Dịch vụ AWS gọi mô hình AI qua một cổng chung, tính phí theo token |
 | Bedrock Managed Knowledge Base (MKB) | Dịch vụ AWS quản trọn gói kho tài liệu — nhận file, đánh chỉ mục, tìm kiếm theo yêu cầu |
 
@@ -103,7 +103,7 @@ Hệ thống hiện tại (Main API, chứa engine tính toán đã vận hành 
 
 Vòng lặp "mô hình đề xuất gọi hàm → hệ thống gọi thật → trả kết quả → mô hình xem xét tiếp" có thể tự viết bằng mã nguồn nội bộ. Kiến trúc đề xuất dùng dịch vụ quản lý sẵn của AWS thay vì tự viết: **AgentCore Harness** quản vòng lặp gọi hàm, **AgentCore Gateway** biến các API nội bộ thành công cụ mô hình gọi được, và **Cedar** — ngôn ngữ chính sách của AWS — quy định ai được gọi công cụ nào.
 
-Lựa chọn dùng dịch vụ quản lý thay vì tự viết vòng lặp đánh đổi lấy một hạn chế đáng lưu ý: AgentCore Harness không hỗ trợ điểm chèn logic tùy biến (hook), nên toàn bộ lớp kiểm an toàn của hệ thống (mục 3.4) buộc phải đặt ở một service riêng đứng sau Gateway, không đặt được ngay trong vòng lặp của Harness.
+Lựa chọn dùng dịch vụ quản lý thay vì tự viết vòng lặp có một điểm cần nói rõ: AgentCore Harness cho gắn điểm chèn logic (hook) vào vòng lặp, nhưng thông tin hook nhận được không có danh tính người dùng và không có kết quả thật từ hệ thống tính toán. Vì vậy toàn bộ lớp kiểm an toàn của hệ thống (mục 3.4) đặt ở một service riêng đứng sau Gateway, đúng nơi lời gọi thật sự được thực thi, chứ không đặt trong vòng lặp của Harness.
 
 Việc phân loại một câu hỏi thuộc nhóm nào — hỏi tài liệu, yêu cầu tính toán, hay tra tình huống cũ — do một mô hình nhỏ, nhanh và rẻ (Claude Haiku) đảm nhiệm ở đầu mỗi lượt hỏi, tách biệt khỏi mô hình chính trả lời câu hỏi (Claude Sonnet 5). Mục 3.3 và 3.5 trình bày lý do dùng nhiều tầng mô hình thay vì một mô hình duy nhất cho mọi việc.
 
@@ -114,7 +114,7 @@ Truy xuất tài liệu chạy theo hai giai đoạn liên tiếp:
 1. **Tìm rộng.** Câu hỏi được gửi tới Bedrock Managed Knowledge Base qua API `Retrieve`, trả về bốn mươi đoạn tài liệu (chunk) có điểm liên quan cao nhất, đã lọc theo quyền đọc của người dùng ngay trong tham số gọi.
 2. **Chọn hẹp.** Bốn mươi đoạn đó được chấm điểm lại chính xác hơn (rerank), chọn ra tám đoạn tốt nhất. Nếu điểm cao nhất vẫn dưới một ngưỡng đã định, hệ thống từ chối trả lời thay vì trả lời dựa trên tài liệu không thật sự liên quan.
 
-Với câu hỏi có chứa mã điều khoản tiêu chuẩn, PostgreSQL (dùng tiện ích `pg_trgm` của chính cơ sở dữ liệu) giải mã điều khoản trước — sửa được cả khi người dùng gõ gần đúng — vì Managed Knowledge Base tìm được theo nghĩa và từ khóa nhưng không sửa được mã điều khoản gõ sai.
+Với câu hỏi có chứa mã điều khoản tiêu chuẩn, PostgreSQL tìm mã chuẩn trước, trong đúng các tài liệu người dùng được đọc — sửa được cả khi người dùng gõ thiếu hoặc thừa dấu chấm — vì Managed Knowledge Base tìm được theo nghĩa và từ khóa nhưng không sửa được mã điều khoản gõ sai. Không chắc người dùng muốn điều nào thì hệ thống hỏi lại kèm vài mã gợi ý, chứ không đoán.
 
 **Quyết định kiến trúc quan trọng nhất của nhánh này:** dùng Bedrock Managed Knowledge Base thay vì tự xây dựng và vận hành một kho vector riêng trên nền PostgreSQL. Đánh đổi: công ty không còn tự chỉnh được các tham số kỹ thuật sâu của việc tìm kiếm (thuật toán xếp hạng, tham số chỉ mục), và mô hình embedding không đổi được sau khi kho đã được tạo. Đổi lại, công ty không phải tự vận hành, tự vá lỗi, và tự mở rộng một hệ thống tìm kiếm vector — một hạng mục kỹ thuật phức tạp và tốn nhân lực nếu tự làm.
 
@@ -155,7 +155,7 @@ Ba loại dữ liệu, ba cơ chế xử lý khác nhau vì đặc tính khác n
 | --- | --- | --- | --- |
 | Tài liệu tiêu chuẩn | Văn bản, không cấu trúc, khối lượng lớn | Amazon S3 (file gốc) + Bedrock MKB (đã đánh chỉ mục) | Retrieval — tìm theo nghĩa |
 | Kết quả tính toán | Con số, có cấu trúc, phải chính xác tuyệt đối | PostgreSQL | Tool calling — gọi thẳng engine |
-| Tình huống đã duyệt (case) | Bản ghi có cấu trúc, gắn danh tính người duyệt | PostgreSQL | Tra cứu theo tham số tương đồng |
+| Tình huống đã tính đạt (case) | Bộ thông số có cấu trúc của một cấu kiện mà engine đã tính và kết luận đạt | PostgreSQL | Tra cứu theo tham số tương đồng |
 
 Cách ly dữ liệu giữa các khách hàng dùng hai cơ chế khác nhau tùy loại dữ liệu. Với tài liệu, việc lọc thực hiện bằng một tham số của API `Retrieve` — vì kho tài liệu do AWS quản lý, hệ thống không viết được câu truy vấn SQL trực tiếp vào đó. Với dữ liệu tình huống, việc lọc thực hiện bằng câu lệnh SQL trên PostgreSQL, nơi có cơ chế Row-Level Security (RLS) của chính cơ sở dữ liệu — một cơ chế khiến việc bỏ sót điều kiện lọc trở nên gần như không thể xảy ra, miễn vai trò kết nối ứng dụng bị RLS ràng buộc.
 
@@ -165,22 +165,22 @@ Cách ly dữ liệu giữa các khách hàng dùng hai cơ chế khác nhau tù
 
 ### 4.1 Nguyên tắc vận hành cốt lõi
 
-**Nguyên tắc P1: hệ thống hỗ trợ kỹ sư, không thay thế kỹ sư.** Một tình huống chỉ trở thành tri thức dùng chung của công ty khi có một kỹ sư thực hiện thao tác duyệt (Approve) có gắn danh tính và thời điểm. Hệ thống không tự động đưa bất kỳ kết quả nào vào kho tri thức dùng chung mà không qua bước này.
+**Nguyên tắc P1: hệ thống hỗ trợ kỹ sư, không thay thế kỹ sư.** Một tình huống chỉ trở thành tri thức dùng chung của công ty khi engine tính toán đã tính và kết luận đạt. Mô hình ngôn ngữ không bao giờ tự đưa câu chữ của nó vào kho tri thức dùng chung, và kỹ sư vẫn là người chịu trách nhiệm cho quyết định cuối cùng.
 
 ### 4.2 Chủ sở hữu
 
 Kiến trúc kỹ thuật hiện đã gán vai trò tạm thời cho từng hạng mục rủi ro và vận hành, dùng ký hiệu ngắn (ví dụ: đội dẫn dắt kỹ thuật, hai đội backend, đội DevOps, đội frontend, đội quản lý sản phẩm). **Đây là ký hiệu vai trò do đội kỹ thuật đề xuất, chưa phải một ma trận RACI chính thức đã được công ty phê duyệt.** Trước khi vận hành thật, công ty cần điền tên người phụ trách cụ thể cho từng hạng mục vận hành, đặc biệt là quyền quyết định ngân sách, quyền phê duyệt thay đổi mô hình AI, và quyền xử lý sự cố dữ liệu.
 
-### 4.3 Quy trình duyệt kỹ thuật
+### 4.3 Quy trình xác nhận kỹ thuật
 
-Mọi giá trị đưa vào kho tri thức dùng chung — dù là một tình huống tính toán mới hay một tham số hệ thống tự bóc tách được từ câu hỏi — đều phải qua một trong hai đường xác nhận: kết quả trực tiếp từ engine tính toán (đáng tin nhất), hoặc thao tác duyệt tường minh của kỹ sư trên giao diện. Giá trị chỉ có nguồn từ suy diễn của mô hình ngôn ngữ, không có xác nhận nào khác, không bao giờ được tự động đưa vào kho dùng chung.
+Mọi giá trị đưa vào kho tri thức dùng chung đều phải là kết quả trực tiếp từ engine tính toán, sau khi engine đã kiểm tham số và kết luận đạt. Tham số hệ thống tự bóc tách được từ câu hỏi chỉ dùng để tra cứu, không bao giờ được ghi vào kho dùng chung; giá trị chỉ có nguồn từ suy diễn của mô hình ngôn ngữ cũng vậy.
 
 ### 4.4 Quản trị AI
 
 Ba cơ chế quản trị đã có sẵn trong kiến trúc kỹ thuật, cần được công ty xác nhận là chính sách chính thức trước khi vận hành:
 
 - **Ép an toàn ở tầng hạ tầng, không dựa vào lời dặn trong prompt.** Ở tầng quyền của AWS có một điều kiện bắt buộc: mọi lời gọi mô hình chat phải kèm theo bộ lọc nội dung (guardrail). Thiếu điều kiện này, AWS tự từ chối cuộc gọi — không phụ thuộc vào việc mô hình có "nghe lời" hay không.
-- **Ghi vết đầy đủ, không thể chối bỏ.** Mọi thao tác duyệt tình huống đều lưu bản ghi bất biến (chỉ-thêm, không sửa được) gồm danh tính người duyệt và thời điểm — phục vụ tra soát khi có tranh chấp.
+- **Ghi vết đầy đủ, không thể chối bỏ.** Mọi lần gọi công cụ tính toán, mọi lần ghi hay rút một tình huống khỏi kho đều lưu bản ghi bất biến (chỉ-thêm, không sửa được) gồm ai, làm gì, khi nào — phục vụ tra soát khi có tranh chấp.
 - **Kiểm lại sau khi sinh, không phải trước khi hiển thị.** Một tầng kiểm bằng mã tất định (không phải hỏi lại mô hình) chạy sau khi mô hình đã trả lời, đối chiếu mọi con số và trích dẫn với dữ liệu nguồn thật — trình bày chi tiết ở mục 6.
 
 ---
@@ -194,16 +194,16 @@ Kỹ sư tương tác với hệ thống
         ↓
 Hệ thống ghi log (tool_run) — kết quả tính toán, có cấu trúc
         ↓
-Kỹ sư xác nhận (Approve) — gắn danh tính và thời điểm
+Engine kết luận đạt — tham số đã qua đủ các lớp kiểm
         ↓
-Hệ thống tạo bản ghi tình huống (case) — chính thức thành tri thức dùng chung
+Hệ thống ghi bản ghi tình huống (case) — chính thức thành tri thức dùng chung
         ↓
 Tình huống được tái sử dụng cho các câu hỏi tương tự sau này
 ```
 
-Mỗi lần engine tính toán chạy, kết quả được ghi lại thành một bản ghi có cấu trúc (`tool_run`). Bản ghi này chỉ dừng lại như một log kỹ thuật, không tự động trở thành tri thức dùng chung. Khi kỹ sư xem lại kết quả và bấm duyệt, hệ thống ghi nhận thao tác đó — kèm danh tính người duyệt và thời điểm — và tạo một bản ghi tình huống (case) chính thức.
+Mỗi lần engine tính toán chạy, kết quả được ghi lại thành một bản ghi có cấu trúc (`tool_run`). Chỉ khi engine kết luận cấu kiện đạt, hệ thống mới ghi bộ thông số đó thành một bản ghi tình huống (case), ngay trong cùng một thao tác ghi với `tool_run`. Cùng một cấu hình được tính đạt nhiều lần thì chỉ có một bản ghi, kèm số lần đã dùng lại.
 
-Từ đó, các câu hỏi tương lai có tham số tương tự (nhịp dầm, mác bê tông, loại cấu kiện...) sẽ được đối chiếu với kho tình huống đã duyệt này, ưu tiên lọc cứng theo công ty sở hữu và trạng thái đã duyệt trước, rồi mới so khoảng cách theo tham số kỹ thuật.
+Từ đó, các câu hỏi tương lai có tham số tương tự (nhịp dầm, mác bê tông, loại cấu kiện...) sẽ được đối chiếu với kho tình huống này, ưu tiên lọc cứng theo công ty sở hữu và loại cấu kiện trước, rồi mới so khoảng cách theo tham số kỹ thuật.
 
 Một vòng phản hồi thứ hai chạy song song, phục vụ việc cải thiện chất lượng: khi kỹ sư đánh dấu một câu trả lời là chưa tốt, phản hồi đó vào hàng đợi phân loại định kỳ; nếu xác định là lỗi thật (thiếu tài liệu, tài liệu lỗi thời, prompt sai, hoặc lỗi công cụ), câu hỏi đó cùng đáp án đúng được thêm vào bộ câu hỏi kiểm định chất lượng (trình bày ở mục 6), để lỗi tương tự không tái diễn trong các phiên bản sau.
 
@@ -231,7 +231,7 @@ Tại thời điểm viết hồ sơ này, các chỉ tiêu sau **chưa có đ�
 
 - **Thời gian tiết kiệm** trên mỗi lượt hỏi, so với quy trình tra cứu thủ công hiện tại.
 - **Tỉ lệ kỹ sư sử dụng** hệ thống thường xuyên, so với tổng số kỹ sư có quyền truy cập.
-- **Mức giảm công việc lặp lại** — số lần một tình huống tương tự phải tính lại từ đầu thay vì tra được từ kho tình huống đã duyệt.
+- **Mức giảm công việc lặp lại** — số lần một tình huống tương tự phải tính lại từ đầu thay vì tra được từ kho tình huống đã tính đạt.
 
 Khuyến nghị: thiết lập cách đo và một mốc đo cơ sở (baseline) trước khi triển khai giai đoạn đầu, làm căn cứ so sánh sau một khoảng thời gian vận hành thật.
 
@@ -239,9 +239,9 @@ Khuyến nghị: thiết lập cách đo và một mốc đo cơ sở (baseline)
 
 ## 7. Nền tảng tri thức kỹ thuật
 
-Tài sản tri thức của công ty, trong phạm vi hệ thống này, gồm bốn loại: tài liệu tiêu chuẩn, tình huống tính toán đã duyệt, kết quả tính toán thô, và các quyết định kỹ thuật đi kèm lý do lựa chọn.
+Tài sản tri thức của công ty, trong phạm vi hệ thống này, gồm bốn loại: tài liệu tiêu chuẩn, tình huống tính toán đã tính đạt, kết quả tính toán thô, và các quyết định kỹ thuật đi kèm lý do lựa chọn.
 
-**Vì sao tình huống đã duyệt có giá trị hơn tài liệu đơn thuần.** Một tài liệu tiêu chuẩn chỉ nói quy tắc chung — nó không nói quy tắc đó áp dụng thế nào vào một tình huống cụ thể mà công ty đã từng gặp. Một tình huống đã duyệt (case) thì có cấu trúc: tham số đầu vào cụ thể, kết quả cụ thể, và một kỹ sư đã xác nhận kết quả đó đúng. Tra một tình huống tương tự đã duyệt cho câu trả lời gần với thực tế công việc hơn nhiều so với tra một điều khoản tiêu chuẩn viết chung chung — đây chính là lý do chức năng tra tình huống (F3) và cơ chế duyệt (mục 5) được đặt ở trung tâm của giá trị hệ thống mang lại, chứ không chỉ là chức năng phụ đi kèm hỏi đáp tài liệu.
+**Vì sao tình huống đã tính đạt có giá trị hơn tài liệu đơn thuần.** Một tài liệu tiêu chuẩn chỉ nói quy tắc chung — nó không nói quy tắc đó áp dụng thế nào vào một tình huống cụ thể mà công ty đã từng gặp. Một tình huống đã tính đạt (case) thì có cấu trúc: tham số đầu vào cụ thể, kết quả cụ thể, và engine đã kiểm kết quả đó đạt. Tra một tình huống tương tự cho câu trả lời gần với thực tế công việc hơn nhiều so với tra một điều khoản tiêu chuẩn viết chung chung — đây chính là lý do chức năng tra tình huống (F3) và cơ chế ghi tình huống (mục 5) được đặt ở trung tâm của giá trị hệ thống mang lại, chứ không chỉ là chức năng phụ đi kèm hỏi đáp tài liệu.
 
 ---
 
@@ -254,7 +254,7 @@ Sơ đồ tầm cao các thành phần hạ tầng:
 | Frontend | Panel AI (trong ứng dụng hiện có) + lớp trung gian BFF (backend for frontend) | Giao diện hội thoại; BFF giữ mọi thông tin xác thực ở phía server |
 | API | `Assistant.Api` (.NET 8) | Điều phối trung tâm: xác thực, phân loại, gọi mô hình, kiểm lại kết quả |
 | Agent Runtime | AgentCore Harness + Gateway | Quản vòng lặp gọi hàm, áp chính sách truy cập công cụ |
-| Cơ sở dữ liệu | PostgreSQL | Hội thoại, bản ghi tính toán, kho tình huống đã duyệt |
+| Cơ sở dữ liệu | PostgreSQL | Hội thoại, bản ghi tính toán, kho tình huống đã tính đạt |
 | Vector Database | Bedrock Managed Knowledge Base | Chỉ mục và tìm kiếm tài liệu theo nghĩa |
 | Storage | Amazon S3 | Lưu file tài liệu nguồn, mã hóa và có versioning |
 | Monitoring | Amazon CloudWatch (qua chuẩn mở OpenTelemetry) | Trace theo từng lượt hỏi, chỉ số vận hành Bedrock, cảnh báo |
@@ -298,7 +298,7 @@ Bộ rủi ro đầy đủ (47 mục, có mã, mức độ, biện pháp giảm 
 | --- | --- | --- |
 | Điểm phân loại câu hỏi trở thành điểm chết đơn | Toàn bộ lượt hỏi phụ thuộc một lần gọi mô hình nhỏ; nếu mô hình này gặp sự cố, hệ thống mất khả năng hiểu ngữ cảnh hội thoại (dù vẫn có đường dự phòng chạy được ở mức giảm) | So sánh sẵn mô hình thay thế trước khi cần, không đợi đến lúc bắt buộc phải đổi |
 | Mô hình phân loại đã công bố mốc kết thúc vòng đời | Có thể phải đổi mô hình ngay trong giai đoạn triển khai đầu tiên | Đổi mô hình chỉ là thay đổi cấu hình, không sửa mã nguồn — đã thiết kế sẵn |
-| Dịch vụ quản lý vòng lặp gọi hàm không hỗ trợ điểm chèn logic tùy biến | Toàn bộ lớp kiểm an toàn phải đặt đúng vị trí ở service riêng; đặt sai chỗ thì lỗi quyền có thể lọt vào kết quả trả về | Kiểm tra riêng từng công cụ, cô lập lớp kiểm an toàn khỏi vòng lặp AI |
+| Điểm chèn logic (hook) của dịch vụ quản lý vòng lặp gọi hàm không nhận danh tính người dùng | Toàn bộ lớp kiểm an toàn phải đặt đúng vị trí ở service riêng; dời vào hook thì lỗi quyền có thể lọt vào kết quả trả về | Kiểm tra riêng từng công cụ, cô lập lớp kiểm an toàn khỏi vòng lặp AI |
 | Tài liệu hướng dẫn sử dụng phần mềm nội bộ có thể lỗi thời | Có thể khiến hệ thống hướng dẫn sai thao tác cho người dùng | Phụ thuộc câu hỏi mở về nguồn tài liệu hướng dẫn (mục 11) |
 
 ---
@@ -339,7 +339,7 @@ Vì vậy, hướng mở rộng này cần một quyết định kiến trúc ri
 | Hallucination | Hiện tượng mô hình bịa thông tin nhưng trình bày như thật |
 | MCP (Model Context Protocol) | Giao thức chuẩn hóa cách mô hình AI gọi công cụ bên ngoài |
 | Guardrail | Bộ lọc nội dung của Amazon Bedrock, ép ở tầng hạ tầng |
-| Case | Một tình huống tính toán đã được kỹ sư duyệt, trở thành tri thức dùng chung |
+| Case | Bộ thông số của một cấu kiện mà engine đã tính và kết luận đạt, trở thành tri thức dùng chung |
 | Golden set | Bộ câu hỏi kiểm định có sẵn đáp án đúng, chạy như cổng chặn chất lượng |
 | RLS (Row-Level Security) | Cơ chế của PostgreSQL tự chặn truy vấn thiếu điều kiện lọc dữ liệu |
 | TPM/TPD | Hạn mức token mỗi phút / mỗi ngày do AWS đặt cho tài khoản |

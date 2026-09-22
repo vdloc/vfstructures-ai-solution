@@ -202,7 +202,7 @@ Tám endpoint giả định: `bedrock-runtime`, `bedrock-agent-runtime`, `bedroc
 | Chặn trong ngày | Quota token ngày theo user và org (AD-23); chốt con số sau khi có chi phí mỗi lượt thật | [06](06-bao-mat.md) §2a |
 | Đo chi phí thật | Đọc `usage` từ event `done` và từ `metadata` của stream Harness; ghi `cost_usd_est` vào `invocation_record` bằng bảng đơn giá ở mục 3 | [08](08-eval-quan-sat.md) §4 |
 
-Sách *Building Gen AI Applications with Amazon Bedrock* ch06 xếp việc xem hóa đơn cuối tháng vào anti-pattern: Budgets và Cost Explorer phải bật từ ngày đầu, không phải khi hóa đơn đã tăng. Sách *Using Amazon Bedrock* ch05 cảnh báo Provisioned Throughput tính tiền liên tục và có thể tốn "hàng nghìn USD mỗi tháng" nếu quên tắt sau khi thử; dự án không dùng Provisioned Throughput.
+Sách *Building Gen AI Applications with Amazon Bedrock* ch06 yêu cầu có sẵn quy trình theo dõi, phân bổ chi phí và ép ngân sách bằng AWS Budgets và Cost Explorer khi ứng dụng lớn dần, và xếp việc mặc định dùng mô hình lớn nhất vào anti-pattern gây tốn kém không cần thiết. Sách *Using Amazon Bedrock* ch05 cảnh báo Provisioned Throughput tính tiền liên tục và có thể tốn "hàng nghìn USD mỗi tháng" nếu quên tắt sau khi thử; dự án không dùng Provisioned Throughput.
 
 ---
 

@@ -2,6 +2,8 @@
 
 **Phiên bản 1.1 · 19/09/2026 · Đội 5 người · 8 tuần (POC 4 tuần)**
 
+> **Đã cập nhật trong `ship/`.** Bộ này là bản 1.1, đã được thay bằng bộ bàn giao 2.0 ở [`ship/`](ship/README.md). Chỗ nào hai bộ khác nhau thì `ship/` đúng, đặc biệt là AD-28 (case tự ghi khi engine tính đạt, không còn bước duyệt) và việc ToolGate đặt ở facade dù Harness có lifecycle hook.
+
 Bộ tài liệu này đề xuất kiến trúc cho trợ lý AI trong ứng dụng tính toán kết cấu `vfstructures-app`: hỏi đáp tiêu chuẩn có dẫn chứng (RAG), tính toán qua engine hiện có (tool calling) và kho tình huống (case memory). Backend .NET 8, PostgreSQL, Amazon Bedrock. Trình bày theo hướng **sơ đồ trước**: sơ đồ tổng thể ở tài liệu 01, mỗi phần có sơ đồ chi tiết riêng (hơn 60 sơ đồ Mermaid, đã kiểm tra render bằng mermaid-cli 11.17.0, 19/09/2026).
 
 ## Đọc theo thứ tự

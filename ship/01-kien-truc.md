@@ -83,7 +83,7 @@ Nguồn: tài liệu cuộc họp "Mục tiêu triển khai trợ lý AI cho ph�
 
 | Mã | Nguyên tắc |
 | --- | --- |
-| P1 | AI hỗ trợ kỹ sư, không thay thế kỹ sư. Case chỉ sinh từ thao tác Approve có danh tính và thời điểm. |
+| P1 | AI hỗ trợ kỹ sư, không thay thế kỹ sư. Case chỉ sinh từ output của engine đã kết luận đạt, không bao giờ từ câu chữ của mô hình (AD-28). |
 | P2 | Mô hình không tự tính bất kỳ con số nào. Số đến từ engine (`tool_run`) hoặc từ chunk (citation). |
 | P3 | Không có căn cứ thì không có câu trả lời. Mọi khẳng định truy được về nguồn: `chunk_id` + trang + điều khoản, hoặc `tool_run_id`. |
 | P4 | Hàng rào nằm ngoài mô hình: scope filter, guardrail, ToolGate. Phân quyền dùng lại cơ chế sẵn có (`[ApiAccess]`, token người dùng), không viết lại. Thứ hệ thống biết chắc thì hệ thống cung cấp, không hỏi mô hình. |
@@ -103,11 +103,11 @@ Nguồn: tài liệu cuộc họp "Mục tiêu triển khai trợ lý AI cho ph�
 | --- | --- |
 | Kỹ thuật | Backend.NET 8; PostgreSQL; hệ thống hiện có không có message broker |
 | Kỹ thuật | `eu.anthropic.claude-sonnet-5` bắt buộc dùng inference profile `eu.*`, route trong **8 region EU** (model card, 22/09/2026), không có single-region |
-| Kỹ thuật | Aurora DSQL không dùng được: không hỗ trợ extension, tức không có `pg_trgm` và `unaccent` |
+| Kỹ thuật | Aurora DSQL không dùng được: không hỗ trợ extension, tức không có `fuzzystrmatch` (AD-29) |
 | Kỹ thuật | Rerank trong EU chỉ có ở region `eu-central-1` (Frankfurt, Đức) |
 | Kỹ thuật | Managed Knowledge Base chỉ GA ở một tập region; mô hình embedding **không đổi được sau khi tạo KB**; dùng embedding riêng thì **mất managed reranker** |
 | Kỹ thuật | MKB luôn dùng hybrid search. Cấu hình truy vấn nằm ở `retrievalConfiguration.managedSearchConfiguration` (`filter`, `numberOfResults` 1–100, `rerankingModelType`, `rerankingConfiguration`), không phải `vectorSearchConfiguration`. Không có `overrideSearchType` và không có tham số ngưỡng điểm |
-| Kỹ thuật | AgentCore Harness không hỗ trợ hook |
+| Kỹ thuật | Lifecycle hook của AgentCore Harness chỉ mang tên tool, tham số và `toolUseId`, không mang danh tính người dùng; chỉ đích Lambda mới trả được allow/deny |
 | Pháp lý | Dữ liệu cá nhân của công dân Việt Nam ra nước ngoài: hồ sơ đánh giá tác động theo Luật 91/2025/QH15 và Nghị định 356 |
 | Pháp lý | Quyền ingest NF EN / DTU vào kho nội bộ chưa xác nhận |
 | Tổ chức | Đội 5 người |
@@ -187,7 +187,7 @@ Sinh bản vẽ; ký hồ sơ; thay thế phán đoán kỹ sư; sinh SQL bằng
 | Hỏi đáp tài liệu | Retrieval qua Bedrock Managed Knowledge Base, đường cố định 1 lần gọi mô hình. Worker chunking theo điều khoản và ghi chunk ra S3 kèm metadata | AD-17 |
 | Tính toán | Tool calling vào engine .NET hiện có, không để mô hình tính | AD-08, P2 |
 | Tra case | Lọc cứng SQL rồi chấm điểm khoảng cách số học; tie-break bằng số lần dùng, không dùng vector | AD-28, AD-16 |
-| Tool loop | AgentCore Harness; ToolGate chuyển ra facade C# vì Harness không có hook | AD-13 |
+| Tool loop | AgentCore Harness; ToolGate đặt ở facade C#, nơi lời gọi tool thật sự chạy (§8.5) | AD-13 |
 | Routing | Một lần gọi Haiku cho mọi lượt; luật chỉ là fallback | AD-15 |
 | Chống bịa | Post-validation sau stream, gắn cờ thay vì xóa chữ | F6 |
 | Streaming | SSE một chiều, BFF chuyển tiếp nguyên dạng | AD-07 |
@@ -223,7 +223,7 @@ flowchart TB
  end
  subgraph DATA["Dữ liệu"]
  PGMAIN[("PostgreSQL VFSoftware")]
- PGAI[("PostgreSQL assistant (MỚI)<br/>case, tool_run, message, audit<br/>+ pg_trgm tra mã điều khoản")]
+ PGAI[("PostgreSQL assistant (MỚI)<br/>case, tool_run, message, audit<br/>+ clause_ref tra mã điều khoản")]
  OBJ[("S3 / MinIO<br/>tệp nguồn + chunk kèm sidecar")]
  end
  subgraph AWS["AWS eu-central-1"]
@@ -266,7 +266,7 @@ flowchart TB
 | Tool facade C# | ToolGate 6 lớp, gọi Main API, ghi `tool_run`, `ApplyGuardrail` trên nội dung tool | Có |
 | `Assistant.Worker` | Ingest tài liệu, chunking theo điều khoản, ghi chunk kèm sidecar ra S3, tổng hợp eval, tác vụ định kỳ. Embedding do MKB sinh | Có |
 | Bedrock Managed KB | Embedding, vector store, `Retrieve`. Ingest từ S3 qua managed connector | Có |
-| PostgreSQL `assistant` | `document`, `case`, `tool_run`, `message`, `audit_event`, bảng `clause_ref`; `pg_trgm`, `unaccent`. Kho chunk **không** còn ở đây kể từ AD-17 | Có |
+| PostgreSQL `assistant` | `document`, `case`, `tool_run`, `message`, `audit_event`, bảng `clause_ref`; `fuzzystrmatch`. Kho chunk **không** còn ở đây kể từ AD-17 | Có |
 | BFF proxy | Đọc cookie HttpOnly, gắn Bearer, chuyển tiếp SSE nguyên dạng | Không |
 | Main API | Engine tính toán, `[ApiAccess]` | Không |
 | AgentCore Harness | Tool loop, gọi Sonnet 5 | Có |
@@ -279,7 +279,7 @@ flowchart TB
 | `ChatOrchestrator` | State machine của lượt, phát sự kiện SSE |
 | `IntentRouter` | Gọi Haiku, trả `intent`, `search_query`, `instruction`, `case_hints` |
 | `ScopedKnowledgeBaseClient` | Lớp **duy nhất** được gọi `Retrieve`; scope là tham số khởi tạo bắt buộc; dựng `filter`, đặt `numberOfResults` |
-| `ClauseResolver` | Regex bóc mã điều khoản, `pg_trgm` phân giải thành `clause_path` chuẩn hóa |
+| `ClauseResolver` | Regex bóc mã điều khoản; khớp đúng mã rồi khớp dãy chữ số trong tài liệu thuộc phạm vi; không ra đúng một mã thì hỏi lại (AD-29) |
 | `AccessScopeResolver` | Tính `scope_key`, cache trong tiến trình 60 giây |
 | `CaseSimilarityScorer` | Gom tham số, lọc cứng, chấm điểm khoảng cách, top 5 |
 | `NumberValidator` | Đối chiếu số trong câu trả lời với `tool_run` hoặc chunk |
@@ -291,7 +291,7 @@ flowchart TB
 
 | Tool | Nhóm rủi ro | Chạy ở |
 | --- | --- | --- |
-| `calc.*` (một tool cho mỗi phép kiểm tra) | B | Facade → Main API. Kết quả có thể vào hồ sơ, nên luôn hiện kèm tham số đầu vào và phát `approval_required` |
+| `calc.*` (một tool cho mỗi phép kiểm tra) | B | Facade → Main API. Kết quả có thể vào hồ sơ, nên luôn hiện kèm tham số đầu vào; tính đạt thì facade ghi case (AD-28) |
 | `search_documents` | A | Facade → `ScopedKnowledgeBaseClient` → Bedrock Managed KB |
 | `find_similar_cases` | A | Facade → PostgreSQL |
 | `project.list_members(projectId)` | A | Facade → Main API. Đổi tên cấu kiện người dùng nhắc ("dầm B2") thành mã |
@@ -344,10 +344,10 @@ classDiagram
 | Nhóm | Đặc điểm | Ví dụ | Kiểm soát | Trong phạm vi |
 | --- | --- | --- | --- | --- |
 | A — chỉ đọc | Không đổi dữ liệu | Tìm tài liệu, tìm case, đọc kết quả dự án | Mô hình gọi tự do trong phạm vi quyền của người dùng | Có |
-| B — tính toán | Không đổi dữ liệu, kết quả có thể vào hồ sơ | Khả năng chịu uốn, độ võng | Gọi tự do; kết quả luôn hiện kèm tham số đầu vào; phát `approval_required` | Có |
+| B — tính toán | Không đổi dữ liệu, kết quả có thể vào hồ sơ | Khả năng chịu uốn, độ võng | Gọi tự do; kết quả luôn hiện kèm tham số đầu vào; tính đạt thì thành case (AD-28) | Có |
 | C — ghi | Đổi trạng thái hệ thống nghiệp vụ | Cập nhật thông số cấu kiện | Bắt buộc xác nhận; bắt buộc khóa idempotency (AD-27) | **Không** |
 
-Ghi vào bảng của chính assistant (`case`) không phải nhóm C: đó là kho phụ trợ, không phải hồ sơ nghiệp vụ. Vẫn cần kỹ sư Duyệt vì P1.
+Ghi vào bảng của chính assistant (`case`) không phải nhóm C: đó là kho phụ trợ, không phải hồ sơ nghiệp vụ. Không cần bước duyệt, vì case chỉ sinh từ output của engine nên P1 vẫn giữ (AD-28).
 
 **Registry sinh từ OpenAPI rồi chỉnh tay (AD-08).** Phần OpenAPI không tự sinh được (đơn vị, nhóm rủi ro, căn cứ tiêu chuẩn, chủ sở hữu, giới hạn áp dụng, verdict, biên tham số) nằm trong `tools.manifest.yaml`, review như code:
 
@@ -415,9 +415,10 @@ stateDiagram-v2
  Routing --> Refused: out_of_scope
  Retrieving --> Refused: điểm dưới ngưỡng
  Retrieving --> Generating: đủ căn cứ
+ Retrieving --> AskBack: mã điều khoản không ra đúng một điều (AD-29)
  CaseLookup --> AskBack: dưới 2 tham số giải được
  CaseLookup --> Generating
- ToolLoop --> AwaitingApproval: kết quả cần duyệt
+ ToolLoop --> AwaitingApproval: tool nhóm C cần xác nhận (ngoài phạm vi v1)
  ToolLoop --> Generating: tool xong
  ToolLoop --> Degraded: quá vòng, timeout, tool lỗi 2 lần
  AwaitingApproval --> Generating
@@ -476,14 +477,17 @@ sequenceDiagram
  autonumber
  participant O as ChatOrchestrator
  participant S as AccessScopeResolver
- participant PG as PostgreSQL (pg_trgm)
+ participant PG as PostgreSQL (clause_ref)
  participant KB as Bedrock MKB
  participant R as Bedrock Rerank
  O->>S: Scope của user (cache 60 giây)
  S-->>O: public, org:42, project:7
  opt Câu hỏi có mã điều khoản
- O->>PG: similarity(clause_ref, @clauseq)
- PG-->>O: clause_path chuẩn hóa
+ O->>PG: clause_path hoặc clause_digits khớp, trong tài liệu thuộc scope
+ PG-->>O: đúng một clause_path, hoặc danh sách ứng viên
+ end
+ opt Không ra đúng một mã
+ O-->>O: AskBack kèm tối đa 5 mã gợi ý, không gọi Retrieve
  end
  O->>KB: Retrieve(query, filter = scope_key IN scopes [+ clause_path])
  KB-->>O: top 40 chunk + score + metadata (phẳng: khóa → giá trị)
@@ -501,7 +505,7 @@ sequenceDiagram
  end
 ```
 
-Hai stage vì MKB không có tương đương của trigram: MKB luôn tìm hybrid (nghĩa và từ khóa) nhưng không sửa được mã điều khoản gõ sai. PostgreSQL vẫn nằm trong đường retrieval để phân giải mã điều khoản gõ gần đúng. Bước rerank có thể do chính `Retrieve` làm (reranker sẵn, hoặc `rerankingModelType: CUSTOM` với Cohere), không nhất thiết là một lời gọi `Rerank` riêng như sơ đồ. Chi tiết ở §8.2
+Hai stage vì MKB luôn tìm hybrid (nghĩa và từ khóa) nhưng không sửa được mã điều khoản gõ sai. PostgreSQL vẫn nằm trong đường retrieval để phân giải mã theo dãy chữ số trong đúng các tài liệu được đọc; không chắc thì hỏi lại chứ không đoán (AD-29). Bước rerank có thể do chính `Retrieve` làm (reranker sẵn, hoặc `rerankingModelType: CUSTOM` với Cohere), không nhất thiết là một lời gọi `Rerank` riêng như sơ đồ. Chi tiết ở §8.2
 
 ### 6.4 Tool loop (F2, F5)
 
@@ -698,7 +702,7 @@ flowchart TB
  ASSIST["Assistant.Api<br/>ECS Fargate (đề xuất)"]
  WORKER["Assistant.Worker"]
  FAC["Tool facade"]
- RDS[("RDS PostgreSQL<br/>case, tool_run, audit, clause_ref<br/>pg_trgm, unaccent")]
+ RDS[("RDS PostgreSQL<br/>case, tool_run, audit, clause_ref<br/>fuzzystrmatch")]
  end
  HAR["AgentCore Harness<br/>(chế độ VPC)"]
  EP["VPC endpoint:<br/>ecr.dkr, ecr.api, s3 (gateway),<br/>bedrock-runtime,<br/>bedrock-agent-runtime"]
@@ -716,7 +720,7 @@ flowchart TB
 | Region | `eu-central-1` |
 | Cơ sở dữ liệu | RDS PostgreSQL hoặc Aurora PostgreSQL; **không** Aurora DSQL |
 | Kho chunk | Bedrock Managed KB, nạp từ S3 qua managed connector (AD-17) |
-| Extension PostgreSQL | `pg_trgm`, `unaccent`. **Không cần `pgvector`** — vector store nằm ở MKB |
+| Extension PostgreSQL | `fuzzystrmatch` (AD-29). **Không cần `pgvector`** — vector store nằm ở MKB |
 | CloudTrail | Data event cho `AWS::Bedrock::KnowledgeBase` bật ngay lúc tạo KB — `Retrieve` mặc định **không** ghi |
 | Chạy container | ECS Fargate là mặc định đề xuất; topology production chưa chốt (GĐ-7) |
 | Mạng của Harness (chế độ VPC) | **Không cần NAT gateway để kéo image.** Ở chế độ VPC, Harness kéo image từ ECR riêng qua endpoint `ecr.dkr`, `ecr.api`, `s3` (gateway) và `bedrock-runtime`; thiếu endpoint thì phiên không khởi động được. Execution role cần quyền pull repo `harness-*` (V-A10 đã trả lời, xem [05](05-devops.md) mục 4C) |
@@ -750,7 +754,7 @@ erDiagram
 
  document { uuid id string standard string family_key string edition date effective_from date effective_to uuid supersedes_document_id string scope_key string status }
  chunk { uuid id uuid document_id int chunk_index string clause_path int page string s3_uri string status }
- clause_ref { uuid id uuid document_id string clause_path string raw_ref }
+ clause_ref { uuid id uuid document_id string clause_path string clause_digits string raw_ref }
  case { uuid id string org_id string tool_id string tool_version string element_type jsonb params jsonb result string verdict string dedupe_key int use_count date last_seen_at string status }
  tool_run { uuid id string tool_id string tool_version jsonb inputs jsonb outputs string units }
  audit_event { uuid id uuid message_id string kind jsonb payload }
@@ -775,7 +779,7 @@ erDiagram
 | `numberOfResults` | Đặt tường minh 40 (miền hợp lệ 1–100). Trang managed không nêu mặc định; tài liệu chung ghi **5** |
 | `overrideSearchType` | **Không tồn tại** trên managed KB. MKB luôn hybrid (V-K5 đã trả lời) |
 | Ngưỡng điểm | **Không phải tham số API.** Mã của mình so `score` của từng kết quả với ngưỡng, bắt đầu 0.5 rồi hiệu chỉnh. Số 0.7 là thang cosine của pgvector, không chuyển sang MKB được |
-| Trigram | `pg_trgm` trên `clause_ref` trong PostgreSQL, phân giải mã điều khoản trước khi gọi `Retrieve` |
+| Phân giải mã điều khoản | ClauseResolver trên `clause_ref` trong PostgreSQL, khớp đúng mã rồi khớp dãy chữ số trước khi gọi `Retrieve`; mơ hồ thì hỏi lại (AD-29) |
 | Rerank | `rerankingModelType`: `MANAGED` (mặc định, không tính thêm tiền, chỉ khi dùng embedding do AWS quản), `CUSTOM` (Cohere Rerank 3.5, truyền ngay trong `Retrieve`), hoặc `NONE`. Reranker `MANAGED` **bật sẵn** dù không có cờ nào, nên cờ tính năng chỉ chọn *reranker nào* chứ không quyết định *có rerank hay không*. Muốn tắt hẳn thì `NONE`. `score` trả về đã qua reranker nên ngưỡng 0.5 phải hiệu chỉnh trên thang đó. Top 8 |
 | Ngưỡng từ chối | Bắt đầu 0.5, hiệu chỉnh bằng golden set. Thang điểm của MKB không giống thang cosine |
 | Tiền tố chunk | `EN 1992-1-1:2004 · 6.2.2 Cắt · trang 84`, gắn vào nội dung chunk trước khi đẩy lên S3 |
@@ -837,7 +841,7 @@ Lớp 04: mô hình thấy `b = 0.3` có thể hiểu là 0,3 mét hoặc 0,3 mi
 
 Lớp 06: Main API hiện tại trả lỗi `Forbidden` **bên trong thân một phản hồi HTTP 200**. Về mặt giao thức, request đó "thành công" — mọi lớp hạ tầng phía trước (load balancer, Gateway, Cedar) chỉ nhìn mã trạng thái HTTP, không mở thân phản hồi ra đọc. Không bắt ở lớp 06 thì lỗi quyền trôi thẳng vào `toolResult`, và mô hình diễn giải nó như dữ liệu hợp lệ.
 
-ToolGate nằm ở facade C#, không nằm trong Harness: Harness không có hook.
+ToolGate nằm ở facade C#, không nằm trong lifecycle hook của Harness. Harness có hook `before_tool_call` gửi tên tool và tham số tới một Lambda để trả allow hoặc deny, nhưng đó không phải chỗ đặt ToolGate. Context của hook không mang danh tính người dùng nên không kiểm được lớp 02; lớp 06 cần thân phản hồi của Main API, thứ chỉ facade cầm; và deny chỉ làm Harness bỏ qua lời gọi, trong khi facade trả lỗi có nội dung để mô hình sửa tham số rồi gọi lại. Mỗi lời gọi tool còn phải thêm một chặng Lambda. Vì vậy v1 không dùng hook; chỉ xem lại khi có tool không đi qua facade.
 
 ### 8.6 Post-validation
 
@@ -915,7 +919,7 @@ Nội dung của `search_documents` và `find_similar_cases` đi qua `ApplyGuard
 - Không phải nguồn số hợp lệ: `NumberValidator` không chấp nhận một con số chỉ có trong tóm tắt. Muốn dùng lại số của lượt cũ thì phải trỏ về `tool_run` của lượt đó.
 - Không phải nguồn tham số case: thứ tự ưu tiên `tool_run` > `pageContext` > `case_hints` (AD-16) không có chỗ cho tóm tắt.
 
-Nhờ vậy, người dùng nói sai một điều ("dự án dùng thép loại X") thì điều sai đó chỉ ảnh hưởng hội thoại hiện tại, không vào bộ nhớ dài hạn. Bộ nhớ dài hạn duy nhất của hệ thống là kho case, và kho đó chỉ nhận dữ liệu từ `tool_run` qua thao tác Duyệt có danh tính.
+Nhờ vậy, người dùng nói sai một điều ("dự án dùng thép loại X") thì điều sai đó chỉ ảnh hưởng hội thoại hiện tại, không vào bộ nhớ dài hạn. Bộ nhớ dài hạn duy nhất của hệ thống là kho case, và kho đó chỉ nhận dữ liệu từ `tool_run` khi engine kết luận đạt (AD-28).
 
 ### 8.11 Chạy lại an toàn (AD-27)
 
@@ -1039,11 +1043,11 @@ Frontend chỉ biết 11 sự kiện ở [02](02-hop-dong.md) §4. Harness phát
 | AD-10 | Guardrails ép bằng IAM condition key | Chỉ dặn trong prompt | Hai role tách riêng. **Xác nhận (fetch 21/09/2026, đọc trực tiếp bằng trình duyệt):** `bedrock:GuardrailIdentifier` áp dụng cho `Converse`, `ConverseStream`, `InvokeModel`, `InvokeModelWithResponseStream` — đúng bốn API dự án dùng. Cơ chế chuẩn của AWS là cặp Allow + Deny tường minh (`StringNotEquals`), không phải một điều kiện Allow đơn. Hai giới hạn quan trọng: (1) role đã gắn điều kiện này **không được** dùng thêm để gọi API đa bước nội bộ như `RetrieveAndGenerate`, `InvokeAgent`, `InvokeInlineAgent` — các API đó tự gọi `InvokeModel` nhiều lần bên trong, có lần không kèm guardrail, gây `AccessDenied` dù request gốc có guardrail (dự án này không gọi các API đó nên chưa bị, nhưng phải nhớ khi mở rộng); (2) guardrail input tag có thể bị lách ở phía prompt, nhưng **guardrail luôn áp cho response** bất kể input có bị lách hay không |
 | AD-11 | Job nền bằng bảng PostgreSQL `FOR UPDATE SKIP LOCKED` | RabbitMQ / Kafka / SQS | Không có retry và DLQ sẵn của broker |
 | AD-12 | Logical database `assistant` riêng; không dùng Aurora DSQL | Dùng chung schema với VFSoftware | Instance vật lý riêng nay là tùy chọn: lý do cũ là tải của chỉ mục HNSW, mà vector store đã sang MKB. **Xác nhận đúng hướng, lý do mạnh hơn (fetch 21/09/2026):** Aurora DSQL không hỗ trợ PL/pgSQL (chỉ SQL function), **một transaction chỉ sửa được tối đa 3 000 dòng** bất kể có bao nhiêu index phụ, DDL và DML phải tách thành hai transaction riêng, mỗi cluster chỉ có đúng một database tên `postgres`, và dùng optimistic concurrency control (xung đột trả lỗi serialization, phải tự viết retry thay vì chờ lock). Bất kỳ lý do nào ở trên cũng đủ loại Aurora DSQL khỏi vai trò lưu `message`/`tool_run`/`case` của dự án này, không chỉ vì HNSW |
-| AD-13 | Tool loop là AgentCore Harness | Vòng lặp C# thuần | Không có hook nên ToolGate ra facade; phải dịch stream sang SSE; ba hạ tầng AWS mới cùng lúc |
+| AD-13 | Tool loop là AgentCore Harness | Vòng lặp C# thuần | ToolGate đặt ở facade vì hook của Harness không mang danh tính người dùng và không thấy phản hồi Main API (§8.5); phải dịch stream sang SSE; ba hạ tầng AWS mới cùng lúc |
 | AD-14 | Vùng chạy `eu-central-1` | APAC; hai vùng | Kỹ sư tại Việt Nam cộng 250–320 ms; nghĩa vụ hồ sơ theo luật Việt Nam (Luật 91/2025/QH15 + Nghị định 356 — xem [10](10-rui-ro.md) Q1); **cần luật sư xác nhận phạm vi áp dụng** |
 | AD-15 | Bỏ luật nhanh khỏi đường routing chính; mọi lượt qua IntentRouter | Giữ luật nhanh ở đường chính | Mọi lượt cộng 300–500 ms; router thành điểm chết đơn (R44) |
 | AD-16 | IntentRouter bóc luôn `case_hints`; ưu tiên `tool_run` > `pageContext` > `case_hints` | Lọc case thuần bằng vector; bắt nhập qua form | Bóc sai thì kỹ sư nhận tiền lệ sai (R45); `MaxTokens` router lên 300–400 |
-| AD-17 | **Retrieval tài liệu chạy trên Bedrock Managed Knowledge Base.** Worker parse, chunking theo điều khoản, giữ tiêu đề cột, rồi ghi một object S3 cho mỗi chunk kèm metadata sidecar. Lọc quyền là `filter` trên `scope_key` và `status`. `pg_trgm` phân giải mã điều khoản trước khi gọi `Retrieve` | Tự xây hybrid trên PostgreSQL + pgvector với RRF; Customer-managed KB; `AgenticRetrieveStream` | Biên phân quyền là tham số API chứ không phải mệnh đề SQL (R46); không tự chủ được RRF và tham số HNSW; embedding không đổi được sau khi tạo KB; Worker **không** biến mất |
+| AD-17 | **Retrieval tài liệu chạy trên Bedrock Managed Knowledge Base.** Worker parse, chunking theo điều khoản, giữ tiêu đề cột, rồi ghi một object S3 cho mỗi chunk kèm metadata sidecar. Lọc quyền là `filter` trên `scope_key` và `status`. ClauseResolver phân giải mã điều khoản trước khi gọi `Retrieve` (AD-29) | Tự xây hybrid trên PostgreSQL + pgvector với RRF; Customer-managed KB; `AgenticRetrieveStream` | Biên phân quyền là tham số API chứ không phải mệnh đề SQL (R46); không tự chủ được RRF và tham số HNSW; embedding không đổi được sau khi tạo KB; Worker **không** biến mất |
 | AD-18 | Bedrock Evaluation chạy song song golden set trong CI | Chỉ golden set tự chấm | Thêm một nguồn chấm phải hiểu và đối chiếu. **Xác nhận (fetch 21/09/2026, đọc trực tiếp bằng trình duyệt, URL đúng là `evaluation.html` không phải `model-evaluation.html`):** dịch vụ có tên chính thức "Amazon Bedrock evaluations", hỗ trợ đúng ba dạng dự án cần — "Model evaluation jobs that use a judge model" (chấm bằng LLM thứ hai), đánh giá tự động theo dataset tùy biến hoặc built-in, và "RAG evaluations that use LLMs" (chấm knowledge base theo ground truth). Nâng từ "Proposed" lên đã xác nhận tồn tại đúng như mô tả |
 | AD-19 | Prompt router và prompt trả lời giữ trong Bedrock Prompt Management | Prompt hằng trong mã C# | Thêm một nơi phải kiểm soát phiên bản. **Xác nhận (fetch 21/09/2026):** Prompt Management cho tạo, lưu version, và dùng lại prompt lúc gọi inference hoặc qua Bedrock Flows — khớp mô tả AD-19 |
 | AD-20 | Ingestion điều phối bằng Step Functions; kích hoạt qua **S3 → EventBridge → Step Functions** (S3 Event Notification không gọi trực tiếp Step Functions) | Bảng hàng đợi PostgreSQL cho nhánh ingestion | Thêm hai hạ tầng (Step Functions + EventBridge) vào phạm vi (R39). Đường S3 → EventBridge → Step Functions **đã xác minh 22/09/2026** (https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html + https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html — xem [00](00-thuat-ngu-va-nguon.md)) |
@@ -1056,6 +1060,7 @@ Frontend chỉ biết 11 sự kiện ở [02](02-hop-dong.md) §4. Harness phát
 | AD-26 | **Phiên bản tài liệu theo ngày hiệu lực.** `document` thêm `family_key`, `effective_from`, `effective_to`, `supersedes_document_id`; sidecar mang ngày dạng `NUMBER`; hai chế độ retrieval hiện hành và theo dự án; chuyển ấn bản bằng một ingestion job; `ScopedKnowledgeBaseClient` loại trùng ấn bản cùng `active` | Chỉ dựa vào `status`; luôn trả bản mới nhất kèm warning | Worker và kỹ sư tri thức phải điền ngày hiệu lực khi nạp. Thêm ba thuộc tính sidecar, mỗi thuộc tính là một chỗ có thể hỏng im lặng (R47) |
 | AD-27 | **Chạy lại an toàn.** Facade khử trùng theo `toolUseId`; approvals unique theo `(org_id, tool_run_id)` và `(org_id, dedupe_key)`; BFF không tự retry `/v1/chat`; tool ghi chỉ được đăng ký khi có khóa idempotency | Để retry sinh bản ghi trùng rồi gộp sau | Thêm hai unique index. Chưa biết Gateway có chuyển `toolUseId` không (V-A12) |
 | AD-28 | **Case là cấu hình JSON đã tính đạt, tự ghi, không duyệt.** Tool facade upsert case cùng transaction với `tool_run` khi `verdict = pass`; `dedupe_key` gộp cấu hình trùng và đếm `use_count`; tra bằng lọc cứng SQL + RLS rồi chấm `distance / coverage` trong C#; tie-break bằng `use_count`, `last_seen_at`. Chi tiết ở [12](12-tra-case.md) | Giữ bước Duyệt (AD-09); OpenSearch Serverless hoặc Elasticsearch k-NN; `pgvector` trên vector `summary` | Cấu hình chạy thử cũng thành case nếu đạt, chỉ bớt được bằng `use_count` và quyền rút case; không còn chữ ký "người duyệt" trên case; cần kỹ sư E khai `case_source` cho từng tool. Chưa có nguồn case từ các phép tính kỹ sư tự làm trong ứng dụng (R35) |
+| AD-29 | **Phân giải mã điều khoản theo dãy chữ số, trong phạm vi, mơ hồ thì hỏi lại.** ClauseResolver chỉ tra `clause_ref` của tài liệu thuộc scope và ấn bản của lượt; khớp đúng `clause_path`, không có thì khớp `clause_digits`; ra đúng một mã mới đưa vào filter, còn lại chuyển `AskBack` kèm tối đa 5 mã gợi ý (`levenshtein` trên tập đã lọc) | `pg_trgm` với ngưỡng `similarity()`; bỏ filter mã khi tìm không ra | Thêm một nhánh hỏi lại ở đường tài liệu. Đo trên PostgreSQL 16 (22/09/2026): `pg_trgm` bỏ dấu chấm nên `6.22` giống 0,5 với cả `6.2.2`, `6.2`, `2.6`, `2.2.6` — không ngưỡng nào tách được |
 
 **Ràng buộc kèm theo AD-15:** `pageContext` phải mang `hasResult`, `resultKind`, `calcAt`.
 
@@ -1080,6 +1085,7 @@ Mục tiêu chất lượng nằm ở §1.2. Mục này là các kịch bản ch
 | Tool lỗi hai lần | Engine trả lỗi | Trạng thái `Degraded`, không lặp tiếp |
 | Số không truy được nguồn | `NumberValidator` trượt | `warning`, `CompletedUnverified`, giữ chữ đã hiện |
 | Tham số case thiếu | Dưới 2 key giải được | Hỏi lại, không trả 5 case yếu |
+| Mã điều khoản mơ hồ | ClauseResolver ra 0 hoặc từ 2 mã trở lên | Hỏi lại kèm tối đa 5 mã gợi ý, không gọi `Retrieve` (AD-29) |
 | Gọi `Retrieve` thiếu filter | Đường mã mới bỏ qua `ScopedKnowledgeBaseClient` | Architecture test trong CI **chặn build**, không để chạy tới production (R46) |
 | Lọc trên thuộc tính không có trong sidecar | Sai dữ liệu nạp | Có thể trả rỗng mà không báo lỗi (chưa kiểm chứng cho MKB). Bắt bằng V-K4 và test tích hợp đa organization (R47) |
 | Nội dung tool có chỉ dẫn độc hại | Guardrail chặn | Trả lỗi mô tả thay cho nội dung |
@@ -1114,7 +1120,7 @@ Mục tiêu chất lượng nằm ở §1.2. Mục này là các kịch bản ch
 | V-K2 | MKB có GA ở `eu-central-1` — **có câu trả lời**: tài liệu AWS liệt kê `eu-central-1` trong danh sách region của managed KB | Xong |
 | V-K3 | AWS SDK for .NET có `MANAGED` và `MANAGED_KNOWLEDGE_BASE_CONNECTOR`, và gửi được `retrievalConfiguration.managedSearchConfiguration` | **Chặn** |
 | V-K4 | Managed S3 connector đọc được sidecar có kiểu, và `managedSearchConfiguration.filter` lọc đúng theo `scope_key`, và toán tử số lọc đúng trên `effective_from`, `effective_to` (AD-26). Kiểm thêm ba điều chưa có trong tài liệu: lọc trên thuộc tính không có trong sidecar thì rỗng hay lỗi; `startsWith` / `stringContains` thì lỗi hay bị bỏ qua; `listContains` có chạy không | **Chặn** |
-| V-K5 | `overrideSearchType: HYBRID` — **có câu trả lời**: managed KB luôn hybrid, `ManagedSearchConfiguration` không có `overrideSearchType`, semantic-only không khả dụng. `pg_trgm` stage 1 giữ lại để chuẩn hóa mã điều khoản gõ gần đúng, không phải làm phương án dự phòng | Xong |
+| V-K5 | `overrideSearchType: HYBRID` — **có câu trả lời**: managed KB luôn hybrid, `ManagedSearchConfiguration` không có `overrideSearchType`, semantic-only không khả dụng. Stage 1 (ClauseResolver, AD-29) giữ lại để chuẩn hóa mã điều khoản gõ gần đúng, không phải làm phương án dự phòng | Xong |
 | V-K6 | Reranker quản lý sẵn của MKB có đủ tốt so với Cohere Rerank 3.5 không. Reranker sẵn **không tính thêm tiền** nhưng **chỉ dùng được khi embedding do AWS quản**; chọn embedding riêng (AD-06 nhánh B) thì mất nó | **Chặn** |
 
 | V-A11 | Hủy việc đọc stream `InvokeHarness` có dừng tool loop ở phía AWS không. Nếu không, có API nào dừng một phiên đang chạy không (skill `amazon-bedrock` không nêu API nào như vậy) | Không chặn. Chỉ ảnh hưởng chi phí, và đã có trần `maxIterations`, `timeoutSeconds` |
@@ -1137,7 +1143,7 @@ V-A1 hoặc V-A6 trượt thì rơi về tool loop C# ngay.
 | R12 | Prompt injection từ chunk tài liệu bên thứ ba | V | C |
 | R26 | Kho case chứa cấu hình chạy thử hoặc tính theo phiên bản engine cũ (AD-28) | C | V |
 | R23 | Haiku 4.5 đã công bố mốc EOL | C | V |
-| R27 | Harness không có hook nên ToolGate phải ra facade | C | C |
+| R27 | ToolGate bị dời vào lifecycle hook của Harness, mất danh tính người dùng và phản hồi Main API | C | C |
 | R29 | Có thể phải tự viết bộ đọc event stream cho Bearer JWT | V | C |
 | R30 | `GuardrailVersion` thiếu thì guardrail không chạy và không báo lỗi | V | C |
 | R32 | Token exchange trên Keycloak chưa có | C | C |
@@ -1190,7 +1196,7 @@ X = xác suất, T = tác động. T/V/C = thấp/vừa/cao. Bảng đầy đủ
 | `case_hints` | Khối tham số số học do IntentRouter bóc từ câu hỏi (AD-16) |
 | `dedupe_key` | `hash(tool_id, tool_version, input đã chuẩn hóa)` |
 | ToolGate | Sáu lớp kiểm chạy trong facade C# trước khi gọi engine |
-| Harness | Vòng lặp agent quản lý sẵn của AgentCore; không hỗ trợ hook |
+| Harness | Vòng lặp agent quản lý sẵn của AgentCore; có lifecycle hook gọi Lambda để allow/deny |
 | Gateway | Thành phần AgentCore phơi REST thành tool MCP, kèm Cedar Policy |
 | Cedar | Ngôn ngữ chính sách phân quyền của AWS, chạy ở Gateway |
 | Facade | Service C# đứng giữa Gateway và Main API, giữ ToolGate |

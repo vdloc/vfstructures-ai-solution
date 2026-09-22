@@ -1,6 +1,6 @@
 # 07 · Xác thực, phân quyền và bảo mật
 
-> **Đã cập nhật trong `ship/`.** File này ghi thiết kế phân quyền trước lượt rà soát nguồn 21/09/2026 (đặc biệt phần lọc `scope_key`, ACL). Bản đã sửa: `ship/06-bao-mat.md`.
+> **Đã cập nhật trong `ship/`.** File này ghi thiết kế phân quyền trước lượt rà soát nguồn 21/09/2026 (đặc biệt phần lọc `scope_key`, ACL). Bản đã sửa: `ship/06-bao-mat.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`.
 
 Nguyên tắc: **hàng rào kiểm soát nằm ngoài mô hình**. Câu "chỉ trả lời dựa trên tài liệu được cung cấp" trong prompt là chỉ dẫn, không phải biện pháp kiểm soát. Mọi kiểm soát dưới đây chạy bằng code và cấu hình, độc lập với việc mô hình có làm theo hay không.
 

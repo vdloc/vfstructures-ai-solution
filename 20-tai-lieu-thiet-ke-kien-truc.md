@@ -1,6 +1,6 @@
 # Architecture Design Document — AI Assistant cho VF Structures
 
-> **Đã cập nhật trong `ship/`.** File này ghi thiết kế trước lượt rà soát nguồn 21/09/2026. Bản đã sửa: `ship/01-kien-truc.md`.
+> **Đã cập nhật trong `ship/`.** File này ghi thiết kế trước lượt rà soát nguồn 21/09/2026. Bản đã sửa: `ship/01-kien-truc.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`. Harness có lifecycle hook, nhưng ToolGate vẫn đặt ở facade: xem `ship/01-kien-truc.md` §8.5.
 
 **RFC-2026-001**
 

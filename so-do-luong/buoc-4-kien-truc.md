@@ -171,7 +171,7 @@ ILlmClient:   └── tóm tắt ──┘ [5] [6] [7] [8]  + [9]
 
 **Bộ nhớ ngắn hạn và dài hạn**
 - Là gì: Ngắn hạn là "đang nói chuyện gì", tức lịch sử gần. Dài hạn là "biết gì", tức kho tri thức lưu lâu.
-- Ở kiến trúc này: Bước 4 chỉ lo bộ nhớ ngắn hạn. Bộ nhớ dài hạn đi qua bước 6: Bedrock Knowledge Base cho tài liệu, bảng `case` cho trường hợp đã duyệt.
+- Ở kiến trúc này: Bước 4 chỉ lo bộ nhớ ngắn hạn. Bộ nhớ dài hạn đi qua bước 6: Bedrock Knowledge Base cho tài liệu, bảng `case` cho trường hợp đã tính đạt.
 - Vì sao: Dùng lịch sử làm kho tri thức thì phải giữ lịch sử rất dài, quay lại đúng vấn đề context rot.
 - Nguồn: *AI Agents in Action* ch8 · *AI Agents on AWS* ch3
 

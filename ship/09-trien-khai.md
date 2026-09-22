@@ -109,7 +109,7 @@ flowchart TB
 | BFF (Next.js) | Route handler trả `ReadableStream`, không `await` toàn bộ body; tắt nén cho đường này |
 | Health check | Tách `/health/live` (tiến trình sống) và `/health/ready` (kết nối PostgreSQL, cấu hình Bedrock nạp được); **không** gọi Bedrock trong health check |
 
-**Cấu hình cho PostgreSQL assistant (AD-12, GĐ-5):** extension `unaccent` và `pg_trgm`, chỉ mục GIN trigram trên `clause_ref.clause_path`. Instance riêng hay dùng chung là quyết định vận hành theo Q4 — kho vector nằm ở MKB nên không còn yêu cầu bộ nhớ cho chỉ mục vector. Sao lưu, mã hóa lưu trữ bằng KMS.
+**Cấu hình cho PostgreSQL assistant (AD-12, GĐ-5):** extension `fuzzystrmatch`, chỉ mục btree trên `clause_ref (document_id, clause_path)` và `clause_ref (document_id, clause_digits)` (AD-29). Instance riêng hay dùng chung là quyết định vận hành theo Q4 — kho vector nằm ở MKB nên không còn yêu cầu bộ nhớ cho chỉ mục vector. Sao lưu, mã hóa lưu trữ bằng KMS.
 
 ---
 
@@ -272,7 +272,7 @@ Trước khi phát hành beta ra ngoài đội, mỗi mục phải có bằng ch
 ## 8. Bổ sung: cơ sở dữ liệu, tác vụ định kỳ, sẵn sàng
 
 - **Vai trò cơ sở dữ liệu tách nhau:** vai trò migration (có quyền tạo bảng, chỉ mục và **`CREATE EXTENSION`**) khác vai trò runtime của Assistant (chỉ đọc/ghi bảng của schema `assistant`, không có quyền tạo extension hay superuser). Tương tự thói quen tắt `enable_load_extension` sau khi nạp extension: bề mặt tấn công qua extension không được để mở ở tài khoản ứng dụng.
-- **Kiểm tra sẵn sàng (`/health/ready`)** gồm: kết nối PostgreSQL, extension `unaccent` và `pg_trgm` có mặt. **Không kiểm cấu hình full-text-search theo ngôn ngữ** — không còn extension đó trong thiết kế này (xem [05](05-devops.md) mục 4A-bis). Kiểm tra khi khởi động thay vì phát hiện lúc có người hỏi. Phần tìm kiếm hybrid nay do MKB làm, không còn truy vấn UNION trong PostgreSQL; PostgreSQL chỉ còn giữ stage 1 (`pg_trgm` trên `clause_ref`).
+- **Kiểm tra sẵn sàng (`/health/ready`)** gồm: kết nối PostgreSQL, extension `fuzzystrmatch` có mặt. **Không kiểm cấu hình full-text-search theo ngôn ngữ** — không còn extension đó trong thiết kế này (xem [05](05-devops.md) mục 4A-bis). Kiểm tra khi khởi động thay vì phát hiện lúc có người hỏi. Phần tìm kiếm hybrid nay do MKB làm, không còn truy vấn UNION trong PostgreSQL; PostgreSQL chỉ còn giữ stage 1 (ClauseResolver trên `clause_ref`, AD-29).
 - **Kết nối:** `NpgsqlDataSource` singleton, giới hạn số kết nối; nếu nhiều instance, cân nhắc bộ gom kết nối (RDS Proxy hoặc PgBouncer) để không chạm giới hạn kết nối của PostgreSQL.
 - **Tác vụ định kỳ** (dọn retention, tổng hợp eval, tổng hợp chi phí): chạy như tác vụ chạy-một-lần theo lịch (ví dụ ECS scheduled task với `RunTask`) hoặc `BackgroundService` trong Worker, không gắn vào tiến trình phục vụ người dùng.
 - **Job ingestion lỗi** không biến mất: trạng thái `Failed` kèm lỗi là hàng đợi thư chết (dead-letter) tương đương; có cảnh báo và quy trình sửa rồi đưa lại `Queued`.

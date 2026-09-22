@@ -124,7 +124,7 @@ Giải thích kỹ ở Phần 3: **mình không tự dựng và không tự vậ
 
 ### PostgreSQL
 
-Cơ sở dữ liệu quan hệ thông thường. Nó giữ những thứ có cấu trúc rõ ràng: nội dung hội thoại, bản ghi mỗi lần chạy engine tính toán, kho kinh nghiệm đã được duyệt, nhật ký kiểm toán, và một bảng nhỏ để tra mã điều khoản.
+Cơ sở dữ liệu quan hệ thông thường. Nó giữ những thứ có cấu trúc rõ ràng: nội dung hội thoại, bản ghi mỗi lần chạy engine tính toán, kho kinh nghiệm engine đã tính đạt, nhật ký kiểm toán, và một bảng nhỏ để tra mã điều khoản.
 
 Nó **không** giữ phần tìm kiếm ngữ nghĩa — phần đó ở MKB.
 
@@ -393,8 +393,9 @@ Khi có câu hỏi thật, đường tìm kiếm chạy như sau:
 
 ```
 Stage 1 ── Câu hỏi có mã điều khoản không?  (regex)
-           có → pg_trgm trên bảng clause_ref
+           có → tra bảng clause_ref trong tài liệu được đọc
                 phân giải "6.22" thành "6.2.2"
+                không ra đúng một điều → hỏi lại kèm gợi ý
 
 Stage 2 ── Retrieve của Managed Knowledge Base
              retrievalConfiguration.managedSearchConfiguration:
@@ -414,7 +415,7 @@ Stage 5 ── Lấy thêm chunk liền kề (trước và sau, cùng tài liệ
 Stage 6 ── Gửi tất cả cho Claude Sonnet, chữ bắt đầu chảy ra
 ```
 
-**Vì sao có stage 1?** Tìm bằng vector rất giỏi so nghĩa, nhưng **rất dở tra số hiệu chính xác**. Người dùng gõ `6.22` mà ý là `6.2.2` thì cả tìm theo nghĩa lẫn tìm theo từ khóa đều trượt. Nên PostgreSQL giữ một bảng nhỏ tên `clause_ref`, dùng `pg_trgm` — một tiện ích so chuỗi theo mức giống nhau, hoạt động giống tính năng gợi ý khi gõ sai chính tả. Nó phân giải mã gõ gần đúng thành mã chuẩn, rồi đưa vào bộ lọc.
+**Vì sao có stage 1?** Tìm bằng vector rất giỏi so nghĩa, nhưng **rất dở tra số hiệu chính xác**. Người dùng gõ `6.22` mà ý là `6.2.2` thì cả tìm theo nghĩa lẫn tìm theo từ khóa đều trượt. Nên PostgreSQL giữ một bảng nhỏ tên `clause_ref` chứa mọi mã chuẩn. Hệ thống so mã người dùng gõ với bảng này theo dãy chữ số, bỏ qua dấu chấm, nên `6.22` vẫn ra `6.2.2`. Ra đúng một điều thì đưa vào bộ lọc; ra nhiều điều hoặc không ra điều nào thì hỏi lại người dùng kèm vài mã gợi ý, giống cách trình soát chính tả gợi ý chữ sửa.
 
 Nên **PostgreSQL vẫn nằm trong đường tìm kiếm**, dù vector store đã chuyển sang AWS.
 
@@ -573,7 +574,6 @@ Received ─┬─→ Rejected              chặn ở cổng: quá nhanh / th�
                        │               └─→ Generating
                        │
                        ├─→ ToolLoop ───┬─→ Degraded    quá vòng / tool lỗi hai lần
-                       │               ├─→ AwaitingApproval ─→ Generating
                        │               └─→ Generating
                        │
                        ├─→ CaseLookup ─┬─→ AskBack     chưa đủ 2 tham số

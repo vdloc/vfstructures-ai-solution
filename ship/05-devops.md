@@ -455,15 +455,15 @@ Tạo KB và tạo data source đều **bất đồng bộ**: poll `get-knowledg
 
 ### 4A-bis · PostgreSQL
 
-PostgreSQL vẫn cần, với hai vai trò: giữ `document`, `case`, `tool_run`, `message`, `audit_event`; và chạy `pg_trgm` trên bảng `clause_ref` để phân giải mã điều khoản ở stage 1 của retrieval.
+PostgreSQL vẫn cần, với hai vai trò: giữ `document`, `case`, `tool_run`, `message`, `audit_event`; và tra bảng `clause_ref` để phân giải mã điều khoản ở stage 1 của retrieval (AD-29).
 
 **Không còn cần `pgvector`.** Kho vector nằm ở MKB, nên ràng buộc RDS PostgreSQL 15.18+/16.6+/17.3+ (sinh ra chỉ vì `pgvector` ≥ 0.8.0) không còn. Cũng vì vậy, **instance vật lý riêng cho assistant nay là tùy chọn** chứ không bắt buộc (AD-12): lý do cũ là tải bộ nhớ khi build chỉ mục HNSW.
 
 | Mục | Giá trị | Vì sao |
 | --- | --- | --- |
-| Phiên bản PostgreSQL | Không ràng buộc | `pg_trgm` 1.6 và `unaccent` 1.1 có ở mọi phiên bản RDS |
-| Extension | `pg_trgm`, `unaccent` | `pg_trgm` cho `similarity()` trên `clause_ref.clause_path`; `unaccent()` chuẩn hóa mã điều khoản gõ có dấu trước khi so |
-| Chỉ mục | GIN trigram trên `clause_ref.clause_path` | Stage 1 của retrieval theo mã điều khoản |
+| Phiên bản PostgreSQL | Không ràng buộc | `fuzzystrmatch` 1.2 có ở RDS for PostgreSQL 16 và 17 |
+| Extension | `fuzzystrmatch` | `levenshtein()` để gợi ý mã điều khoản gần đúng khi hỏi lại người dùng. Không dùng `pg_trgm`: nó bỏ dấu chấm nên không phân biệt được `6.2.2` với `6.2` hay `2.6` (AD-29) |
+| Chỉ mục | Btree trên `clause_ref (document_id, clause_path)` và `(document_id, clause_digits)` | Stage 1 khớp đúng mã hoặc đúng dãy số trong tài liệu thuộc phạm vi |
 
 **Không có cấu hình full-text-search (`fr_unaccent`/`english`) trong PostgreSQL.** Một TEXT SEARCH CONFIGURATION theo ngôn ngữ chỉ cần thiết khi toàn bộ nội dung chunk nằm trong PostgreSQL và được tìm bằng `to_tsvector`/`to_tsquery`. Từ AD-17, nội dung chunk không còn trong PostgreSQL, và tìm kiếm hybrid (ngữ nghĩa + từ khóa) trên nội dung đó do MKB tự làm bên trong `Retrieve`, không lộ ra tham số cấu hình theo ngôn ngữ nào. `clause_ref.clause_path` chỉ là mã số (`6.2.2`), so bằng `similarity()` chứ không phải FTS theo ngôn ngữ, nên không cần TEXT SEARCH CONFIGURATION nào ở đây.
 

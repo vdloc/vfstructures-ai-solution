@@ -1,6 +1,6 @@
 # Bước 6 — Gom nguyên liệu
 
-Đi lấy nguyên liệu để trả lời: đoạn tài liệu, kết quả tính của engine, hoặc case đã duyệt. Nhãn ở bước 5 quyết định đi nhánh nào.
+Đi lấy nguyên liệu để trả lời: đoạn tài liệu, kết quả tính của engine, hoặc case đã tính đạt. Nhãn ở bước 5 quyết định đi nhánh nào.
 
 Nguồn: `/home/vdloc/Downloads/vfstructures-ai-assistant (1)/vfstructures-ai-assistant/vfstructures-ai-solution/`
 
@@ -14,7 +14,9 @@ Assistant.Api · ChatOrchestrator
 6a.1 PHÂN GIẢI MÃ ĐIỀU KHOẢN                    Assistant.Api · ClauseResolver
 │  Làm gì:     Tra đúng điều khoản khi câu hỏi có mã, kể cả gõ nhầm
 │  Làm thế nào: Regex bóc mã "6.22", "EN 1992-1-1"
-│              pg_trgm trên bảng clause_ref → clause_path chuẩn "6.2.2"
+│              clause_ref trong tài liệu thuộc phạm vi: khớp đúng mã,
+│              không có thì khớp dãy chữ số → clause_path chuẩn "6.2.2"
+│              ⏸ không ra đúng một mã → hỏi lại kèm tối đa 5 mã gợi ý
 │              Không có mã → bỏ qua bước này
 ▼
 6a.2 TÌM RỘNG                                   ScopedKnowledgeBaseClient → Bedrock MKB
@@ -71,16 +73,17 @@ Assistant.Api · ChatOrchestrator
 │  Làm gì:     Không để lỗi ẩn lọt vào câu trả lời
 │  Làm thế nào: L6: đọc ApiResult.Code — Forbidden có thể nằm trong HTTP 200
 │              search_documents, find_similar_cases: ApplyGuardrail trên nội dung
-│              Ghi tool_run, trả nguyên JSON, không tóm tắt
+│              Ghi tool_run theo toolUseId: gọi lại thì trả kết quả cũ, không tính lại
+│              verdict pass → ghi case cùng transaction với tool_run (AD-28)
+│              Trả nguyên JSON, không tóm tắt
 ▼
 6b.6 VÒNG LẶP                                   AgentCore Harness ⇄ Sonnet 5
    Cần tính thêm → quay lại 6b.1
    Đủ rồi → Sonnet viết câu trả lời luôn, bước 7 gộp vào đây
-   ⏸ kết quả tool nhóm B có thể vào case → approval_required
    ✗ quá vòng, quá giờ, hoặc cùng tool lỗi 2 lần → Degraded
 ```
 
-## 6c · Tra case đã duyệt — case_lookup
+## 6c · Tra case đã tính đạt — case_lookup
 
 ```
 Assistant.Api · ChatOrchestrator
@@ -93,8 +96,8 @@ Assistant.Api · ChatOrchestrator
 │              ⏸ dưới 2 key → hỏi lại người dùng
 ▼
 6c.2 LỌC CỨNG                                   PostgreSQL · bảng case, RLS
-│  Làm gì:     Chỉ giữ case đúng công ty, đã duyệt, đúng loại
-│  Làm thế nào: org_id, status = Approved, tool_id / element_type khớp
+│  Làm gì:     Chỉ giữ case đúng công ty, còn hiệu lực, đúng loại
+│  Làm thế nào: org_id, status = active, verdict = pass, tool_id / element_type khớp
 │              Tối đa 200 ứng viên
 ▼
 6c.3 CHẤM ĐIỂM                                  Assistant.Api · CaseSimilarityScorer
@@ -108,12 +111,12 @@ Kết quả: 5 case → bước 7, nhãn "Kinh nghiệm nội bộ, không phả
 
 ## Từ khóa
 
-**ClauseResolver và pg_trgm**
-<!-- alias: ClauseResolver, pg_trgm -->
-- Là gì: `pg_trgm` là extension của PostgreSQL so khớp chuỗi theo cụm 3 ký tự, nên tìm được cả chuỗi gõ gần đúng. `ClauseResolver` dùng nó để đổi mã điều khoản người dùng gõ thành `clause_path` chuẩn.
-- Ở kiến trúc này: Chạy trên một bảng nhỏ `clause_ref` trong PostgreSQL, trước khi gọi Bedrock MKB.
+**ClauseResolver**
+<!-- alias: ClauseResolver -->
+- Là gì: Thành phần đổi mã điều khoản người dùng gõ thành `clause_path` chuẩn, bằng cách so dãy chữ số của mã với bảng `clause_ref` (AD-29).
+- Ở kiến trúc này: Chỉ tra trong tài liệu thuộc scope và ấn bản của lượt, trước khi gọi Bedrock MKB. Ra đúng một mã mới đưa vào filter; còn lại hỏi lại kèm gợi ý. Không dùng `pg_trgm`, vì nó bỏ dấu chấm nên `6.2.2`, `6.2` và `2.6` giống hệt nhau.
 - Vì sao: MKB tìm theo nghĩa, không sửa được mã gõ sai. "6.2.2" gõ thành "6.22" thì cả vector search lẫn keyword search đều trượt.
-- Nguồn: `03-rag.md` §2 · `19-dac-ta-kien-truc.md` §5.3
+- Nguồn: `ship/03-backend.md` §4A · `ship/00-thuat-ngu-va-nguon.md` Phần F
 
 **Bedrock MKB (Managed Knowledge Base)**
 <!-- alias: Bedrock MKB -->
@@ -168,8 +171,8 @@ Kết quả: 5 case → bước 7, nhãn "Kinh nghiệm nội bộ, không phả
 <!-- alias: AgentCore Harness, InvokeHarness -->
 - Là gì: Dịch vụ AWS quản lý sẵn vòng lặp "mô hình đề xuất gọi tool → hệ thống gọi thật → trả kết quả → mô hình xem tiếp".
 - Ở kiến trúc này: Đường chính của POC (AD-13). Mặc định của Harness là 75 vòng, 3 600 giây và model route toàn cầu, nên phải đặt tường minh model `eu.*`, số vòng, thời gian.
-- Vì sao: Không phải tự viết vòng lặp. Cái giá: Harness không có hook, nên mọi bước kiểm tham số phải dời ra tool facade. Vòng lặp C# tự viết là phương án dự phòng.
-- Nguồn: `04-tool-calling.md` §6, §8
+- Vì sao: Không phải tự viết vòng lặp. Harness có lifecycle hook `before_tool_call`, nhưng hook không mang danh tính người dùng và không thấy phản hồi của Main API, nên mọi bước kiểm tham số đặt ở tool facade. Vòng lặp C# tự viết là phương án dự phòng.
+- Nguồn: `ship/01-kien-truc.md` §8.5 · `04-tool-calling.md` §6, §8
 
 **AgentCore Gateway và Cedar**
 <!-- alias: AgentCore Gateway, Cedar -->
@@ -215,10 +218,10 @@ Kết quả: 5 case → bước 7, nhãn "Kinh nghiệm nội bộ, không phả
 
 **approval_required**
 <!-- alias: approval_required -->
-- Là gì: Event gửi về giao diện để kỹ sư bấm Duyệt hoặc Bỏ qua một kết quả tính.
-- Ở kiến trúc này: Chỉ cho tool nhóm B (tính toán). Kỹ sư duyệt thì kết quả thành một case trong kho kinh nghiệm.
-- Vì sao: Case chỉ sinh từ thao tác duyệt của kỹ sư trên một `tool_run` có thật. Đây là cách chặn đầu độc kho case.
-- Nguồn: `ship/02-hop-dong.md` §4 · `05-case-memory.md`
+- Là gì: Event trong hợp đồng SSE để kỹ sư bấm Duyệt hoặc Bỏ qua một thao tác.
+- Ở kiến trúc này: Không phát cho case (AD-28). Event giữ trong hợp đồng cho tool nhóm C, chưa có trong v1.
+- Vì sao: Case tự ghi khi engine kết luận đạt. Bước duyệt thêm một cú bấm mà không thêm thông tin nào engine chưa kiểm, và làm kho case rỗng nếu kỹ sư không có thói quen bấm.
+- Nguồn: `ship/02-hop-dong.md` §4 · `ship/12-tra-case.md`
 
 **RLS (Row-Level Security)**
 <!-- alias: RLS -->
@@ -237,5 +240,5 @@ Kết quả: 5 case → bước 7, nhãn "Kinh nghiệm nội bộ, không phả
 ## Chưa rõ trong tài liệu
 
 - `03-rag.md` khẳng định `startsWith` bị bỏ qua im lặng trên MKB. `ship/00-thuat-ngu-va-nguon.md` ghi cùng điểm đó là chưa kiểm chứng. Kiểm ở V-K4.
-- Kho vector của MKB có nhận `HYBRID` search không vẫn chưa rõ (V-K5). Không nhận thì `pg_trgm` ở 6a.1 chuyển từ bổ trợ thành bắt buộc.
+- Kho vector của MKB có nhận `HYBRID` search không vẫn chưa rõ (V-K5). Không nhận thì ClauseResolver ở 6a.1 chuyển từ bổ trợ thành bắt buộc.
 - Một "vòng" của Harness chưa chắc khớp một vòng tool như trong thiết kế (V-A4).

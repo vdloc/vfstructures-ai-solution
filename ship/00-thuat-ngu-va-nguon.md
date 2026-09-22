@@ -222,11 +222,13 @@ Chọn mô hình rerank riêng thì đặt `rerankingModelType: CUSTOM` kèm `re
 
 **Nguồn — đã fetch.** [Supported Regions and models for reranking](https://docs.aws.amazon.com/bedrock/latest/userguide/rerank-supported.html) · *Hands-On RAG for Production* — hybrid search và reranking.
 
-### `pg_trgm` và stage 1
+### Phân giải mã điều khoản và stage 1
 
-**Là gì.** Một extension của PostgreSQL so chuỗi theo mức giống nhau, hoạt động giống tính năng gợi ý khi gõ sai chính tả.
+**Là gì.** ClauseResolver tách mã điều khoản trong câu hỏi rồi tìm mã chuẩn trong bảng `clause_ref`, chỉ trong các tài liệu người dùng được đọc (AD-29).
 
-**Vì sao cần nó dù đã có vector.** Tìm bằng vector rất giỏi so nghĩa nhưng **rất dở tra số hiệu chính xác**. Người dùng gõ `6.22` mà ý là `6.2.2` thì cả tìm theo nghĩa lẫn tìm theo từ khóa đều trượt. Nên PostgreSQL giữ một bảng nhỏ `clause_ref`, phân giải mã gõ gần đúng thành mã chuẩn, rồi đưa vào filter.
+**Vì sao cần nó dù đã có vector.** Tìm bằng vector rất giỏi so nghĩa nhưng **rất dở tra số hiệu chính xác**. Người dùng gõ `6.22` mà ý là `6.2.2` thì cả tìm theo nghĩa lẫn tìm theo từ khóa đều trượt. Nên PostgreSQL giữ một bảng nhỏ `clause_ref`, so mã gõ với mã chuẩn theo dãy chữ số (`6.22` và `6.2.2` cùng là `622`), rồi đưa mã chuẩn vào filter. Ra nhiều mã hoặc không ra mã nào thì hỏi lại người dùng kèm gợi ý, không đoán.
+
+**Vì sao không dùng `pg_trgm`.** `pg_trgm` bỏ mọi ký tự không phải chữ hay số, nên dấu chấm trong mã điều khoản bị coi là ranh giới từ và thứ tự các số mất đi. Đo trực tiếp: `6.2.2`, `6.2` và `2.6` có cùng tập trigram, và `similarity('6.22', …)` bằng 0,5 cho cả `6.2.2`, `6.2`, `2.6`, `2.2.6`. Không ngưỡng nào tách được mã đúng khỏi mã sai.
 
 Hệ quả kiến trúc: **PostgreSQL vẫn nằm trong đường retrieval**, dù vector store đã sang AWS.
 
@@ -347,10 +349,10 @@ Bỏ dòng `Filter` đi: đoạn code vẫn **hợp lệ**, compile qua, type ch
 
 | Nguồn | Nội dung | Áp dụng |
 | --- | --- | --- |
-| *Hands-On RAG for Production* ch1 | *"Access control is a first-class RAG benefit, not an afterthought — implement it via metadata filtering at retrieval time."* | Khớp với `filter` theo `scope_key` ở AD-17 |
-| *Build AI-Enhanced Web Apps*, pattern *Namespaced Shared Vector Store* | *"one shared vector store with strict namespacing/metadata filtering (user ID + knowledge-base ID) enforced on every query and write."* Mặc định dùng kho chung; sách ghi cách ly này là **logic, không phải vật lý** — *"insufficient for strict regulatory/compliance requirements demanding physical separation"* | Khớp AD-17. Chữ **"every query and write"** là lý do R46 cần `ScopedKnowledgeBaseClient`: một lời gọi thiếu filter là hỏng |
-| *Enterprise Guide for Implementing Generative AI and Agentic AI* ch3, *Zero Trust Pattern* | *"default-deny access control, permissions granted strictly on a need basis"* | Cùng tinh thần với hướng hỏng-đóng của ACL-aware retrieval và với default-deny của PostgreSQL RLS |
-| *AI Agents on AWS* ch7 | Chính sách Cedar phải kiểm thuộc tính đã xác thực (`principal.orgId`), *"never values a prompt-injected conversation could have influenced"* | Khớp mục 8 của [06](06-bao-mat.md): `org_id` lấy từ Payment API |
+| *Hands-On RAG for Production* ch1, mục "Access controls and permissions", tr. 12 | *"With RAG, you can easily implement access controls within the retrieval step by adding permission-based metadata fields in the data store and using filtering at query time."* | Khớp với `filter` theo `scope_key` ở AD-17 |
+| *Build AI-Enhanced Web Apps* ch11, tr. 325 | Ứng dụng mẫu dùng *"a shared Upstash Vector database with strict namespacing and metadata filtering based on the knowledge base and user identifiers"*, tức cách ly **logic** qua filter ở từng truy vấn; sách ghi rõ khi cần tuân thủ chặt thì *"the customer data should be physically separated"* | Khớp AD-17. Cách ly chỉ đứng được khi **mọi** truy vấn đều mang filter, nên R46 cần `ScopedKnowledgeBaseClient`: một lời gọi thiếu filter là hỏng |
+| *Enterprise Guide for Implementing Generative AI and Agentic AI* ch3, *Zero Trust Pattern* | *"By default, it considers zero trust in any system/anyone, and permissions are given on a need basis."* | Cùng tinh thần với hướng hỏng-đóng của ACL-aware retrieval và với default-deny của PostgreSQL RLS |
+| *AI Agents on AWS* ch7 | Chính sách Cedar kiểm thuộc tính đã xác thực: *"No amount of prompt injection can bypass this. The user's `orgId` comes from the authenticated identity token, not from the conversation."* | Khớp mục 8 của [06](06-bao-mat.md): `org_id` lấy từ Payment API |
 | *Using Amazon Bedrock* ch6 | RAG giảm chứ không loại bỏ hallucination; cần kiểm soát quyền **ghi** vào vector database để chống đầu độc dữ liệu | Áp cho bucket S3 nguồn và vai `Assistant.Curate`: ai ghi được chunk hoặc sidecar là người quyết định `scope_key` |
 
 **Một hướng cấu trúc khác, theo sách: một KB riêng cho mỗi organization.** Sách dành hướng này cho yêu cầu pháp lý hoặc tuân thủ chặt. Ưu điểm: quên `filter` không còn làm rò dữ liệu chéo organization, vì mỗi KB chỉ chứa dữ liệu của một organization. Cái phải trả: quản nhiều KB, và tài liệu `public` phải nạp vào từng KB hoặc truy vấn thêm một KB chung rồi gộp kết quả. Hướng này **chưa được đánh giá** trong bộ tài liệu, chưa có số đo chi phí hay giới hạn số KB. Ghi lại để quyết khi Q1 (residency) và R46 được đưa lại lên bàn.
@@ -521,7 +523,7 @@ aws cloudtrail put-event-selectors --trail-name <trail> \
 
 **Hạn mức ngày tính theo token, không theo số lượt** — một lượt có gọi tool tốn gấp nhiều lần lượt hỏi thường.
 
-**Nguồn.** *Build AI-Enhanced Web Apps* (Theo Despoudis) — pattern *Defense-in-Depth Abuse Control*: `rate limiting (burst, sliding window) → message quota (daily cap per user, shared store, checked after rate limiting) → registration friction`, kèm nhận định *"a rate limiter alone doesn't stop determined abuse"*. Pattern *Security Middleware Pipeline*: *"cheap rejects (CORS, rate limit) should run before expensive ones (auth, LLM calls)"*.
+**Nguồn.** *Build AI-Enhanced Web Apps* (Theo Despoudis) ch9, mục 9.3.2 "Practical security control: Rate limiting", tr. 280–285: rate limiter dùng store chung (Redis) để mọi instance đếm chung, sách khuyên dùng dịch vụ phân tán *"handle requests before they reach your application servers"*, rồi mới tới message quota theo ngày cho từng user. Ngay sau đó sách cảnh báo quota chưa đủ, vì *"determined individuals may exploit disposable email services to create multiple accounts and bypass these limits"*, nên cần thêm rào ở khâu đăng ký.
 
 **Ma sát đăng ký không áp dụng** ở đây: danh tính đến từ Keycloak của khách hàng doanh nghiệp, người dùng không tự đăng ký được, nên đường lách bằng tài khoản dùng một lần không tồn tại.
 
@@ -535,7 +537,7 @@ aws cloudtrail put-event-selectors --trail-name <trail> \
 
 **Vì sao đếm theo lượt chứ không theo message.** Một lượt có gọi tool mang thêm `tool_call` và `tool_result`, nên đếm theo message làm cửa sổ co giãn theo loại lượt.
 
-**Nguồn.** *AI Agents on AWS* ch3 — xếp "nhồi toàn bộ lịch sử vào ngữ cảnh" vào nhóm anti-pattern (*"fine for a demo, wrong for production"*, gây *context rot*), và chốt rằng production dùng **hỗn hợp**: sliding window giữ mạch hội thoại, retrieval lo tri thức dài hạn, compaction lo mạch dài · *AI Agents in Action* ch8 — bộ đệm hội thoại là bộ nhớ ngắn hạn, tri thức lâu dài đi qua kho truy xuất.
+**Nguồn.** *AI Agents on AWS* ch3, mục "Context management and memory optimization" — *"If you dump 1,000 pages of data into an AI's context window, it suffers from context rot"*; sliding window giữ N message gần nhất, nhanh nhưng quên chi tiết cũ, và sách khuyên production dùng **hỗn hợp**: sliding window giữ mạch hội thoại, retrieval lo tri thức dài hạn, compaction lo mạch dài · *AI Agents in Action* ch8 — bộ đệm hội thoại là bộ nhớ ngắn hạn, tri thức lâu dài đi qua kho truy xuất.
 
 ### SSE — Server-Sent Events
 
@@ -625,6 +627,7 @@ Mỗi dòng dưới đây đã được đọc bằng `WebFetch`; câu trích tr
 | AgentCore Harness — mạng và IAM | Chế độ VPC kéo image từ **ECR riêng**, **không cần NAT gateway**; cần endpoint `ecr.dkr`, `ecr.api`, `s3` (gateway), `bedrock-runtime`; execution role cần quyền pull `harness-*`; SigV4 không mang danh tính người dùng xuống tool | https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness-security.html | 21/09/2026 |
 | `CreateHarness` API | `maxIterations`, `timeoutSeconds`, `maxTokens` đều `Required: No`, không ghi giá trị mặc định trong API reference (mặc định ghi ở trang harness-operations) | https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_CreateHarness.html | 21/09/2026 |
 | AgentCore Harness — giới hạn, tool, model, memory | `maxIterations` mặc định 75; `timeoutSeconds` 3600; `shell` và `file_operations` mở sẵn (~900 token/request); model mặc định `global.anthropic.claude-sonnet-4-6`; memory: API bỏ trống thì có managed memory, CLI mặc định tắt; CloudTrail dùng `AWS::BedrockAgentCore::Runtime` | https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness-operations.html · .../harness-tools.html · .../harness-models.html · .../harness-memory.html | 21/09/2026 |
+| AgentCore Harness — lifecycle hooks | Bốn sự kiện `before_invocation`, `before_tool_call`, `after_tool_call`, `after_invocation`, tối đa 20 hook mỗi harness; chỉ đích Lambda trả được allow/deny, SNS và EventBridge chỉ thông báo; `before_tool_call` nhận tên tool, loại tool, `toolUseId` và tham số do mô hình sinh, **không** có danh tính người dùng; deny thì bỏ qua lời gọi và vòng lặp chạy tiếp; context tối đa 64 KiB, vượt thì bị cắt | https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness-lifecycle-hooks.html | 22/09/2026 |
 | JWT authorizer của AgentCore | Bắt buộc **ít nhất một** trong: audience, client, scope, custom claim; đặt nhiều thì kiểm đủ | https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/inbound-jwt-authorizer.html | 21/09/2026 |
 | Bedrock Agents Classic — maintenance mode | Ngừng nhận khách hàng mới từ **30/07/2026**; agent cũ (account đã dùng trong 12 tháng) không bị ảnh hưởng; AWS khuyến nghị chuyển sang AgentCore, harness là *"closest analog to the Bedrock Agents managed experience"* | https://docs.aws.amazon.com/bedrock/latest/userguide/agents-classic-maintenance-mode.html | 21/09/2026 |
 | Guardrail trong Converse API — phạm vi đánh giá | *"a guardrail specified in `guardrailConfig` does not evaluate every field"*: `toolResult` và `toolUse.input` **không** được đánh giá; chỉ `text`/`guardContent` được đánh giá | https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-use-converse-api.html | 21/09/2026 |
@@ -645,6 +648,17 @@ Mỗi dòng dưới đây đã được đọc bằng `WebFetch`; câu trích tr
 | Row Security Policies | Owner, superuser và `BYPASSRLS` bỏ qua RLS trừ khi có `FORCE ROW LEVEL SECURITY`; không có policy thì mặc định từ chối hết | https://www.postgresql.org/docs/current/ddl-rowsecurity.html | 21/09/2026 |
 | System Administration Functions | `current_setting(name, missing_ok)` ném lỗi nếu chưa gán và `missing_ok` không phải `true`; `set_config(name, value, is_local)` — `is_local = true` chỉ có hiệu lực trong transaction hiện tại | https://www.postgresql.org/docs/current/functions-admin.html | 21/09/2026 |
 | SELECT — `FOR UPDATE ... SKIP LOCKED` (AD-11) | Nguyên văn: *"With `SKIP LOCKED`, any selected rows that cannot be immediately locked are skipped"*; tài liệu nêu đúng dùng để tránh tranh khóa với nhiều consumer trên một **"queue-like table"** | https://www.postgresql.org/docs/current/sql-select.html | 22/09/2026 |
+| `pg_trgm` (AD-29) | *"pg_trgm ignores non-word characters"*: dấu chấm trong mã điều khoản bị bỏ, nên không dùng để phân giải mã | https://www.postgresql.org/docs/current/pgtrgm.html | 22/09/2026 |
+| `fuzzystrmatch` — `levenshtein` (AD-29) | Tính khoảng cách Levenshtein giữa hai chuỗi, mỗi thao tác chèn, xóa, thay mặc định tốn 1; dùng được với UTF-8 | https://www.postgresql.org/docs/current/fuzzystrmatch.html | 22/09/2026 |
+| Extension trên RDS for PostgreSQL (AD-29) | `fuzzystrmatch` 1.2 và `pg_trgm` 1.6 có ở RDS for PostgreSQL 16 và 17 | https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-extensions.html | 22/09/2026 |
+
+### Đo trực tiếp
+
+| Chủ đề | Kết quả | Cách đo | Ngày |
+| --- | --- | --- | --- |
+| `pg_trgm` trên mã điều khoản (AD-29) | `show_trgm('6.2.2')`, `show_trgm('6.2')`, `show_trgm('2.6')` cùng là `{"  2","  6"," 2 "," 6 "}`; `similarity('6.22', x)` = 0,5 với `6.2.2`, `6.2`, `2.6`, `2.2.6` | PostgreSQL 16 (Docker `postgres:16-alpine`), `CREATE EXTENSION pg_trgm` | 22/09/2026 |
+| Khớp theo dãy chữ số (AD-29) | `6.22`, `622`, `6,2,2`, `§6.2.2` đều khớp đúng một `clause_path` là `6.2.2`; `levenshtein ≤ 1` cho 3–4 ứng viên nên chỉ dùng để gợi ý | Cùng máy, bảng mẫu 14 mã | 22/09/2026 |
+| Chi phí truy vấn (AD-29) | 43 200 dòng `clause_ref`: khớp `clause_digits` dùng index btree, khoảng 0,05 ms; `levenshtein` không có index, chạy trên 2 160 dòng đã lọc theo `document_id`, khoảng 0,5 ms | `EXPLAIN ANALYZE`, index `(document_id, clause_digits)` | 22/09/2026 |
 
 ### Tài liệu AWS — trích từ skill `amazon-bedrock`, chưa fetch trực tiếp
 

@@ -1,5 +1,7 @@
 # 01 · Kiến trúc tổng thể
 
+> **Đã cập nhật trong `ship/`.** File này ghi sơ đồ tổng thể trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/01-kien-truc.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`.
+
 Tài liệu này chứa **sơ đồ tổng thể** và bản đồ các luồng. Mỗi luồng được phóng to ở một tài liệu chi tiết, có liên kết ngay dưới bản đồ.
 
 ---

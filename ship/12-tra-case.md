@@ -193,7 +193,7 @@ Bảng `case_standard` giữ nguyên (`case_id`, `standard_code`, `edition`, `cl
 ### Căn cứ
 
 **Sách.**
-- *Vector Databases: A Practical Introduction* ch01 xếp việc **lưu metadata dưới dạng vector** vào anti-pattern: mất khả năng lọc, sắp xếp và mất ràng buộc toàn vẹn. Thông số của case chính là metadata có cấu trúc. Cũng chương đó xếp PostgreSQL kèm extension là mặc định cho ứng dụng quy mô nhỏ và vừa, kho vector chuyên dụng chỉ khi tới quy mô hàng tỉ vector.
+- *Vector Databases: A Practical Introduction* ch01, mục "Limitations of Pure Vector Storage" (tr. 13): **lưu metadata dưới dạng vector** là không thực tế, vì mất khả năng lọc, sắp xếp và mất ràng buộc toàn vẹn. Thông số của case chính là metadata có cấu trúc. Cũng chương đó xếp PostgreSQL kèm extension là mặc định cho ứng dụng quy mô nhỏ và vừa, kho vector chuyên dụng chỉ khi tới quy mô hàng tỉ vector.
 - *AI Agents on AWS* ch03 tách bộ nhớ dài hạn làm hai loại: **có cấu trúc → Aurora**, **ngữ nghĩa → OpenSearch, pgvector, Bedrock Knowledge Bases**. Case là bộ nhớ có cấu trúc.
 - *Engineering Generative AI-Based Software* ch07: dữ liệu dạng hàng có cấu trúc → SQL; vector database dành cho tìm theo nghĩa, không phải khớp chính xác.
 
@@ -293,7 +293,7 @@ Không làm ngay. Ghi ra để khi cần thì không phải thiết kế lại.
 | Để case là view trên `tool_run` | `tool_run` bị xóa theo retention, kho case sẽ rỗng dần |
 | Tra case chéo organization | Case là bộ nhớ của một organization |
 | Dựng OpenSearch hay Elasticsearch chỉ để tra case | Không biểu diễn được hàm xếp hạng, thêm đường đồng bộ và một biên phân quyền dễ quên |
-| Lưu thông số case dưới dạng vector để tìm | Anti-pattern "metadata as vectors"; key thiếu làm sai khoảng cách |
+| Lưu thông số case dưới dạng vector để tìm | Sách *Vector Databases* ch01 ghi lưu metadata dạng vector là không thực tế; key thiếu làm sai khoảng cách |
 | Cho role ứng dụng là owner bảng `case` | Owner bỏ qua RLS |
 
 ---

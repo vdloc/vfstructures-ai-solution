@@ -177,7 +177,7 @@ Không dùng `bedrock:*` hay `AmazonBedrockFullAccess` ở bất kỳ role nào.
 | --- | --- |
 | Engine | Aurora PostgreSQL, **Serverless v2** |
 | ACU | Prod: tối thiểu 0,5, tối đa theo đo tải; một writer và một reader ở AZ khác. Dev: tối thiểu 0 để tự dừng khi rảnh |
-| Extension | `pg_trgm`, `unaccent`. **Không** `pgvector` (AD-17, AD-28) |
+| Extension | `fuzzystrmatch` (AD-29). **Không** `pgvector` (AD-17, AD-28) |
 | Parameter group | `rds.force_ssl = 1` |
 | Mã hóa | Khóa `vf-assistant-db` |
 | Backup | Giữ tối thiểu 14 ngày; snapshot thủ công trước mỗi migration lớn |
@@ -185,7 +185,7 @@ Không dùng `bedrock:*` hay `AmazonBedrockFullAccess` ở bất kỳ role nào.
 | Secret | Secrets Manager, **bật xoay tự động** |
 | Giám sát | Performance Insights; alarm trên ACU gần trần và trên số kết nối |
 
-Aurora DSQL bị loại (AD-12): không hỗ trợ `pg_trgm`, không PL/pgSQL, giới hạn 3 000 dòng mỗi transaction. Skill `aws-database` xác nhận DSQL không có `pg_trgm` lẫn `pgvector`.
+Aurora DSQL bị loại (AD-12): không hỗ trợ extension (thiết kế cần `fuzzystrmatch`), không PL/pgSQL, giới hạn 3 000 dòng mỗi transaction. Skill `aws-database` xác nhận DSQL không có extension nào, kể cả `pg_trgm` và `pgvector`.
 
 ---
 

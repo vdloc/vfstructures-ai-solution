@@ -116,7 +116,7 @@ Khung SSE tách bằng dòng trống. Backend flush sau mỗi event.
 ```
 doc_qa : status → retrieval → token×n → citation → done
 calc : status → status → tool_call → tool_result
- → approval_required → token×n → citation → done
+ → token×n → citation → done
 refusal : status → refusal → done ← KHÔNG có token nào
 error : status → retrieval → token×3 → error
 ```

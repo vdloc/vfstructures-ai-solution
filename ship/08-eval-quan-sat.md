@@ -218,7 +218,7 @@ flowchart TD
  ROOT --> S2["guardrail.input"]
  ROOT --> S3["router.classify (Haiku)"]
  ROOT --> S4["retrieval"]
- S4 --> S4a["clause.resolve (pg_trgm)"]
+ S4 --> S4a["clause.resolve (ClauseResolver)"]
  S4 --> S4b["mkb.retrieve"]
  S4 --> S4c["rerank"]
  ROOT --> S5["llm.generate (Sonnet)"]
@@ -295,7 +295,7 @@ flowchart TD
 
 ## 6. Audit
 
-`audit_event` là bảng chỉ-thêm (append-only) ghi **ai, làm gì, khi nào, kết quả**, không chứa nội dung câu hỏi. Ghi: đăng nhập vào assistant, lệnh gọi tool (tool, version, hash tham số), duyệt/rút case, guardrail can thiệp, từ chối quyền, thay đổi kho tài liệu (ai nạp, version nào), thay đổi cấu hình prompt/guardrail (version). Đây là nền để trả lời về sau: "vì sao hệ thống đưa ra kết quả này vào ngày đó?" bằng đúng version của prompt, tool, kho và mô hình đã dùng.
+`audit_event` là bảng chỉ-thêm (append-only) ghi **ai, làm gì, khi nào, kết quả**, không chứa nội dung câu hỏi. Ghi: đăng nhập vào assistant, lệnh gọi tool (tool, version, hash tham số), ghi/rút case, guardrail can thiệp, từ chối quyền, thay đổi kho tài liệu (ai nạp, version nào), thay đổi cấu hình prompt/guardrail (version). Đây là nền để trả lời về sau: "vì sao hệ thống đưa ra kết quả này vào ngày đó?" bằng đúng version của prompt, tool, kho và mô hình đã dùng.
 
 ### Bản ghi lần gọi mô hình (`invocation_record`)
 
@@ -420,7 +420,7 @@ Tham chiếu từ sách Enterprise GenAI, dùng làm điểm khởi đầu và �
 
 | Chủ đề | Nguồn | Áp dụng |
 | --- | --- | --- |
-| **Mỗi thành phần phức tạp phải thắng phương án đơn giản hơn** | Interpretable AI (Rashomon), Enterprise GenAI (LLM fit) | Chạy loạt so sánh truy xuất trên golden set: chỉ trigram stage 1, cộng Retrieve, cộng rerank, cộng viết lại câu hỏi. Thành phần nào không tăng recall@k hoặc nDCG quá ε thì bỏ (rerank còn phải tính thêm độ trễ). Loạt này không gọi LLM nên rẻ; chạy ở giai đoạn sau, **trước cổng truy xuất**, làm bằng chứng cho cổng này |
+| **Mỗi thành phần phức tạp phải thắng phương án đơn giản hơn** | Interpretable AI (Rashomon), Enterprise GenAI (LLM fit) | Chạy loạt so sánh truy xuất trên golden set: chỉ stage 1 (ClauseResolver), cộng Retrieve, cộng rerank, cộng viết lại câu hỏi. Thành phần nào không tăng recall@k hoặc nDCG quá ε thì bỏ (rerank còn phải tính thêm độ trễ). Loạt này không gọi LLM nên rẻ; chạy ở giai đoạn sau, **trước cổng truy xuất**, làm bằng chứng cho cổng này |
 | **Nhóm câu hỏi về kết quả bất ngờ** | Interpretable AI | Vài trường hợp engine cho số ngoài dự kiến; giám khảo kiểm lời diễn giải không bịa nguyên nhân ngoài output tool ([01](01-kien-truc.md)) |
 | **`tool_repeat_rate`** | Lấy cảm hứng từ *AI Agents in Action* — sách không có metric tên này; chương 4 mô tả biểu đồ "Repeat Thoughts" của AgentOps cho thấy **vòng lặp suy luận lặp lại**, gần nhưng không giống hệt "gọi lại đúng cùng tool cùng tham số". Đã tách metric riêng cho dự án này, không trích thẳng sách | Tỉ lệ lượt có lời gọi lặp cùng tool cùng tham số ([01](01-kien-truc.md)); tăng bất thường sau đổi prompt hoặc mô tả tool là dấu hiệu hồi quy |
 | **Định vị lỗi theo Plan / Action / Observation** | Building Gen AI Applications with Amazon Bedrock | Khi một lượt sai, gắn nhãn khâu hỏng: chọn/lập kế hoạch sai, gọi tool sai tham số, hay hiểu sai kết quả tool. Ba nhãn này khớp bảng phân loại thất bại ở [01](01-kien-truc.md) và giúp biết sửa mô tả tool, ToolGate hay prompt diễn giải |

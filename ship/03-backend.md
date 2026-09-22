@@ -53,7 +53,7 @@ Giải thích đầy đủ ở [00-thuat-ngu-va-nguon.md](00-thuat-ngu-va-nguon.
 | **Structured output** | Ép mô hình trả JSON đúng khuôn. Bảo đảm **hình dạng**, không bảo đảm **nghĩa** |
 | **`Retrieve`** | Lời gọi API đi tìm chunk tài liệu liên quan |
 | **`filter`** | Tham số lọc của `Retrieve`. **Đây là hàng rào phân quyền** |
-| **`pg_trgm`** | Extension PostgreSQL so chuỗi gần đúng, dùng để phân giải mã điều khoản gõ sai |
+| **`fuzzystrmatch`** | Extension PostgreSQL có hàm `levenshtein()`, dùng để gợi ý mã điều khoản gần đúng khi hỏi lại người dùng (AD-29) |
 | **ToolGate** | Sáu lớp kiểm chạy trước khi engine chạy |
 | **Validator** | Mã tất định kiểm lại câu trả lời **sau** khi mô hình viết xong |
 | **Fallback** | Đường dự phòng khi thành phần chính hỏng |
@@ -139,7 +139,7 @@ Hai việc đầu là **tài liệu, không phải mã chạy được** — ph�
 - `Temperature = 0`, `MaxTokens = 400`.
 - Bộ eval độ chính xác nhãn trên câu hỏi kỹ thuật, **tách theo ngôn ngữ** tiếng Pháp và tiếng Anh.
 - Fallback khi Haiku lỗi: mặc định `doc_qa`, `search_query = raw turn`, gắn cờ `degraded_routing` vào `retrieval_log`.
-- **Regex bóc mã điều khoản** — giữ lại kể cả khi bỏ luật nhanh. Nó phục vụ nhánh trigram ở bước 4, không phải phục vụ routing.
+- **Regex bóc mã điều khoản** — giữ lại kể cả khi bỏ luật nhanh. Nó phục vụ ClauseResolver ở bước 4, không phải phục vụ routing.
 
 ### AD-16
 
@@ -155,7 +155,7 @@ Luật nhanh **ra khỏi đường chính**. Ba việc kèm theo:
 2. Yêu cầu FE thêm `hasResult`, `resultKind`, `calcAt` vào `pageContext`. Thiếu nó Haiku **không thể** thay được luật `explain_result`, vì luật đó dựa vào trạng thái chứ không dựa vào chữ, mà Haiku chỉ thấy khối `pageContext` rút gọn.
 3. Đo lại ngân sách độ trễ: mọi lượt nay đều trả 300–500 ms cho router.
 
-**Không xóa nhầm:** regex bóc mã điều khoản ở lại. Nó không phải luật routing — nó phục vụ nhánh trigram ở bước 4.
+**Không xóa nhầm:** regex bóc mã điều khoản ở lại. Nó không phải luật routing — nó phục vụ ClauseResolver ở bước 4.
 
 ### Nghiệm thu
 
@@ -195,7 +195,7 @@ Ba nhánh, ba khối công việc tách biệt. Có thể chia cho ba người.
 - **Không có `overrideSearchType`.** MKB luôn tìm hybrid và không có tùy chọn chỉ tìm theo nghĩa. V-K5 đã trả lời và bị bỏ.
 - **Rerank:** mặc định `rerankingModelType: MANAGED`. Muốn Cohere Rerank 3.5 thì `CUSTOM` kèm `rerankingConfiguration`, truyền ngay trong `Retrieve`. Reranker sẵn chỉ dùng được khi KB dùng embedding `MANAGED`; chốt cùng lúc với AD-06 (V-K6).
 - **Chỉ dùng `equals`, `notEquals`, `in`, `notIn` và toán tử số**, ghép bằng `andAll` / `orAll`. Cấm `startsWith` và `stringContains`: tài liệu managed KB ghi *"not supported"*, còn báo lỗi hay bị bỏ qua thì chưa kiểm chứng (R47). `listContains` không nằm trong câu đó nhưng vẫn cấm theo thận trọng. `clause_path` lọc bằng `in` với danh sách đầy đủ, không bằng prefix.
-- **Stage 1 vẫn là `pg_trgm` trong PostgreSQL**: regex trích mã điều khoản → `similarity(clause_ref, @clauseq)` → danh sách `clause_path` chuẩn hóa → đưa vào filter. Không có mã thì bỏ chặng này. MKB đã hybrid nên chặng này không còn là phương án dự phòng, nhưng vẫn cần để sửa mã gõ sai (`6.22` → `6.2.2`).
+- **Stage 1 là ClauseResolver trong PostgreSQL (AD-29)**: regex trích mã điều khoản, đổi `,` thành `.` và bỏ ký tự không phải số hay dấu chấm. Chỉ tra trong `clause_ref` của các tài liệu thuộc scope và ấn bản của lượt (đã có từ bước 3+4 và chế độ retrieval). Thứ tự: khớp đúng `clause_path`; không có thì khớp `clause_digits` (dãy chữ số, nên `6.22` và `622` đều ra `6.2.2`). Ra **đúng một** `clause_path` thì đưa vào filter, ghi vào `retrieval_log` rằng mã đã được hiểu thành mã nào, và câu trả lời nói rõ điều đó. Ra 0 hoặc từ 2 mã trở lên thì **không gọi `Retrieve`**: lượt kết thúc ở `AskBack`, hỏi lại kèm tối đa 5 mã gợi ý (ứng viên khớp dãy số, không có thì `levenshtein(clause_path, mã gõ) ≤ 1` trên tập đã lọc theo tài liệu). Không dùng `pg_trgm`: extension này bỏ ký tự không phải chữ hay số, nên `6.2.2`, `6.2` và `2.6` có cùng tập trigram và `similarity('6.22', …)` bằng nhau 0,5 cho cả bốn (đo trên PostgreSQL 16, [00](00-thuat-ngu-va-nguon.md) Phần F). Có filter mã mà điểm vẫn dưới ngưỡng thì đi đúng đường từ chối như mọi lượt, không âm thầm bỏ filter để tìm lại.
 - **Worker ghi mỗi chunk thành một object S3 + sidecar `{tên file chunk}.metadata.json`**, tối đa **10 KB**, với `standard`, `edition`, `clause_path`, `page`, `scope_key`, `status`, `chunk_type`, `doc_id`, `chunk_index`. Mỗi thuộc tính có kiểu: `"page": { "value": { "type": "NUMBER", "numberValue": 84 } }`, chuỗi thì `"type": "STRING", "stringValue"`. Thuộc tính phải **có trong sidecar** thì mới lọc được. Không đặt tên bắt đầu bằng `_` (MKB dành riêng).
 - **Vòng đời nạp giữ bằng `status`**: Worker ghi `staged`, truy vấn ở chế độ hiện hành lọc `status = "active"`, phát hành là ghi lại sidecar rồi chạy lại `start-ingestion-job`.
 - **Ấn bản và ngày hiệu lực (AD-26).** Sidecar thêm `family_key` (STRING), `effective_from` và `effective_to` (NUMBER, `yyyymmdd`; bản còn hiệu lực ghi `99991231`, không bỏ trống). Chuyển ấn bản: ghi sidecar của bản mới (`active`) và bản cũ (`superseded`, `effective_to` = ngày trước `effective_from` của bản mới) rồi chạy **một** ingestion job cho cả hai.
@@ -303,7 +303,7 @@ Ba nhánh, ba khối công việc tách biệt. Có thể chia cho ba người.
 | Suy diễn đơn vị khi tham số tool thiếu đơn vị | Sai một nghìn lần, kết quả vẫn trông hợp lý |
 | Rút gọn output tool trước khi trả cho mô hình | Vô hiệu `NumberValidator` |
 | Bỏ qua `ApiResult.Code` vì HTTP đã 200 | Lỗi quyền trôi vào câu trả lời |
-| Đẩy cả câu hỏi vào nhánh trigram khi không có mã điều khoản | Rác có điểm, tệ hơn không có gì |
+| Đoán một mã khi ClauseResolver ra nhiều ứng viên, hoặc bỏ filter mã khi tìm không ra | Filter khóa việc tìm vào sai điều khoản, hoặc trả lời trôi chảy về điều khác với điều người dùng hỏi |
 | Sinh tóm tắt case bằng LLM | Lộ tên dự án và chi tiết khách hàng |
 | Để số do mô hình đọc từ văn xuôi đi vào input engine | Phá nguyên tắc trung tâm của hệ thống |
 | Gọi ra ngoài mà không truyền `CancellationToken` của lượt | Người dùng đóng tab mà lời gọi vẫn chạy và vẫn tính tiền |

@@ -1,6 +1,6 @@
 # 06 · Tầng Amazon Bedrock
 
-> **Đã cập nhật trong `ship/`.** File này chốt thông số AWS trước lượt rà soát nguồn 21/09/2026. Bản đã sửa, có nguồn kèm ngày fetch: `ship/00-thuat-ngu-va-nguon.md` và `ship/05-devops.md`.
+> **Đã cập nhật trong `ship/`.** File này chốt thông số AWS trước lượt rà soát nguồn 21/09/2026. Bản đã sửa, có nguồn kèm ngày fetch: `ship/00-thuat-ngu-va-nguon.md` và `ship/05-devops.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`.
 
 Tài liệu này chốt các thông số AWS và mô tả cách Assistant gọi Bedrock: chọn mô hình theo tác vụ, chịu lỗi, guardrail, prompt caching, IAM, mạng, chi phí.
 

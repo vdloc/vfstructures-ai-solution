@@ -1,5 +1,7 @@
 # 09 · Đánh giá chất lượng và quan sát
 
+> **Đã cập nhật trong `ship/`.** File này ghi thiết kế đánh giá và quan sát trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/08-eval-quan-sat.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`.
+
 Hai câu hỏi phải trả lời được bằng số liệu, không bằng cảm tính:
 
 1. **Hệ thống có đúng không?** (eval: trước khi phát hành và sau mỗi thay đổi)

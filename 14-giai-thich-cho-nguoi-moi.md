@@ -1,5 +1,7 @@
 # 14 · Giải thích cho người mới (bé 5 tuổi cũng hiểu)
 
+> **Đã cập nhật trong `ship/`.** File này ghi phần giải thích trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/11-thuyet-minh.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`. Harness có lifecycle hook, nhưng ToolGate vẫn đặt ở facade: xem `ship/01-kien-truc.md` §8.5.
+
 Tài liệu này giải thích **mọi công nghệ và thuật ngữ** trong bộ tài liệu kiến trúc bằng lời đời thường và ví von. Đọc từ trên xuống là thấy toàn cảnh; hoặc tra bảng chữ cái ở cuối.
 
 **Quy ước:** nếu tài liệu này khác với các tài liệu 00 đến 13, thì **00 đến 13 đúng**. Tài liệu này chỉ để hiểu, không quyết định gì. Cột “Trong dự án này” chỉ chỗ dùng thật, kèm liên kết để đào sâu.

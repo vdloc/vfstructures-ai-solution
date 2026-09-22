@@ -1,6 +1,6 @@
 # 22 · Thuyết minh kiến trúc
 
-> **Đã cập nhật trong `ship/`.** File này có bản đã sửa nguồn và ngày fetch: xem `ship/11-thuyet-minh.md` (bản chính thức, giống nội dung file này sau lượt rà soát 21/09/2026) và `ship/00-thuat-ngu-va-nguon.md` (bảng nguồn đầy đủ).
+> **Đã cập nhật trong `ship/`.** File này có bản đã sửa nguồn và ngày fetch: xem `ship/11-thuyet-minh.md` (bản chính thức, giống nội dung file này sau lượt rà soát 21/09/2026) và `ship/00-thuat-ngu-va-nguon.md` (bảng nguồn đầy đủ). Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`.
 
 **Nội dung:** chỉ kiến trúc và luồng xử lý.
 **Người đọc:** không cần biết gì về AI từ trước. Mọi thuật ngữ được giải thích ngay lần đầu gặp, và giữ nguyên tên tiếng Anh để sau này đọc tài liệu kỹ thuật không bị lạc.

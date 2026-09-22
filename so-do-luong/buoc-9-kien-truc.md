@@ -32,12 +32,20 @@ Assistant.Api · SSE writer
    token              → nối chữ vào bubble
    tool_call          → thẻ "Đang tính B12…" kèm input
    tool_result        → thẻ kết quả, dựng từ JSON này
-   approval_required  → nút Duyệt / Bỏ qua
+   approval_required  → không phát trong v1 (AD-28)
    citation           → [n] bấm được, mở đúng trang
    refusal            → thẻ từ chối kèm gợi ý
    warning            → banner chèn lên câu trả lời đã xong
    error              → giữ phần đã có, nút Retry, nút copy requestId
    done               → mở khóa ô nhập, nút chấm tốt/xấu
+▼
+9.5 DỪNG GIỮA CHỪNG                             FE · BFF · Assistant.Api
+   Làm gì:     Bấm Dừng, đóng tab hay rớt mạng thì cả lượt dừng theo
+   Làm thế nào: FE gọi AbortController.abort() trên fetch đang mở
+               BFF truyền req.signal vào fetch upstream, không tự retry
+               Backend nối RequestAborted với timeout thành một CancellationToken
+               Lượt dừng trong ≤ 2 giây, ghi message aborted kèm phần chữ đã sinh
+               FE mở khóa ô nhập ngay, không chờ event nào
 ```
 
 ## Bốn chuỗi event hợp lệ
@@ -45,7 +53,7 @@ Assistant.Api · SSE writer
 ```
 doc_qa   : status → retrieval → token×n → citation → done
 calc     : status → status → tool_call → tool_result
-           → approval_required → token×n → citation → done
+           → token×n → citation → done
 refusal  : status → refusal → done              ← không có token nào
 error    : status → retrieval → token×3 → error
 ```
@@ -58,6 +66,13 @@ error    : status → retrieval → token×3 → error
 - Ở kiến trúc này: `POST /v1/chat` trả về `text/event-stream`. Hợp đồng 11 event đóng băng từ tuần 1, thay đổi phá vỡ phải lên `/v2`.
 - Vì sao: Người dùng thấy trạng thái và chữ ngay khi có, không chờ cả lượt. Hợp đồng đóng băng thì FE dựng mock stream và làm xong giao diện trước khi BE có tool nào chạy được.
 - Nguồn: `ship/02-hop-dong.md` §4 · `17-guideline-frontend.md`
+
+**HttpContext.RequestAborted**
+<!-- alias: RequestAborted -->
+- Là gì: Token hủy của ASP.NET Core, bật lên khi kết nối của request bị đóng.
+- Ở kiến trúc này: Nối với timeout của lượt thành một `CancellationToken` chung; mọi lời gọi ra ngoài (`ConverseStream`, `Retrieve`, `InvokeHarness`, Main API, PostgreSQL) đều nhận token này.
+- Vì sao: Ngắt kết nối không tự lan xuống backend. Thiếu `req.signal` ở BFF hoặc quên truyền token ở một lời gọi thì lượt chạy tới hết và vẫn tính tiền, mà không có lỗi nào báo ra.
+- Nguồn: `ship/01-kien-truc.md` §6.7 · `ship/02-hop-dong.md` §7
 
 **X-Accel-Buffering**
 <!-- alias: X-Accel-Buffering -->

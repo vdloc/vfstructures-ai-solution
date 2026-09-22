@@ -1,5 +1,7 @@
 # 05 · Case memory: kho tình huống (F3)
 
+> **Đã cập nhật trong `ship/`.** File này ghi thiết kế case memory theo AD-09, khi case còn sinh từ thao tác kỹ sư bấm Duyệt. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt; bản đã sửa: `ship/12-tra-case.md`.
+
 Tiêu chuẩn cho biết giới hạn được phép, nhưng không cho biết **đơn vị thường chọn phương án nào trong giới hạn đó**. Khoảng cách giữa "được phép" và "nên làm" là kinh nghiệm, và tài liệu không bao giờ ghi lại phần này.
 
 Case memory biến kinh nghiệm cá nhân thành tài sản của organization: mỗi kết quả tính toán được kỹ sư **duyệt** sẽ thành một bản ghi có cấu trúc, tra lại được theo điều kiện tương tự.

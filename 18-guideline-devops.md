@@ -1,6 +1,6 @@
 # 18 · Hướng dẫn triển khai — đội DevOps AWS
 
-> **Đã cập nhật trong `ship/`.** File này ghi hướng dẫn trước lượt rà soát nguồn 21/09/2026 (đặc biệt NAT gateway/Harness VPC). Bản đã sửa: `ship/05-devops.md`.
+> **Đã cập nhật trong `ship/`.** File này ghi hướng dẫn trước lượt rà soát nguồn 21/09/2026 (đặc biệt NAT gateway/Harness VPC). Bản đã sửa: `ship/05-devops.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`.
 
 Tài liệu thi công, viết theo sáu bước của một lượt hỏi. Phần lớn việc của DevOps nằm ở bước 4, nhưng bước 1 có một cái bẫy có thể làm hỏng toàn bộ trải nghiệm mà không xuất hiện ở môi trường dev.
 

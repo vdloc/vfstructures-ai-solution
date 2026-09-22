@@ -9,7 +9,7 @@
 | # | File | Ai đọc | Trả lời câu hỏi gì |
 | --- | --- | --- | --- |
 | 00 | [Thuật ngữ và nguồn](00-thuat-ngu-va-nguon.md) | Tất cả | Mỗi từ lạ nghĩa là gì, vì sao hệ thống cần nó, quyết định dựa trên nguồn nào |
-| 01 | [**Kiến trúc tổng thể**](01-kien-truc.md) | Tất cả — **điểm vào của bộ** | Vì sao hệ thống có hình dạng này, nó gồm gì, chạy thế nào, 27 quyết định kiến trúc (mã tới AD-28). Mỗi mục có đường dẫn sang file con giữ chi tiết |
+| 01 | [**Kiến trúc tổng thể**](01-kien-truc.md) | Tất cả — **điểm vào của bộ** | Vì sao hệ thống có hình dạng này, nó gồm gì, chạy thế nào, 28 quyết định kiến trúc (mã tới AD-29). Mỗi mục có đường dẫn sang file con giữ chi tiết |
 | 02 | [Hợp đồng API](02-hop-dong.md) | **Backend + Frontend cùng ký** | Endpoint, schema, 11 SSE event, mã lỗi |
 | 03 | [Thi công Backend](03-backend.md) | Backend | Sáu bước, nghiệm thu từng bước, rủi ro phải canh |
 | 04 | [Thi công Frontend](04-frontend.md) | Frontend | Dựng UI từ 11 event, trạng thái phải xử lý |
@@ -94,7 +94,7 @@ Hai mã mới, **không chặn**, chỉ ảnh hưởng chi phí và chạy lại
 
 | # | Nguyên tắc | Ép bằng gì |
 | --- | --- | --- |
-| P1 | AI hỗ trợ kỹ sư, không thay thế kỹ sư | Case chỉ sinh từ thao tác Approve có danh tính và thời điểm |
+| P1 | AI hỗ trợ kỹ sư, không thay thế kỹ sư | Case chỉ sinh từ output của engine đã kết luận đạt, không bao giờ từ câu chữ của mô hình (AD-28) |
 | P2 | **Model không bao giờ tự tính số** | `NumberValidator`; số chỉ đến từ `tool_run` hoặc citation |
 | P3 | **Không có căn cứ thì không có câu trả lời** | Score threshold, refusal trước khi gọi model trả lời |
 | P4 | Hàng rào nằm ngoài model | Scope filter, guardrail ở Bedrock, ToolGate. Câu dặn trong prompt **không** phải biện pháp kiểm soát |

@@ -1,5 +1,7 @@
 # 15. Hỏi đáp: một lượt hỏi đi qua hệ thống, từng bước
 
+> **Đã cập nhật trong `ship/`.** File này ghi phần hỏi đáp trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/11-thuyet-minh.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`. Harness có lifecycle hook, nhưng ToolGate vẫn đặt ở facade: xem `ship/01-kien-truc.md` §8.5.
+
 Tài liệu này ghi lại các câu hỏi đã đặt trong lúc rà soát kiến trúc và câu trả lời tương ứng. Khác với [02](02-assistant-service.md) (đặc tả) và [04](04-tool-calling.md) (thiết kế tool), tài liệu này viết theo lối **giải thích cho người chưa quen**, bám một ví dụ chạy suốt từ đầu đến cuối.
 
 Đối tượng: người mới vào dự án, thành viên không thuộc team BE, và người cần trình bày kiến trúc cho nhiều bên cùng lúc.

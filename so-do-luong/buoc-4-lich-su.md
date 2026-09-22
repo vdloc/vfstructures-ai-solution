@@ -97,7 +97,7 @@ Bước 7 nhận:  └── tóm tắt ──┘ [5] [6] [7] [8]  + [9]
 - Nguồn: *AI Agents on AWS* ch3, qua `ship/00-thuat-ngu-va-nguon.md`
 
 **Bộ nhớ ngắn hạn và dài hạn**
-- Là gì: Ngắn hạn là "đang nói chuyện gì" — lịch sử gần. Dài hạn là "biết gì" — kho tài liệu, trường hợp đã duyệt.
+- Là gì: Ngắn hạn là "đang nói chuyện gì" — lịch sử gần. Dài hạn là "biết gì" — kho tài liệu, trường hợp đã tính đạt.
 - Thiếu thì hỏng gì: Dùng lịch sử làm kho kiến thức thì phải giữ lịch sử rất dài, quay lại đúng vấn đề context rot.
 - Ở hệ thống này: Bước 4 chỉ lo ngắn hạn. Dài hạn đi qua bước 6 (tìm tài liệu, tra trường hợp cũ).
 - Nguồn: *AI Agents in Action* ch8 · *AI Agents on AWS* ch3

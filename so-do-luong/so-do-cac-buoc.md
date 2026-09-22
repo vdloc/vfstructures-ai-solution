@@ -70,7 +70,7 @@ end: *Bước 7 · ILlmClient | nhận lịch sử + tóm tắt
 row:
 - 5.1 Dựng prompt | IntentRouter
 - 5.2 Gọi Haiku | Bedrock Runtime · structured output
-- 5.3 Kiểm đầu ra | lỗi → fallback, degraded_routing
+- 5.3 Kiểm đầu ra | lỗi → event error, nút Thử lại
 end: *6a · Tìm tài liệu | doc_qa, app_help
 end: *6b · Gọi engine | calc, explain_result, mixed, optimize
 end: *6c · Tra case | case_lookup
@@ -82,7 +82,7 @@ end: !Refused | out_of_scope
 ```diagram
 start: Nhãn từ bước 5 | IntentRouter
 row: 6a · Tìm tài liệu
-- 6a.1 Phân giải mã | ClauseResolver · pg_trgm
+- 6a.1 Phân giải mã | ClauseResolver · clause_ref
 - 6a.2 Tìm rộng 40 | Bedrock MKB · filter scope
 - 6a.3 Chọn hẹp 8 | Bedrock Rerank
 - 6a.4 Áp ngưỡng | dưới ngưỡng → Refused

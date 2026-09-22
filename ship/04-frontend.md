@@ -244,7 +244,7 @@ Nếu FE parse số từ chữ, toàn bộ công sức post-validation ở bư�
 | `token` | `text` | Nối vào bong bóng trả lời |
 | `tool_call` | `toolId`, `version`, `inputs` | Thẻ "Đang tính…" kèm tham số |
 | `tool_result` | `toolRunId`, `outputs`, `units`, `standard` | **Dựng thẻ kết quả từ JSON** |
-| `approval_required` | `toolRunId`, `summary` | Nút Duyệt / Bỏ qua |
+| `approval_required` | `toolRunId`, `summary` | Nút Duyệt / Bỏ qua, chỉ dành cho tool nhóm C; v1 không phát (AD-28) |
 | `citation` | `[{n, docId, page, clause, quote}]` | `[n]` bấm được, mở đúng trang |
 | `refusal` | `reason`, `suggestion` | Thẻ từ chối kèm gợi ý |
 | `warning` | `code` | Banner trên câu trả lời |

@@ -6,7 +6,7 @@
 - **internal** — lựa chọn build, biện minh bằng lập luận/tradeoff hoặc pattern trong sách; không cần nguồn ngoài.
 - **assumption** — số tự khai, hiệu chỉnh bằng golden set; không lấy từ nguồn ngoài (theo thiết kế).
 
-**Tổng: 27 mã hiện diện (không có AD-04), AD-09 đã superseded → 26 quyết định active.**
+**Tổng: 28 mã hiện diện (không có AD-04), AD-09 đã superseded → 27 quyết định active.**
 
 ## Phủ nguồn 100%
 
@@ -23,7 +23,7 @@
 | AD-10 | AWS-capability | https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions-id.html (21/09/2026, đọc Playwright) · https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-use-converse-api.html | confirmed |
 | AD-11 | internal + Postgres sub-claim | https://www.postgresql.org/docs/current/sql-select.html (22/09/2026, trích verbatim) | confirmed — SKIP LOCKED có nguồn |
 | AD-12 | AWS-capability | https://docs.aws.amazon.com/aurora-dsql/latest/userguide/working-with-postgresql-compatibility-unsupported-features.html (21/09/2026, trích verbatim) | confirmed |
-| AD-13 | AWS-capability + internal | https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness.html · https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_CreateHarness.html · https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness-security.html (21/09/2026); *AI Agents on AWS* (Bunny Kaushik, Mona M) ch6 | confirmed |
+| AD-13 | AWS-capability + internal | https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness.html · https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_CreateHarness.html · https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness-security.html (21/09/2026) · https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness-lifecycle-hooks.html (22/09/2026); *AI Agents on AWS* (Bunny Kaushik, Mona M) ch6 | confirmed |
 | AD-14 | mixed | https://docs.aws.amazon.com/general/latest/gr/bedrock.html (region, 21/09/2026); độ trễ = assumption; luật VN: **Luật 91/2025/QH15 + Nghị định 356** (10 §1 Q1) | có nguồn nội bộ — cần luật sư xác nhận (không verify bằng AWS/Playwright) |
 | AD-15 | internal | NONE (bỏ luật nhanh, mọi lượt qua IntentRouter) | không cần nguồn ngoài |
 | AD-16 | internal + assumption | NONE; `MaxTokens` 300–400 = assumption | không cần nguồn ngoài |
@@ -33,16 +33,17 @@
 | AD-20 | AWS-capability | https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html · https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html (22/09/2026) | confirmed — đã sửa claim: **S3 → EventBridge → Step Functions** |
 | AD-21 | AWS-capability | https://docs.aws.amazon.com/bedrock/latest/userguide/batch-inference-supported.html · https://docs.aws.amazon.com/bedrock/latest/userguide/batch-inference.html (21/09, xác minh lại 22/09/2026) | cited-but-contradicts (Sonnet 5) — phải test trước khi triển khai |
 | AD-22 | internal + assumption | *AI Agents on AWS* (Bunny Kaushik, Mona M) ch3; *AI Agents in Action* (Micheal Lanham) ch8 | confirmed (sách); 3 con số = assumption |
-| AD-23 | internal + assumption | *Build AI-Enhanced Web Apps* (Theo Despoudis) — pattern *Defense-in-Depth Abuse Control* | confirmed (sách); ngưỡng = assumption |
+| AD-23 | internal + assumption | *Build AI-Enhanced Web Apps* (Theo Despoudis) ch9, mục 9.3.2, tr. 280–285 | confirmed (sách, đối chiếu bản gốc 22/09/2026); ngưỡng = assumption |
 | AD-24 | internal | *Interpretable and Trustworthy AI* (Pethuru Raj và cộng sự, chủ biên); *Enterprise Guide for Implementing Generative AI and Agentic AI* (Shakuntala Gupta Edward, Rahul Bhattacharya, Vikas Sinha) | confirmed (sách) |
 | AD-25 | internal | NONE cho cơ chế .NET (`CancellationToken`/`RequestAborted` = ASP.NET Core chuẩn); *Designing AI Interfaces* (Louise Macfadyen) đỡ phần UX hủy/chờ | không cần nguồn ngoài |
 | AD-26 | AWS-capability + internal | https://docs.aws.amazon.com/bedrock/latest/userguide/kb-managed-ds-s3.html · https://docs.aws.amazon.com/bedrock/latest/userguide/kb-test-config.html (21/09/2026) | confirmed |
 | AD-27 | internal | NONE (`toolUseId` khái niệm Converse; idempotency = thiết kế nội bộ) | không cần nguồn ngoài |
 | AD-28 | internal + Postgres | https://www.postgresql.org/docs/current/ddl-rowsecurity.html (21/09/2026); *Vector Databases: A Practical Introduction* (Nitin Borwankar) — loại phương án pgvector | confirmed |
+| AD-29 | internal + Postgres | https://www.postgresql.org/docs/current/pgtrgm.html · https://www.postgresql.org/docs/current/fuzzystrmatch.html · https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-extensions.html (22/09/2026); đo trực tiếp trên PostgreSQL 16 (22/09/2026, [00](00-thuat-ngu-va-nguon.md) Phần F); *Designing AI Interfaces* (Louise Macfadyen) ch3, tr. 61–62 và 71 | confirmed |
 
 ## Tổng kết đếm (27 mã)
 
-- **Confirmed — có nguồn xác minh:** 16 — AD-02, 03, 06, 10, 12, 13, 17, 18, 19, 20, 21, 22, 23, 24, 26, 28.
+- **Confirmed — có nguồn xác minh:** 17 — AD-02, 03, 06, 10, 12, 13, 17, 18, 19, 20, 21, 22, 23, 24, 26, 28, 29.
 - **Internal — không cần nguồn ngoài:** 9 — AD-01, 05, 07, 08, 11, 15, 16, 25, 27.
 - **Superseded:** 1 — AD-09.
 - **KHÔNG CĂN CỨ:** 0 — sau vá 22/09/2026, mọi quyết định đều truy được nguồn. AD-14 có trích dẫn pháp lý nội bộ (Luật 91/2025/QH15 + Nghị định 356, 10 §1 Q1); chỉ cần luật sư xác nhận phạm vi, không phải lỗ hổng nguồn.

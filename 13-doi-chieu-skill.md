@@ -1,5 +1,7 @@
 # 13 · Đối chiếu với các skill trong repo
 
+> **Đã cập nhật trong `ship/`.** File này ghi phần đối chiếu sách trước lượt rà soát 21/09/2026. Bản đã sửa: `ship/00-thuat-ngu-va-nguon.md`. Từ AD-28 (22/09/2026), case tự ghi khi engine tính đạt và không còn bước duyệt: xem `ship/12-tra-case.md`. Harness có lifecycle hook, nhưng ToolGate vẫn đặt ở facade: xem `ship/01-kien-truc.md` §8.5.
+
 Tài liệu này ghi lại **đã đọc gì, áp dụng gì, sửa gì, và cố ý không áp dụng gì** khi đối chiếu bộ kiến trúc với 13 skill sách trong repo `ai-books-skills`. Mục đích: người đọc biết chính xác mức độ đối chiếu, không phải tin vào một câu chung chung.
 
 ## Phạm vi đã đọc
