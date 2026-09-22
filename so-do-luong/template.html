@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luồng một lượt hỏi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f5f1; --surface: #ffffff; --ink: #1c1b18; --ink-2: #57544c; --ink-3: #a19d92;
+  --line: #dcd8cd; --head: #1f5f8b; --head2: #6b5b95; --branch: #2f7a4f;
+  --stop: #b3261e; --wait: #9a6700; --hl-bg: #e3eef6; --chip: #f0eee8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15161a; --surface: #1d1f24; --ink: #ecebe6; --ink-2: #b4b1a8; --ink-3: #5f5c56;
+    --line: #34373e; --head: #7fb6de; --head2: #b3a4dc; --branch: #7cc79b;
+    --stop: #f08a80; --wait: #e2b457; --hl-bg: #1f2d38; --chip: #25282e;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15161a; --surface: #1d1f24; --ink: #ecebe6; --ink-2: #b4b1a8; --ink-3: #5f5c56;
+  --line: #34373e; --head: #7fb6de; --head2: #b3a4dc; --branch: #7cc79b;
+  --stop: #f08a80; --wait: #e2b457; --hl-bg: #1f2d38; --chip: #25282e;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.6 "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 36px 16px 72px; }
+.top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-start; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; flex: 1 1 320px; }
+.intro { color: var(--ink-2); margin: 0 0 4px; }
+.src { font: 12px/1.5 "JetBrains Mono", ui-monospace, monospace; color: var(--ink-3);
+  word-break: break-all; margin: 8px 0 22px; }
+button { font: inherit; font-size: 13px; color: var(--ink-2); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; cursor: pointer; }
+pre { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 22px 24px; overflow-x: auto;
+  font: 14px/1.55 "JetBrains Mono", ui-monospace, "DejaVu Sans Mono", monospace; }
+.g  { color: var(--ink-3); }
+.h  { color: var(--head); font-weight: 700; }
+.h2 { color: var(--head2); font-weight: 700; }
+.br { color: var(--branch); font-weight: 700; }
+.n, .k { color: var(--ink-2); }
+.sn { color: var(--ink-2); font-weight: 700; }
+.x  { color: var(--stop); }
+.w  { color: var(--wait); }
+h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2);
+  margin: 36px 0 10px; }
+ol { margin: 0; padding-left: 22px; }
+ol li { margin: 6px 0; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; overflow-y: hidden;
+  box-shadow: inset 0 -1px 0 var(--line); margin: 18px 0 22px; }
+.tabs .tab { flex: none; font-size: 14px; font-weight: 600; color: var(--ink-2);
+  background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  padding: 8px 14px; }
+.tabs .tab:hover { color: var(--ink); }
+.tabs .tab[aria-selected="true"] { color: var(--head); border-bottom-color: var(--head); }
+.panel[hidden] { display: none; }
+.hl { color: var(--head); font-weight: 700; background: var(--hl-bg); border-radius: 3px; }
+
+/* step tabs */
+.step > p:first-child { font-size: 16px; margin: 0 0 4px; }
+.step h2 { margin-top: 34px; }
+.step pre { margin-bottom: 10px; }
+.step p { margin: 8px 0; }
+.step code { font: 13px "JetBrains Mono", ui-monospace, monospace; background: var(--chip);
+  padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.step ul { margin: 8px 0; padding-left: 22px; }
+.step ul li { margin: 6px 0; }
+h3.group { font-size: 16px; margin: 26px 0 12px; color: var(--head2); }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.kw { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.kw h4 { margin: 0 0 10px; font-size: 16px; }
+.kw .en { font-weight: 400; color: var(--ink-3); font-size: 14px; }
+.kw dl { margin: 0; }
+.kw dt { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-2); margin-top: 10px; }
+.kw dt.f0 { margin-top: 0; }
+.kw dd { margin: 2px 0 0; font-size: 14.5px; }
+.kw dt.f2 { color: var(--stop); }
+.intro code { font: 13px "JetBrains Mono", ui-monospace, monospace; background: var(--chip); padding: 1px 5px; border-radius: 4px; }
+.kw dd.f3 { font-size: 13px; color: var(--ink-2); }
+/* diagrams */
+.dg { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; touch-action: none; cursor: grab; height: 260px; margin-bottom: 8px; }
+.dg.dragging { cursor: grabbing; }
+.dg:focus-visible { outline: 2px solid var(--head); outline-offset: 2px; }
+.dg svg { display: block; width: 100%; height: 100%; user-select: none; }
+.dg-tools { position: absolute; top: 8px; right: 8px; z-index: 2; display: flex; gap: 4px; }
+.dg-tools button { font-size: 13px; line-height: 1; padding: 6px 10px; min-width: 32px;
+  background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.dg-tools button:hover { color: var(--ink); border-color: var(--ink-3); }
+.dg:fullscreen, .dg.is-full { height: 100vh !important; border: 0; border-radius: 0; margin: 0; }
+.dg.is-full { position: fixed; inset: 0; z-index: 40; height: 100dvh !important; }
+.dg:fullscreen .dg-tools, .dg.is-full .dg-tools { top: 14px; right: 14px; }
+.dg:fullscreen .dg-tools button, .dg.is-full .dg-tools button { font-size: 15px; padding: 8px 14px; min-width: 40px; }
+body.dg-lock { overflow: hidden; }
+.dg-edge { stroke: var(--ink-3); stroke-width: 1.5; fill: none; }
+.dg-head { fill: var(--ink-3); }
+.dg-node rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.dg-node.target rect { fill: var(--hl-bg); stroke: var(--head); stroke-dasharray: 5 4; }
+.dg-node.stop rect { stroke: var(--stop); }
+.dg-node.warn rect { stroke: var(--wait); }
+.dg-title { font: 700 13px "Be Vietnam Pro", system-ui, sans-serif; fill: var(--ink); }
+.dg-node.target .dg-title { fill: var(--head); }
+.dg-node.stop .dg-title { fill: var(--stop); }
+.dg-node.warn .dg-title { fill: var(--wait); }
+.dg-sub { font: 11px "JetBrains Mono", ui-monospace, monospace; fill: var(--ink-2); }
+.dg-label { font: 700 12px "Be Vietnam Pro", system-ui, sans-serif; fill: var(--head2); }
+
+/* keyword tooltips */
+.hint { color: var(--ink-2); font-size: 14px; }
+.term { border-bottom: 1px dotted var(--head); cursor: help; }
+.term:hover, .term[aria-describedby] { background: var(--hl-bg); border-radius: 3px; }
+.term:focus-visible { outline: 2px solid var(--head); outline-offset: 1px; border-radius: 3px; }
+.kwlist { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
+.kwchip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 4px 12px; font-size: 14px; }
+.kwchip:hover, .kwchip[aria-describedby] { border-color: var(--head); background: var(--hl-bg); }
+.kwchip code, .tip code { font: 12.5px "JetBrains Mono", ui-monospace, monospace; background: var(--chip);
+  padding: 1px 4px; border-radius: 4px; }
+.tip { position: fixed; z-index: 50; width: max-content; max-width: min(440px, calc(100vw - 32px));
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 14px 16px;
+  font: 14px/1.55 "Be Vietnam Pro", system-ui, sans-serif; }
+.tip[hidden] { display: none; }
+.tip h4 { margin: 0 0 8px; font-size: 15px; }
+.tip dl { margin: 0; }
+.tip dt { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-2); margin-top: 8px; }
+.tip dt.f0 { margin-top: 0; }
+.tip dt.f2 { color: var(--stop); }
+.tip dd { margin: 1px 0 0; }
+.tip dd.f3 { font-size: 12.5px; color: var(--ink-2); }
+@media (max-width: 700px) {
+  .cards { grid-template-columns: 1fr; }
+  pre { font-size: 12px; padding: 16px; }
+  h1 { font-size: 24px; }
+}
+
+.nt-wrap { margin-top: 30px; }
+.nt { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin: 0 0 12px; }
+.nt > summary { cursor: pointer; padding: 14px 18px; font-weight: 700; font-size: 16px; color: var(--head); list-style: none; }
+.nt > summary::-webkit-details-marker { display: none; }
+.nt > summary::before { content: "\25B8"; display: inline-block; width: 1.2em; color: var(--ink-3); transition: transform .15s; }
+.nt[open] > summary::before { transform: rotate(90deg); }
+.nt-body { padding: 0 18px 16px; line-height: 1.65; }
+.nt-body h3 { font-size: 15px; color: var(--head2); margin: 22px 0 8px; }
+.nt-body pre { font: 13px/1.5 "JetBrains Mono", ui-monospace, monospace; padding: 12px 14px; overflow-x: auto; }
+.nt-body code { font: 13px "JetBrains Mono", ui-monospace, monospace; background: var(--chip); padding: 1px 5px; border-radius: 4px; }
+.nt-body pre code { background: none; padding: 0; }
+.nt-tbl { overflow-x: auto; margin: 10px 0; }
+.nt-body table { border-collapse: collapse; font-size: 14px; min-width: 100%; }
+.nt-body th, .nt-body td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+.nt-body th { background: var(--chip); }
+.nt-body ul, .nt-body ol { padding-left: 22px; }
+
+.st-tbl { border-collapse: collapse; font-size: 14px; min-width: 100%; }
+.st-tbl th, .st-tbl td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+.st-tbl th { background: var(--chip); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top">
+  <h1>Luồng một lượt hỏi</h1>
+  <button id="themeBtn" type="button">Đổi nền</button>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" id="tab-mental-model" aria-controls="mental-model" aria-selected="true">Mental model</button>
+  {{TABS}}
+</div>
+
+<section class="panel" role="tabpanel" id="mental-model" aria-labelledby="tab-mental-model">
+<pre>{{BODY}}</pre>
+<h2>Ba nguyên tắc chạy xuyên suốt</h2>
+<ol>
+  <li><b>AI không bao giờ tự tính số.</b> Số chỉ đến từ phần mềm tính kết cấu hoặc từ tài liệu.</li>
+  <li><b>Không đủ căn cứ thì từ chối</b>, không trả lời bừa.</li>
+  <li><b>Mọi đường đều về bước 10.</b> Kể cả bị chặn ở cổng hay lỗi giữa chừng.</li>
+</ol>
+{{NONTECH}}
+</section>
+
+{{PANELS}}
+</div>
+<script>
+(function () {
+  var root = document.documentElement, KEY = "luong-theme";
+  try { var s = localStorage.getItem(KEY); if (s) root.setAttribute("data-theme", s); } catch (e) {}
+  document.getElementById("themeBtn").addEventListener("click", function () {
+    var cur = root.getAttribute("data-theme") ||
+      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    var next = cur === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem(KEY, next); } catch (e) {}
+  });
+
+  // Tabs: thêm tab mới = thêm một <button class="tab"> và một <section class="panel">
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  function show(id) {
+    tabs.forEach(function (t) {
+      var on = t.getAttribute("aria-controls") === id;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+    });
+    // a diagram in a hidden panel has no size, so fit it once its tab is visible
+    var panel = document.getElementById(id);
+    if (panel) panel.querySelectorAll(".dg").forEach(function (d) { if (d._fit) d._fit(); });
+  }
+
+  // Diagrams: drag to pan, wheel or pinch to zoom, buttons for +, − and fit
+  function initDiagram(box) {
+    var svg = box.querySelector("svg"), view = svg.querySelector(".dg-view");
+    var W = +svg.getAttribute("data-w"), H = +svg.getAttribute("data-h");
+    var s = 1, tx = 0, ty = 0, ptrs = {}, pinch = null;
+    function apply() { view.setAttribute("transform", "translate(" + tx + "," + ty + ") scale(" + s + ")"); }
+    function fit() {
+      var cw = box.clientWidth;
+      if (!cw) return;
+      if (!isFull()) box.style.height = Math.round(Math.min(480, Math.max(200, cw * H / W + 56))) + "px";
+      var top = 40, ch = box.clientHeight - top;   // keep the zoom buttons clear of the drawing
+      s = Math.min(isFull() ? 3 : 1.25, Math.min(cw / W, ch / H) * 0.97);
+      tx = (cw - W * s) / 2; ty = top + (ch - H * s) / 2;
+      apply();
+    }
+    function zoomAt(f, px, py) {
+      var ns = Math.max(0.15, Math.min(4, s * f));
+      tx = px - (px - tx) * ns / s; ty = py - (py - ty) * ns / s; s = ns;
+      apply();
+    }
+    function local(e) { var r = box.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+    box.addEventListener("wheel", function (e) {
+      e.preventDefault();
+      var p = local(e);
+      zoomAt(Math.exp(-e.deltaY * 0.0015), p[0], p[1]);
+    }, { passive: false });
+    box.addEventListener("pointerdown", function (e) {
+      if (e.target.closest("button")) return;
+      box.setPointerCapture(e.pointerId);
+      ptrs[e.pointerId] = local(e);
+      box.classList.add("dragging");
+    });
+    box.addEventListener("pointermove", function (e) {
+      if (!ptrs[e.pointerId]) return;
+      var p = local(e), ids = Object.keys(ptrs);
+      if (ids.length === 1) {
+        tx += p[0] - ptrs[e.pointerId][0]; ty += p[1] - ptrs[e.pointerId][1];
+        ptrs[e.pointerId] = p; apply();
+      } else if (ids.length === 2) {
+        ptrs[e.pointerId] = p;
+        var a = ptrs[ids[0]], b = ptrs[ids[1]];
+        var d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+        if (pinch) zoomAt(d / pinch, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+        pinch = d;
+      }
+    });
+    function up(e) {
+      delete ptrs[e.pointerId]; pinch = null;
+      if (!Object.keys(ptrs).length) box.classList.remove("dragging");
+    }
+    box.addEventListener("pointerup", up);
+    box.addEventListener("pointercancel", up);
+    // fullscreen: native Fullscreen API when available, else a fixed overlay (iPhone Safari)
+    var fullBtn = box.querySelector('[data-z="full"]');
+    function isFull() { return document.fullscreenElement === box || box.classList.contains("is-full"); }
+    function syncFull() {
+      var on = isFull();
+      fullBtn.textContent = on ? "Thoát" : "⛶";
+      fullBtn.title = on ? "Thoát toàn màn hình" : "Toàn màn hình";
+      fullBtn.setAttribute("aria-label", fullBtn.title);
+      document.body.classList.toggle("dg-lock", box.classList.contains("is-full"));
+      requestAnimationFrame(fit);
+    }
+    function toggleFull() {
+      if (isFull()) {
+        if (document.fullscreenElement === box) document.exitFullscreen();
+        else { box.classList.remove("is-full"); syncFull(); }
+      } else if (box.requestFullscreen) {
+        box.requestFullscreen().catch(function () { box.classList.add("is-full"); syncFull(); });
+      } else { box.classList.add("is-full"); syncFull(); }
+    }
+    document.addEventListener("fullscreenchange", function () {
+      if (document.fullscreenElement === box || !document.fullscreenElement) syncFull();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && box.classList.contains("is-full")) { box.classList.remove("is-full"); syncFull(); }
+    });
+    box.querySelectorAll("[data-z]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var z = b.getAttribute("data-z");
+        if (z === "full") toggleFull();
+        else if (z === "fit") fit();
+        else zoomAt(z === "in" ? 1.25 : 0.8, box.clientWidth / 2, box.clientHeight / 2);
+      });
+    });
+    box._fit = fit;
+  }
+  document.querySelectorAll(".dg").forEach(initDiagram);
+  window.addEventListener("hashchange", function () {
+    var id = location.hash.slice(1);
+    if (tabs.some(function (t) { return t.getAttribute("aria-controls") === id; })) show(id);
+  });
+  window.addEventListener("resize", function () {
+    document.querySelectorAll(".panel:not([hidden]) .dg").forEach(function (d) { d._fit(); });
+  });
+  tabs.forEach(function (t) {
+    t.addEventListener("click", function () {
+      var id = t.getAttribute("aria-controls");
+      show(id);
+      history.replaceState(null, "", "#" + id);
+    });
+  });
+  var initial = location.hash.slice(1);
+  show(tabs.some(function (t) { return t.getAttribute("aria-controls") === initial; })
+    ? initial : tabs[0].getAttribute("aria-controls"));
+
+  // Keyword tooltips: hover, keyboard focus, or tap on a .term
+  var dataEl = document.getElementById("kw-data");
+  if (!dataEl) return;
+  var data = JSON.parse(dataEl.textContent);
+  var tip = document.createElement("div");
+  tip.className = "tip"; tip.id = "kw-tip"; tip.setAttribute("role", "tooltip"); tip.hidden = true;
+  document.body.appendChild(tip);
+  var cur = null, hideTimer = null, shownAt = 0;
+
+  function render(k) {
+    var d = data[k], h = "<h4>" + d.name + "</h4><dl>";
+    d.fields.forEach(function (f, i) {
+      h += '<dt class="f' + i + '">' + f.k + '</dt><dd class="f' + i + '">' + f.v + "</dd>";
+    });
+    return h + "</dl>";
+  }
+  function place(el) {
+    var r = el.getBoundingClientRect();
+    tip.style.left = "0px"; tip.style.top = "0px";
+    var tw = tip.offsetWidth, th = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    var left = Math.min(Math.max(16, r.left), vw - tw - 16);
+    var top = r.bottom + 8;
+    if (top + th > vh - 8 && r.top - th - 8 > 8) top = r.top - th - 8;
+    tip.style.left = left + "px"; tip.style.top = Math.max(8, top) + "px";
+  }
+  function open(el) {
+    clearTimeout(hideTimer);
+    if (cur === el && !tip.hidden) return;
+    if (cur) cur.removeAttribute("aria-describedby");
+    cur = el; shownAt = Date.now();
+    tip.innerHTML = render(el.getAttribute("data-k"));
+    tip.hidden = false;
+    el.setAttribute("aria-describedby", "kw-tip");
+    place(el);
+  }
+  function closeNow() {
+    clearTimeout(hideTimer);
+    tip.hidden = true;
+    if (cur) cur.removeAttribute("aria-describedby");
+    cur = null;
+  }
+  function closeSoon() { clearTimeout(hideTimer); hideTimer = setTimeout(closeNow, 150); }
+  function termOf(n) { return n && n.closest ? n.closest(".term") : null; }
+
+  document.addEventListener("mouseover", function (e) { var t = termOf(e.target); if (t) open(t); });
+  document.addEventListener("mouseout", function (e) {
+    var t = termOf(e.target);
+    if (t && !t.contains(e.relatedTarget) && !tip.contains(e.relatedTarget)) closeSoon();
+  });
+  tip.addEventListener("mouseenter", function () { clearTimeout(hideTimer); });
+  tip.addEventListener("mouseleave", closeSoon);
+  document.addEventListener("focusin", function (e) { var t = termOf(e.target); if (t) open(t); });
+  document.addEventListener("focusout", function (e) { if (termOf(e.target)) closeSoon(); });
+  document.addEventListener("click", function (e) {
+    var t = termOf(e.target);
+    if (t) {
+      // tap on touch screens: first tap opens (via mouseover), second tap closes
+      if (cur === t && !tip.hidden && Date.now() - shownAt > 400) closeNow(); else open(t);
+    } else if (!tip.contains(e.target)) closeNow();
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeNow(); });
+  document.addEventListener("scroll", function () { if (cur && !tip.hidden) place(cur); }, true);
+  window.addEventListener("resize", function () { if (cur && !tip.hidden) place(cur); });
+  tabs.forEach(function (t) { t.addEventListener("click", closeNow); });
+})();
+</script>
+</body>
+</html>
