@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mental model — luồng một lượt hỏi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --desk: #e6e9ee; --paper: #ffffff; --grid: #eef1f5;
+    --ink: #2a3442; --muted: #6b7684; --rule: #dce1e8; --accent: #14385c;
+    --bar: #f3f6fa; --btn: #ffffff; --btn-line: #c4cfda;
+    --how: #59677a; --band: #eef3f8; --line: #b7c4d3;
+    --stop: #b3564e; --stop-bg: #f8ece9; --wait: #a07d3a; --wait-bg: #f6efdf;
+    --tag: #eef2f7; --tag-ink: #3d566e; --sb: #b7c0cb; --sb-hi: #93a1b0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --desk: #14181e; --paper: #1a212a; --grid: #171d25;
+      --ink: #d7dde4; --muted: #8b95a1; --rule: #2b333d; --accent: #7fa9d4;
+      --bar: #12171e; --btn: #1b222b; --btn-line: #333d49;
+      --how: #9aa6b4; --band: #202a35; --line: #3a4551;
+      --stop: #e2938b; --stop-bg: #2c1f1d; --wait: #d9b871; --wait-bg: #2b2519;
+      --tag: #232c37; --tag-ink: #aab7c6; --sb: #39434f; --sb-hi: #4d5966;
+    }
+  }
+  :root[data-theme="dark"] {
+    --desk: #14181e; --paper: #1a212a; --grid: #171d25;
+    --ink: #d7dde4; --muted: #8b95a1; --rule: #2b333d; --accent: #7fa9d4;
+    --bar: #12171e; --btn: #1b222b; --btn-line: #333d49;
+    --how: #9aa6b4; --band: #202a35; --line: #3a4551;
+    --stop: #e2938b; --stop-bg: #2c1f1d; --wait: #d9b871; --wait-bg: #2b2519;
+    --tag: #232c37; --tag-ink: #aab7c6; --sb: #39434f; --sb-hi: #4d5966;
+  }
+  * { box-sizing: border-box; }
+  * { scrollbar-width: thin; scrollbar-color: var(--sb) transparent; }
+  *::-webkit-scrollbar { width: 11px; height: 11px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: var(--sb); border-radius: 8px;
+    border: 3px solid transparent; background-clip: content-box; }
+  *::-webkit-scrollbar-thumb:hover { background: var(--sb-hi); background-clip: content-box; }
+  *::-webkit-scrollbar-corner { background: transparent; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--desk); color: var(--ink);
+    font: 14px/1.55 "Onest", "DejaVu Sans", system-ui, -apple-system, sans-serif; }
+
+  #stage { min-height: 100vh;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--paper); }
+
+  .board { display: flex; flex-direction: row; gap: 44px; justify-content: center;
+    align-items: flex-start; padding: 64px 24px 80px; width: max-content; margin: 0 auto; }
+  .flow { display: flex; flex-direction: column; align-items: center; gap: 0;
+    width: 900px; }
+  .side { width: 300px; flex: none; position: sticky; top: 24px; padding-top: 540px;
+    display: flex; flex-direction: column; align-items: center; }
+  .side .blabel.off { margin-bottom: 12px; }
+  .side .card { width: 100%; }
+  .feednote { margin-top: 12px; font-size: 12px; color: var(--how); text-align: center;
+    border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; background: var(--band); }
+  @media (max-width: 1320px) {
+    .board { flex-direction: column; align-items: center; width: auto; }
+    .side { position: static; padding-top: 0; width: 900px; max-width: 100%; }
+  }
+
+  /* end caps */
+  .cap { font-weight: 700; color: #fff; background: var(--accent);
+    padding: 9px 20px; border-radius: 999px; font-size: 14px; letter-spacing: .01em; }
+
+  /* connector arrow between cards */
+  .arrow { width: 2px; height: 34px; background: var(--line); position: relative; }
+  .arrow::after { content: ""; position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: var(--line); border-bottom: 0; }
+
+  /* card */
+  .card { width: 560px; background: var(--paper); border: 1px solid var(--rule);
+    border-radius: 14px; box-shadow: 0 3px 14px rgba(20,40,70,.09);
+    cursor: pointer; transition: box-shadow .16s ease, transform .16s ease, border-color .16s ease; }
+  .card .hd { border-radius: 14px 14px 0 0; }
+  .card:hover { border-color: var(--accent); box-shadow: 0 10px 28px rgba(20,40,70,.20); transform: translateY(-3px); }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card .hd { display: flex; align-items: center; gap: 12px; padding: 13px 18px;
+    border-bottom: 1px solid var(--rule); }
+  .num { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center;
+    background: var(--accent); color: #fff; font-weight: 800; font-size: 14px; }
+  .ttl { font-weight: 700; font-size: 15.5px; letter-spacing: .01em; }
+  .bd { padding: 13px 18px 15px; }
+  .sum { margin: 0; color: var(--ink); font-size: 13.5px; line-height: 1.62; }
+  .sum code { font-size: 12px; }
+  .what { margin: 0 0 9px; }
+  .what b { color: var(--accent); font-weight: 700; }
+  .how { margin: 0; padding: 0; list-style: none; color: var(--how); font-size: 13px; }
+  .how li { position: relative; padding-left: 16px; margin: 4px 0; }
+  .how li::before { content: ""; position: absolute; left: 3px; top: 8px; width: 5px; height: 5px;
+    border-radius: 50%; background: var(--line); }
+  .k { color: var(--ink); font-weight: 600; }
+  code { font-family: "DejaVu Sans Mono", ui-monospace, monospace; font-size: 12px;
+    background: var(--tag); padding: 1px 5px; border-radius: 4px; }
+  .foot { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+  .chip { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 7px; }
+  .chip.stop { color: var(--stop); background: var(--stop-bg); }
+  .chip.wait { color: var(--wait); background: var(--wait-bg); }
+
+  /* the 3-parallel prepare card */
+  .cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .subp { background: var(--band); border: 1px solid var(--rule); border-radius: 10px; padding: 11px 12px; }
+  .subp h4 { margin: 0 0 6px; font-size: 12.5px; color: var(--accent); font-weight: 700; }
+  .subp .how { font-size: 12px; }
+
+  /* branch labels row */
+  .branch { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; width: 860px; align-items: start; }
+  .lane { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .blabel { background: var(--tag); color: var(--tag-ink); border: 1px solid var(--rule);
+    font-weight: 700; font-size: 12.5px; padding: 5px 12px; border-radius: 999px; }
+  .lane .card { width: 100%; }
+  .lane .bd { padding: 11px 13px 13px; }
+  .lane .how { font-size: 12px; }
+  .split { width: 100%; height: 22px; }
+
+  /* offline worker (ngoài luồng hỏi) */
+  .card.offline { border-style: dashed; border-color: var(--line); background: var(--band); }
+  .card.offline .hd { border-bottom-style: dashed; }
+  .card.offline .num { background: var(--how); }
+  .tag-off { display: inline-block; margin-left: auto; font-size: 10.5px; font-weight: 700;
+    color: var(--how); background: var(--tag); border: 1px dashed var(--line);
+    padding: 2px 7px; border-radius: 999px; }
+  .card.offline:hover { border-color: var(--how); }
+
+  /* modal */
+  #overlay { position: fixed; inset: 0; z-index: 50; background: rgba(15,22,32,.55);
+    display: none; }
+  #overlay.open { display: block; animation: ov-fade .16s ease; }
+  #modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(960px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto;
+    background: var(--paper); border: 1px solid var(--rule); border-radius: 16px;
+    box-shadow: 0 24px 70px rgba(15,22,32,.45); }
+  #overlay.open #modal { animation: mo-pop .22s cubic-bezier(.2,.7,.3,1); }
+  @keyframes ov-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes mo-pop {
+    from { opacity: 0; transform: translate(-50%, -46%) scale(.965); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #overlay.open, #overlay.open #modal { animation: none; }
+  }
+  .m-hd { display: flex; align-items: center; gap: 12px; padding: 16px 22px;
+    border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--paper); z-index: 1; }
+  .m-hd .num { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+    background: var(--accent); color: #fff; font-weight: 800; font-size: 14px; flex: none; }
+  .m-ttl { font-weight: 800; font-size: 18px; }
+  .m-close { margin-left: auto; width: 32px; height: 32px; flex: none;
+    border: 1px solid var(--btn-line); background: var(--btn); border-radius: 8px; cursor: pointer;
+    color: var(--ink); font-size: 17px; line-height: 1; }
+  .m-close:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .m-bd { padding: 18px 22px 24px; }
+  .m-sec { margin: 0 0 22px; }
+  .m-sec:last-child { margin-bottom: 0; }
+  .m-sec h3 { font-size: 12px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 9px; font-weight: 700; }
+  .m-sec ul { margin: 0; padding-left: 18px; color: var(--ink); }
+  .m-sec li { margin: 7px 0; }
+  .m-sec li b { color: var(--accent); font-weight: 700; }
+  .m-why { background: var(--band); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 15px; }
+  .m-why ul { padding-left: 16px; }
+  .m-diagram { position: relative; height: 340px; border: 1px solid var(--rule); border-radius: 10px;
+    padding: 12px; overflow: hidden;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 20px 20px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 20px 20px,
+      var(--paper); }
+  .m-diagram:fullscreen { height: 100vh; width: 100vw; padding: 24px; border: 0; border-radius: 0; }
+  .m-diagram svg { width: 100%; height: 100%; display: block; }
+  .dctrl { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; gap: 5px; }
+  .dctrl button { width: 28px; height: 26px; display: grid; place-items: center; cursor: pointer;
+    border: 1px solid var(--btn-line); background: var(--btn); color: var(--accent);
+    border-radius: 6px; font: inherit; font-size: 15px; line-height: 1; }
+  .dctrl button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .dctrl button svg { width: 14px; height: 14px; stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .m-src { font-size: 11.5px; color: var(--muted); }
+  .m-src code { font-size: 11px; }
+
+  /* technical-term tooltip */
+  .term { border-bottom: 1px dashed var(--accent); cursor: help; position: relative; }
+  .term:hover::after { content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 9px);
+    z-index: 80; width: max-content; max-width: 280px; background: var(--accent); color: #fff;
+    padding: 8px 11px; border-radius: 9px; font: 400 12px/1.45 "Onest", sans-serif;
+    box-shadow: 0 8px 24px rgba(15,22,32,.32); white-space: normal; pointer-events: none; }
+  .term:hover::before { content: ""; position: absolute; left: 14px; bottom: calc(100% + 3px);
+    border: 6px solid transparent; border-top-color: var(--accent); z-index: 80; pointer-events: none; }
+  .term code, code .term { border: 0; }
+
+  #bar { position: fixed; left: 16px; bottom: 16px; z-index: 10;
+    display: flex; align-items: center; gap: 6px; padding: 7px 10px; background: var(--bar);
+    border: 1px solid var(--rule); border-radius: 10px; box-shadow: 0 2px 10px rgba(20,40,70,.12); }
+  #bar button { width: 30px; height: 28px; padding: 0; display: grid; place-items: center;
+    border: 1px solid var(--btn-line); background: var(--btn); border-radius: 5px;
+    color: var(--accent); font: inherit; font-size: 16px; line-height: 1; cursor: pointer; }
+  #bar button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #bar button svg { width: 15px; height: 15px; stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #bar .hint { margin-left: 6px; color: var(--muted); font-size: 11.5px; }
+
+  #title { position: fixed; top: 16px; left: 16px; z-index: 10; color: var(--muted);
+    font-size: 12.5px; font-weight: 600; pointer-events: none; }
+  #title b { color: var(--ink); font-weight: 800; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="title"><b>Mental model — một lượt hỏi</b> · 10 bước · AI không tự tính · thiếu căn cứ thì từ chối · mọi đường về bước 10</div>
+<div id="stage">
+  <div class="board">
+    <div class="flow">
+
+      <div class="cap">Kỹ sư gửi câu hỏi</div>
+      <div class="arrow"></div>
+
+      <div class="card">
+        <div class="hd"><div class="num">1</div><div class="ttl">Gửi câu hỏi</div></div>
+        <div class="bd">
+          <p class="sum">Trình duyệt gói câu hỏi cùng ngữ cảnh màn hình — đang xem dự án nào, cấu kiện nào, đã có kết quả tính chưa — rồi gửi lên hệ thống, cố ý không kèm lịch sử hay lời dặn cho AI. Lớp trung gian gắn phiên đăng nhập trước khi chuyển tiếp, và câu trả lời sau đó stream ngược đúng đường ấy về màn hình.</p>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="card">
+        <div class="hd"><div class="num">2</div><div class="ttl">Chặn cổng</div></div>
+        <div class="bd">
+          <p class="sum">Trước khi nhận câu hỏi, hệ thống lần lượt tự hỏi: máy này có đang gửi dồn dập không, người dùng đã đăng nhập hợp lệ chưa, có quyền dùng AI không, có hỏi quá nhiều trong một phút không, có đang chờ một câu trả lời khác không, và còn hạn mức trong ngày không. Trượt ở câu nào thì dừng ngay ở đó; chỉ câu hỏi qua hết mọi cửa mới được phục vụ, còn lại bị từ chối kèm lý do rõ ràng.</p>
+          <div class="foot"><span class="chip stop">✗ trượt → Từ chối</span></div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="card">
+        <div class="hd"><div class="num">3+4</div><div class="ttl">Chuẩn bị — ba việc chạy cùng lúc</div></div>
+        <div class="bd">
+          <p class="sum">Ba việc chạy song song để khỏi cộng dồn thời gian chờ. Một là <code>ApplyGuardrail</code> soát câu hỏi và che thông tin cá nhân trước khi đưa cho bất kỳ AI nào. Hai là dựng danh sách phạm vi tài liệu người dùng được đọc, lấy từ quyền trong phiên đăng nhập chứ không tin những gì trình duyệt gửi lên. Ba là lấy lịch sử hội thoại gần nhất, đếm theo lượt và cắt vừa đủ. Xong cả ba mới sang bước phân loại.</p>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="card">
+        <div class="hd"><div class="num">5</div><div class="ttl">Phân loại câu hỏi</div></div>
+        <div class="bd">
+          <p class="sum">Một mô hình nhỏ, nhanh và rẻ đọc câu hỏi để đoán ý định người dùng, viết lại câu cho rõ nghĩa và bóc ra các thông số như nhịp hay cấp bê tông. Nhãn ý định quyết định câu hỏi đi nhánh nào — tra tài liệu, gọi engine tính toán, hay tra trường hợp cũ — còn câu lạc đề thì bị từ chối ngay; nếu mô hình lỗi thì có luật đơn giản đỡ tạm.</p>
+          <div class="foot"><span class="chip stop">✗ lạc đề → Từ chối</span></div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="branch">
+        <div class="lane">
+          <div class="blabel">Hỏi tài liệu</div>
+          <div class="split arrow"></div>
+          <div class="card">
+            <div class="hd"><div class="num">6a</div><div class="ttl">Tìm tài liệu</div></div>
+            <div class="bd">
+              <p class="sum">Nếu câu hỏi có mã điều khoản thì tra đúng mã trước, sửa được cả khi gõ nhầm. Sau đó tìm rộng bốn mươi đoạn trong đúng phạm vi được đọc, rồi chấm lại kỹ để giữ tám đoạn tốt nhất. Đoạn tốt nhất mà vẫn dưới ngưỡng thì thà từ chối còn hơn trả lời bừa; đủ căn cứ thì lấy thêm đoạn liền kề cho trọn ý và gửi kèm danh sách nguồn.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <div class="blabel">Tính toán</div>
+          <div class="split arrow"></div>
+          <div class="card">
+            <div class="hd"><div class="num">6b</div><div class="ttl">Gọi công cụ tính toán</div></div>
+            <div class="bd">
+              <p class="sum">Mô hình mở một vòng lặp có giới hạn: nó nói cần tính gì với số nào chứ tự nó không tính. Mỗi lời gọi phải qua sáu lớp kiểm — quyền, khoảng giá trị, đơn vị đo bắt buộc, chống gọi lặp — rồi mới tới phần mềm kết cấu tính thật, và kết quả trả về còn được đọc kỹ để bắt lỗi ẩn núp trong báo &quot;thành công&quot;. Có kết quả thì lặp tiếp nếu cần, hoặc dừng để viết trả lời.</p>
+            <div class="foot"><span class="chip stop">✗ quá vòng/giờ → trả phần đã có</span><span class="chip wait">⏸ cần kỹ sư duyệt</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <div class="blabel">Tra trường hợp cũ</div>
+          <div class="split arrow"></div>
+          <div class="card">
+            <div class="hd"><div class="num">6c</div><div class="ttl">Gợi ý phương án</div></div>
+            <div class="bd">
+              <p class="sum">Hệ thống gom các thông số của câu hỏi, ưu tiên số lấy từ lần tính gần nhất, rồi tới số đang hiển thị trên màn hình, sau cùng mới tới số đọc thẳng từ câu hỏi. Phải đủ ít nhất hai thông số mới tra: nó lọc cứng theo đúng công ty và đúng loại cấu kiện, chỉ lấy trường hợp đã được duyệt, rồi chấm điểm bằng con số chứ không so chữ. Cuối cùng trả về năm trường hợp gần nhất, kèm nhãn nhắc rằng đây là kinh nghiệm nội bộ chứ không phải tiêu chuẩn.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="card">
+        <div class="hd"><div class="num">7</div><div class="ttl">Viết câu trả lời</div></div>
+        <div class="bd">
+          <p class="sum">Nguyên liệu đã gom được xếp vào prompt theo một thứ tự cố định để tận dụng cache, phần nào dài quá thì cắt bớt tài liệu điểm thấp nhưng không bao giờ bỏ kết quả tính. Mô hình chính viết câu trả lời và stream về ngay, có <code>guardrailConfig</code> soát từng đoạn trước khi chữ rời hệ thống; nếu mô hình chính trục trặc thì lùi sang mô hình dự phòng, cùng lắm chỉ trả danh sách nguồn.</p>
+          <div class="foot"><span class="chip stop">Sự cố → thử lại → dự phòng → chỉ trả nguồn (Degraded)</span></div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="card">
+        <div class="hd"><div class="num">8</div><div class="ttl">Soát lại</div></div>
+        <div class="bd">
+          <p class="sum">Sau khi viết xong, các validator bằng code soát lại câu trả lời chứ không lấy AI chấm AI: mỗi con số phải khớp kết quả tính hoặc có nguyên văn trong tài liệu, mỗi trích dẫn phải trỏ về đoạn thật đã tìm ở lượt này, và không được nói &quot;đạt&quot; nếu chưa có lần tính chứng minh. Chỗ nào chưa kiểm được thì gắn cảnh báo lên câu trả lời chứ không xoá phần chữ đã hiện.</p>
+          <div class="foot"><span class="chip wait">✗ → gắn cảnh báo "chưa kiểm chứng", không xoá chữ</span></div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="card">
+        <div class="hd"><div class="num">9</div><div class="ttl">Gửi về</div></div>
+        <div class="bd">
+          <p class="sum">Kết quả về màn hình theo từng mẩu — trạng thái, nguồn, chữ, kết quả tính, trích dẫn, cảnh báo — qua một luồng SSE tắt buffer ở mọi tầng để chữ hiện dần chứ không dồn thành một cục ở cuối. Các con số trên thẻ kết quả lấy thẳng từ dữ liệu tính, không đọc lại từ chữ mô hình viết.</p>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="card">
+        <div class="hd"><div class="num">10</div><div class="ttl">Ghi sổ</div></div>
+        <div class="bd">
+          <p class="sum">Dù lượt kết thúc theo đường nào — xong xuôi, bị chặn, từ chối hay lỗi giữa chừng — hệ thống đều ghi lại đầy đủ: câu hỏi, câu trả lời, tài liệu đã tìm, lần tính và nhật ký kiểm toán. Cuối cùng nó trừ hạn mức theo lượng token thực dùng rồi mở khoá để người dùng hỏi câu tiếp theo.</p>
+        </div>
+      </div>
+      <div class="arrow"></div>
+      <div class="cap">Hết lượt</div>
+
+    </div><!-- /flow -->
+
+    <aside class="side">
+      <div class="blabel off">Luồng phụ · offline</div>
+      <div class="card offline">
+        <div class="hd"><div class="num">W</div><div class="ttl">Nạp tài liệu</div><span class="tag-off">ngoài luồng hỏi</span></div>
+        <div class="bd">
+          <p class="sum">Ngoài luồng hỏi, worker cắt tài liệu thành từng đoạn kèm chú thích nguồn, lưu bản gốc đã mã hoá lên S3 rồi đồng bộ vào Knowledge Base. Kho vector dựng ở đây chính là thứ mà bước 6a tra mỗi khi người dùng hỏi tài liệu.</p>
+        </div>
+      </div>
+      <div class="feednote">Dựng Knowledge Base ⟶ cấp cho bước 6a · Tìm tài liệu</div>
+    </aside>
+
+    </div><!-- /board -->
+</div>
+
+<div id="overlay">
+  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="m-ttl">
+    <div class="m-hd">
+      <div class="num" id="m-num"></div>
+      <div class="m-ttl" id="m-ttl"></div>
+      <button class="m-close" id="m-close" aria-label="Đóng" title="Đóng (Esc)">✕</button>
+    </div>
+    <div class="m-bd" id="m-bd"></div>
+  </div>
+</div>
+
+<div id="bar">
+  <button id="fs" title="Toàn màn hình" aria-label="Toàn màn hình"><svg viewBox="0 0 24 24"><path d="M8 3H3v5M21 8V3h-5M3 16v5h5M16 21h5v-5"/></svg></button>
+  <span class="hint">bấm vào mỗi bước để xem chi tiết · cuộn để xem toàn bộ</span>
+</div>
+
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+await loadScript("https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js");
+const svgPanZoom = window.svgPanZoom;
+const themeAttr = document.documentElement.dataset.theme;
+const dark = themeAttr ? themeAttr === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+const ink = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim();
+mermaid.initialize({
+  startOnLoad: false, theme: "neutral",
+  themeVariables: {
+    fontFamily: "Onest, DejaVu Sans, sans-serif", fontSize: "13px",
+    lineColor: dark ? "#5b6672" : "#9aa5b1",
+    primaryColor: dark ? "#1b222b" : "#eef1f5",
+    primaryBorderColor: dark ? "#3a4551" : "#b7c0cb",
+    primaryTextColor: ink,
+  },
+  flowchart: { htmlLabels: true, nodeSpacing: 34, rankSpacing: 46, curve: "basis",
+    useMaxWidth: true, wrappingWidth: 240, padding: 8 },
+});
+
+// từ điển thuật ngữ — hiện tooltip khi hover
+const GLOSSARY = {
+  "ApplyGuardrail": "Bộ lọc an toàn của Bedrock, gọi tách riêng để soát nội dung: chặn tấn công, chủ đề cấm, che thông tin cá nhân.",
+  "guardrailConfig": "Cách gắn guardrail thẳng vào lời gọi mô hình khi stream, soát ngay lúc sinh chữ.",
+  "Guardrails": "Lớp lọc an toàn của Bedrock đặt quanh mô hình.",
+  "Bedrock": "Dịch vụ AWS chạy các mô hình nền: Runtime, Knowledge Base, Rerank, Guardrails.",
+  "Knowledge Base": "Kho tài liệu đã cắt đoạn và lập chỉ mục vector để tra theo ngữ nghĩa.",
+  "Rerank": "Chấm lại các đoạn tìm được để giữ số ít đoạn liên quan nhất.",
+  "Retrieve": "Lời gọi tìm rộng các đoạn tài liệu gần nghĩa nhất trong Knowledge Base.",
+  "Haiku": "Mô hình Claude nhỏ, nhanh, rẻ — dùng cho phân loại câu hỏi.",
+  "Sonnet 5": "Mô hình Claude mạnh — dùng cho trả lời chính và vòng lặp gọi tool.",
+  "Sonnet 4.6": "Mô hình Claude đời trước, dùng làm đường dự phòng khi mô hình chính lỗi.",
+  "Harness": "Thành phần AgentCore tự quản vòng lặp gọi tool cho mô hình.",
+  "AgentCore": "Nền chạy agent của AWS, gồm Harness và Gateway.",
+  "Gateway": "Cổng AgentCore kiểm quyền bằng Cedar và đổi token trước khi gọi tool.",
+  "Cedar": "Ngôn ngữ khai báo chính sách phân quyền, kiểm ai được gọi tool nào.",
+  "JWT": "Vé đăng nhập đã ký, mang danh tính và quyền của người dùng.",
+  "JWKS": "Bộ khoá công khai để kiểm chữ ký JWT.",
+  "Keycloak": "Hệ quản lý đăng nhập, phát và ký JWT.",
+  "SSE": "Server-Sent Events — kênh một chiều đẩy dữ liệu về trình duyệt theo luồng.",
+  "BFF": "Backend-for-Frontend — lớp trung gian giữa trình duyệt và dịch vụ, giữ token.",
+  "Row-Level Security": "PostgreSQL tự lọc mỗi truy vấn theo tổ chức, kể cả truy vấn viết sai.",
+  "RLS": "Row-Level Security — PostgreSQL tự lọc mỗi truy vấn theo tổ chức.",
+  "pg_trgm": "Tiện ích PostgreSQL so khớp chuỗi gần đúng, dùng sửa mã gõ nhầm.",
+  "cachePoint": "Điểm đánh dấu phần prompt cố định để Bedrock nhớ đệm, rẻ và nhanh hơn.",
+  "ConverseStream": "API Bedrock trả lời theo luồng và gắn được guardrail.",
+  "KMS": "Dịch vụ quản lý khoá mã hoá của AWS.",
+  "S3": "Kho lưu trữ đối tượng của AWS, chứa tài liệu nguồn.",
+  "IAM role": "Vai trò quyền của AWS, giới hạn dịch vụ được làm gì.",
+  "token exchange": "Đổi token người dùng lấy token hẹp quyền hơn cho tool.",
+  "fallback": "Đường dự phòng khi mô hình chính lỗi.",
+  "structured output": "Ép mô hình trả về JSON đúng schema định trước.",
+  "active_turn": "Bản ghi khoá bảo đảm mỗi user chỉ một lượt chạy cùng lúc.",
+  "tool_run": "Bản ghi mỗi lần gọi engine tính, lưu tham số và kết quả.",
+  "audit_event": "Nhật ký kiểm toán: ai làm gì, khi nào — không chứa nội dung câu hỏi.",
+  "retrieval_log": "Bản ghi các đoạn tài liệu đã tìm ở mỗi lượt.",
+  "quota": "Hạn mức token mỗi ngày cho user và tổ chức.",
+  "vector": "Biểu diễn số của đoạn văn để so khớp theo ngữ nghĩa.",
+};
+const _esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const TERM_RX = new RegExp(
+  "(?<![\\p{L}\\p{N}_])(" +
+  Object.keys(GLOSSARY).sort((a, b) => b.length - a.length).map(_esc).join("|") +
+  ")(?![\\p{L}\\p{N}_])", "gu");
+
+function decorateTerms(root) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      if (!n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      const p = n.parentElement;
+      if (!p || p.classList.contains("term") || p.closest(".m-diagram") || p.closest("svg"))
+        return NodeFilter.FILTER_REJECT;
+      TERM_RX.lastIndex = 0;
+      return TERM_RX.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    },
+  });
+  const nodes = [];
+  for (let n; (n = walker.nextNode()); ) nodes.push(n);
+  for (const node of nodes) {
+    const s = node.nodeValue, frag = document.createDocumentFragment();
+    let last = 0, m;
+    TERM_RX.lastIndex = 0;
+    while ((m = TERM_RX.exec(s))) {
+      if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+      const span = document.createElement("span");
+      span.className = "term";
+      span.dataset.tip = GLOSSARY[m[1]] || "";
+      span.textContent = m[1];
+      frag.appendChild(span);
+      last = m.index + m[1].length;
+    }
+    if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+    node.parentNode.replaceChild(frag, node);
+  }
+}
+
+/* STEP_DATA */
+const STEP = {
+  "1": {
+    title: "Bước 1 · Gửi câu hỏi",
+    detail: [
+      "<b>Đọc ngữ cảnh trang</b> — Panel AI tự lấy từ màn hình đang xem: đang mở dự án nào, cấu kiện nào, đã có kết quả tính chưa, nên không phải gõ lại những thông tin này; nhờ vậy một câu hỏi ngắn vẫn được hiểu đúng đang nói về đối tượng nào.",
+      "<b>Dựng request JSON</b> — Gói câu hỏi cùng ngữ cảnh trang thành một bản tin gọn để gửi đi, giống như dán nhãn kèm địa chỉ lên một bưu kiện trước khi bỏ vào thùng thư.",
+      "<b>Gửi qua BFF và gắn Bearer</b> — Bản tin đi tới BFF, lớp trung gian đứng giữa trình duyệt và dịch vụ; BFF giữ vé đăng nhập ở phía máy chủ và đính kèm vào bản tin dưới dạng Bearer, để trang web không bao giờ cầm trực tiếp vé này, an toàn hơn khi trình duyệt bị lợi dụng.",
+      "<b>Chuyển tới Assistant.Api</b> — BFF đẩy bản tin đã có vé sang Assistant.Api, dịch vụ lõi thật sự xử lý câu hỏi và soạn câu trả lời.",
+      "<b>Trả lời chảy ngược qua SSE</b> — Assistant.Api không đợi viết xong mới gửi mà đẩy từng mẩu chữ về theo SSE, một kênh chảy một chiều; chữ đi ngược qua BFF rồi hiện dần trên panel, nên câu trả lời lớn dần trước mắt thay vì phải nhìn màn hình trắng cả phút."
+    ],
+    why: [
+      "Gửi kèm ngữ cảnh trang thay vì chỉ câu chữ: nếu chỉ có câu hỏi, hệ thống phải hỏi lại người dùng đang xem gì, hoặc để mô hình tự đoán cấu kiện rồi trả lời trôi chảy về sai đối tượng.",
+      "Dùng fetch chứ không EventSource vì EventSource không gắn được header Authorization: Bearer; phát hiện muộn thì phải viết lại cả lớp mạng.",
+      "BFF giữ token ngoài trình duyệt và không tự retry khi lỗi mạng, vì mỗi lần retry là một lượt mới và tốn tiền.",
+      "Streaming SSE vì một lượt có thể kéo dài 60 tới 90 giây; không stream thì người dùng nhìn màn hình trắng suốt thời gian đó."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "A[Panel AI · đọc ngữ cảnh trang] --> B[Dựng request JSON]",
+      "B --> C[BFF · gắn Bearer]",
+      "C --> D[Assistant.Api]",
+      "D -->|SSE| C",
+      "C -->|SSE| A"
+    ],
+    sources: ["buoc-1-kien-truc.md", "ship/02-hop-dong.md", "ship/04-frontend.md", "ship/06-bao-mat.md", "ship/01-kien-truc.md"]
+  },
+  "2": {
+    title: "Bước 2 · Chặn cổng",
+    detail: [
+      "<b>Kiểm CORS và gắn requestId</b> — Cổng đầu tiên chỉ nhận request đến từ đúng những trang được phép, rồi dán cho mỗi request một mã requestId riêng; mã này theo suốt log và báo lỗi về sau, giúp truy đúng lượt khi cần điều tra.",
+      "<b>Chặn dồn dập theo IP</b> — Nếu một địa chỉ mạng bắn quá nhiều request trong chớp nhoáng, cổng chặn ngay tại đây, trước cả khi kiểm đăng nhập, để một máy phá phách không kịp làm nghẽn hệ thống.",
+      "<b>Xác thực JWT</b> — Soi vé đăng nhập: dùng JWKS của Keycloak kiểm chữ ký có thật không, vé còn hạn không, và có đúng dành cho dịch vụ này không; vé giả hoặc hết hạn bị trả về ngay.",
+      "<b>Kiểm quyền dùng module</b> — ModuleGuard xét xem người dùng có được bật tính năng trợ lý hay không; có vé hợp lệ nhưng chưa được cấp quyền dùng thì vẫn dừng tại đây.",
+      "<b>Giới hạn nhịp theo từng người, kèm công tắc tắt khẩn</b> — Đếm số lượt của mỗi người trong vài phút gần nhất để không ai hỏi dồn quá mức; đi kèm một kill switch cho phép tắt toàn bộ trợ lý tức thì bằng cấu hình, không cần cài đặt lại, khi cần dừng khẩn.",
+      "<b>Chốt một lượt và hạn mức ngày</b> — TurnGate bảo đảm mỗi người chỉ có một câu hỏi đang chạy tại một thời điểm, chặn kiểu mở nhiều tab để hỏi song song; đồng thời kiểm quota, tức hạn mức token còn lại trong ngày của cả người dùng lẫn tổ chức, trước khi cho đi tiếp."
+    ],
+    why: [
+      "Đặt cổng rẻ trước cổng đắt và đặt rate limit trước quota: nếu đảo, một request đã bị chặn vì gửi quá nhanh vẫn bị trừ quota, người dùng mất hạn mức cho lượt chưa từng được phục vụ, mà lỗi này khó thấy vì mọi thứ khác vẫn chạy đúng.",
+      "Counter để trong PostgreSQL chứ không trong bộ nhớ instance: bộ giới hạn có sẵn của ASP.NET Core đếm theo từng instance, chạy N instance thì giới hạn thật thành N lần, mở đường denial-of-wallet bị spam tới cạn tiền.",
+      "TurnGate mới là lớp chặn spam thật sự: khoá ô nhập ở giao diện chỉ có tác dụng trong một tab, mở mười tab là mười lượt song song mà vẫn dưới ngưỡng tính theo phút.",
+      "Trừ quota theo token thực dùng (gồm cả cacheReadInputTokens, cacheWriteInputTokens) thay vì đếm số lượt, vì một lượt có gọi tool tốn gấp nhiều lần một lượt hỏi thường."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "A[Request từ BFF] --> B[CORS · requestId]",
+      "B --> C[Burst theo IP]",
+      "C --> D[JWT · JWKS · aud]",
+      "D --> E[ModuleGuard · Assistant.Use]",
+      "E --> F[Sliding window · user]",
+      "F --> G[Kill switch]",
+      "G --> H[TurnGate · quota ngày]",
+      "H --> I[Sang bước Chuẩn bị]"
+    ],
+    sources: ["buoc-2-kien-truc.md", "ship/06-bao-mat.md", "ship/03-backend.md", "ship/14-chi-tiet-backend.md", "ship/01-kien-truc.md"]
+  },
+  "3+4": {
+    title: "Bước 3+4 · Chuẩn bị song song",
+    detail: [
+      "<b>Khởi động ba việc cùng lúc</b> — ChatOrchestrator không làm lần lượt mà bấm chạy đồng thời ba việc chuẩn bị độc lập nhau, giống ba người cùng bắt tay vào ba phần việc riêng, nên tổng thời gian chỉ bằng việc lâu nhất chứ không phải cộng dồn cả ba.",
+      "<b>Soát câu hỏi bằng ApplyGuardrail</b> — Việc thứ nhất: ApplyGuardrail, bộ lọc an toàn chạy tách riêng, đọc câu hỏi để chặn mưu toan đánh lừa mô hình và các chủ đề cấm, đồng thời che thông tin cá nhân, làm sạch trước khi câu hỏi tới mô hình hoặc được lưu lại.",
+      "<b>Dựng phạm vi được đọc</b> — Việc thứ hai: AccessScopeResolver căn cứ vào JWT để chốt người này được phép đọc tài liệu và dữ liệu của những tổ chức, dự án nào; quyền luôn lấy từ vé đăng nhập chứ không lấy từ ngữ cảnh trang, vì ngữ cảnh trang do phía trình duyệt gửi lên nên có thể bị sửa.",
+      "<b>Lấy lịch sử hội thoại</b> — Việc thứ ba: ConversationStore gom vài lượt hỏi đáp gần nhất để mô hình hiểu mạch câu chuyện, nhưng chỉ giữ một cửa sổ vừa đủ chứ không nhồi toàn bộ, tránh làm mô hình loãng ý và lạc đề.",
+      "<b>Gộp kết quả bằng Task.WhenAll</b> — Chờ cả ba việc xong rồi hợp nhất lại thành một gói chuẩn bị đầy đủ, sẵn sàng chuyển sang bước phân loại câu hỏi."
+    ],
+    why: [
+      "Ba việc không phụ thuộc nhau nên chạy song song: tổng thời gian bằng việc chậm nhất chứ không phải tổng ba việc, tránh cộng vài trăm mili giây vào mỗi lượt trước khi AI kịp viết.",
+      "Hàng rào nằm ngoài mô hình: câu dặn trong prompt chỉ là lời khuyên cho một bộ máy đoán chữ và lách được, nên lọc quyền và soát nội dung phải chạy bằng mã tất định; quyền đọc lấy từ JWT, không bao giờ từ pageContext vì client sửa được pageContext.",
+      "Cache scope 60 giây để khỏi gọi Payment API và Main API ở mọi lượt, đổi lại thu hồi quyền trễ tới 60 giây; nghiệp vụ không chấp nhận thì phải bàn để giảm TTL, không tự sửa.",
+      "Cửa sổ lịch sử giới hạn theo lượt thay vì nhồi cả hội thoại để tránh context rot (nhồi cả lịch sử là anti-pattern chạy được khi demo, sai khi lên production), và không mang chunk cũ vì chúng dễ lạc đề, trích dẫn [1] [2] trỏ lẫn giữa các lượt."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "A[ChatOrchestrator] --> B[ApplyGuardrail INPUT · soát câu hỏi]",
+      "A --> C[AccessScopeResolver · phạm vi đọc]",
+      "A --> D[ConversationStore · lịch sử]",
+      "B --> E[Task.WhenAll · gộp kết quả]",
+      "C --> E",
+      "D --> E",
+      "E --> F[Sang bước phân loại]"
+    ],
+    sources: ["buoc-3-kien-truc.md", "buoc-4-kien-truc.md", "buoc-4-lich-su.md", "ship/03-backend.md", "02-assistant-service.md", "ship/06-bao-mat.md", "19-dac-ta-kien-truc.md"]
+  },
+  "5": {
+    title: "Bước 5 · Phân loại câu hỏi",
+    detail: [
+      "<b>Nhờ mô hình nhỏ Haiku phân loại</b> — Mỗi câu hỏi trước hết đưa qua IntentRouter chạy trên Haiku, mô hình nhỏ nhanh và rẻ; trong một lần gọi, nó vừa đoán ý định câu hỏi, vừa viết lại câu cho rõ ràng độc lập, vừa nhặt ra các con số nếu có. Dùng mô hình nhỏ vì bước này chạy ở mọi lượt nên phải thật tiết kiệm.",
+      "<b>Kiểm kết quả có đúng khuôn</b> — Router bị ép trả lời theo structured output, tức đúng một khuôn JSON định sẵn, nên bước này soi lại xem kết quả có trọn vẹn và đúng khuôn hay không.",
+      "<b>Hỏng thì lùi về mặc định</b> — Nếu router lỗi, quá giờ hoặc trả về khuôn vỡ, hệ thống không đứng im mà lùi về một luật đơn giản, tạm coi là câu hỏi tra tài liệu và ghi cờ đánh dấu lượt này đã phải chạy đường dự phòng.",
+      "<b>Rẽ nhánh theo nhãn ý định</b> — Khi kết quả tốt, tuỳ nhãn mà đi một trong các hướng: hỏi tài liệu và trợ giúp app thì sang RAG tìm tài liệu, yêu cầu tính toán thì vào vòng lặp gọi engine qua Harness, tra kinh nghiệm cũ thì sang Case Memory, còn câu ngoài phạm vi thì từ chối lịch sự. Mỗi hướng tốn công khác hẳn nhau nên phải rẽ sớm."
+    ],
+    why: [
+      "Từ AD-15 mọi lượt đều qua router thay vì luật nhanh: luật nhanh cũ phân loại sai câu hỏi hỗn hợp, câu có mã điều khoản bị ép thành doc_qa trong khi ý định là mixed. Cái giá là mỗi lượt chậm thêm 300 tới 500 ms và router thành điểm chết đơn, nên bắt buộc có fallback.",
+      "Tách đường ngay từ router vì hỏi tài liệu chỉ cần một lần gọi mô hình, còn tính toán cần vòng lặp nhiều lần gọi; hai kiểu chi phí khác hẳn nhau nên phải rẽ sớm.",
+      "Dùng Haiku và temperature 0 vì router chạy ở mọi lượt nên phải rẻ và phải ổn định (cùng câu hỏi ra cùng nhãn để eval được); Haiku hỗ trợ structured output còn Sonnet 5 trên Bedrock thì không.",
+      "Structured output chỉ bảo đảm hình dạng JSON chứ không bảo đảm nghĩa, nên vẫn phải kiểm stopReason và chấp nhận vẫn có thể phân loại sai; để trống MaxTokens thì Bedrock giữ chỗ quota theo mức tối đa của mô hình, gây throttling."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "A[IntentRouter · Haiku] --> B[Kiểm đầu ra JSON]",
+      "B -->|hỏng| C[Fallback · doc_qa]",
+      "B -->|ok| D[Rẽ nhánh theo nhãn]",
+      "D --> E[doc_qa · app_help sang RAG]",
+      "D --> F[calc · mixed sang Harness]",
+      "D --> G[case_lookup sang Case]",
+      "D --> H[out_of_scope sang Từ chối]"
+    ],
+    sources: ["buoc-5-kien-truc.md", "02-assistant-service.md", "19-dac-ta-kien-truc.md", "ship/02-hop-dong.md"]
+  },
+  "6a": {
+    title: "Bước 6a · Tìm tài liệu",
+    detail: [
+      "<b>Sửa mã điều khoản trước</b> — Nếu câu hỏi có nhắc số hiệu điều khoản, ClauseResolver dùng pg_trgm, công cụ so khớp chuỗi gần đúng, để sửa mã gõ nhầm '6.22' về mã chuẩn '6.2.2'; không có mã thì bỏ qua bước này.",
+      "<b>Tìm rộng trong đúng phạm vi</b> — Gọi Retrieve trên Bedrock Knowledge Base, kho tài liệu đã cắt đoạn và lập chỉ mục, để lấy về 40 đoạn gần nghĩa nhất, nhưng chỉ trong phạm vi tài liệu người này được phép đọc; lấy dư như vậy để không bỏ sót.",
+      "<b>Chọn hẹp bằng Rerank</b> — 40 đoạn vừa lấy được Rerank chấm lại theo độ liên quan rồi chỉ giữ 8 đoạn sát nhất; bước tìm lo không bỏ sót, bước chấm lại lo đúng trọng tâm, tách đôi thì được cả hai.",
+      "<b>Áp ngưỡng, thiếu căn cứ thì từ chối</b> — Nếu đến đoạn tốt nhất cũng dưới ngưỡng điểm khởi điểm 0.5, tức không có tài liệu nào thật sự khớp, hệ thống thà từ chối còn hơn trả lời bừa cho có.",
+      "<b>Bù đoạn lân cận rồi phát nguồn</b> — Lấy thêm đoạn liền trước và liền sau trong cùng tài liệu để câu trích không cụt ý, ghi lại đã tra những gì, rồi báo danh sách nguồn về giao diện để người dùng biết câu trả lời dựa trên đâu."
+    ],
+    why: [
+      "numberOfResults đặt tường minh 40 vì để trống thì nhận mặc định của dịch vụ, không phải số cần; ngân sách rerank cũng tính trên 40 (03-rag.md §2).",
+      "Tách tìm rộng và chọn hẹp: Retrieve ưu tiên không bỏ sót, Rerank ưu tiên chính xác, hai bước riêng thì được cả hai (03-rag.md §2).",
+      "Gom mọi lời gọi Retrieve vào một ScopedKnowledgeBaseClient với scope bắt buộc để quên lọc quyền thành chuyện không làm được (R46); bỏ filter thì code vẫn chạy nhưng lấy tài liệu của mọi organization."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "Q[Câu hỏi] --> CR[ClauseResolver pg_trgm]",
+      "CR --> RT[Retrieve 40 chunk]",
+      "RT --> RK[Rerank giữ 8]",
+      "RK --> TH[Áp ngưỡng 0.5]",
+      "TH --> NB[Mở rộng lân cận]",
+      "NB --> OUT[8 chunk tới bước 7]"
+    ],
+    sources: ["buoc-6-kien-truc.md", "03-rag.md", "19-dac-ta-kien-truc.md"]
+  },
+  "6b": {
+    title: "Bước 6b · Gọi engine tính toán",
+    detail: [
+      "<b>Mở vòng lặp gọi tool</b> — Nhánh tính toán giao cho Harness, thành phần AgentCore tự quản vòng lặp, chạy cùng Sonnet 5; mô hình không tự bấm máy tính mà chỉ phát tín hiệu báo cần gọi công cụ nào với tham số gì. Vòng lặp có trần thời gian và số vòng để không chạy vô hạn.",
+      "<b>Kiểm quyền tại Gateway</b> — Mỗi lời gọi công cụ đi qua Gateway, cổng dùng Cedar, ngôn ngữ khai báo chính sách phân quyền, để xét danh tính này có thật sự được gọi đúng công cụ đó hay không.",
+      "<b>Đổi lấy token hẹp quyền hơn</b> — Qua được Gateway thì làm token exchange: đổi vé của người dùng lấy một vé hẹp quyền hơn theo chuẩn RFC 8693, chỉ vừa đủ cho lần gọi này, giống như đưa đúng chìa mở một phòng thay vì cả chùm chìa.",
+      "<b>Chạy sáu lớp kiểm ở tool facade</b> — Trước khi tính thật, tham số đi qua sáu lớp chắn lần lượt: đúng khuôn, đủ quyền, số nằm trong khoảng hợp lý, bắt buộc khai đơn vị đo, chống gọi lặp thừa, và đọc mã kết quả trả về; sáu lớp này bù cho việc Harness không có chỗ móc kiểm bên trong.",
+      "<b>Gọi Main API tính thật</b> — Lời gọi xuống Main API, engine tính toán thật, chạy bằng chính vé của người dùng và bị kiểm quyền như mọi request khác; kết quả trả về nguyên vẹn không cắt gọt, đồng thời được ghi lại thành tool_run.",
+      "<b>Đọc kết quả rồi lặp hoặc chốt duyệt</b> — Đọc kỹ mã ApiResult.Code phòng khi máy chủ báo thành công nhưng bên trong lại là từ chối; xong thì hoặc quay lại cho mô hình đi tiếp vòng sau, hoặc nếu kết quả đáng lưu thành kinh nghiệm thì phát approval_required để chờ kỹ sư duyệt."
+    ],
+    why: [
+      "Dùng Harness quản lý sẵn vòng lặp để khỏi tự viết (AD-13); cái giá là Harness không có hook nên mọi kiểm tham số phải dời ra tool facade (04-tool-calling.md §6, §8).",
+      "L4 đơn vị đo và L6 lỗi ẩn nguy hiểm nhất vì sai mà kết quả vẫn hợp lý: b = 0.3 là mét hay milimét, và Main API có thể trả HTTP 200 mà body mang Code = Forbidden (R9).",
+      "Cedar kiểm thuộc tính đã xác thực chứ không kiểm giá trị mà một hội thoại bị prompt injection có thể ảnh hưởng tới (04-tool-calling.md §8).",
+      "ApplyGuardrail chạy riêng trên nội dung search_documents và find_similar_cases vì guardrailConfig không soát toolResult (R12, R24)."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "H[Harness Sonnet 5] --> GW[Gateway Cedar]",
+      "GW --> TX[Token exchange RFC 8693]",
+      "TX --> TG[ToolGate 6 lớp gate]",
+      "TG --> API[Main API tính thật]",
+      "API --> RD[Đọc ApiResult.Code · ghi tool_run]",
+      "RD --> H",
+      "RD --> AP[approval_required]"
+    ],
+    sources: ["buoc-6-kien-truc.md", "04-tool-calling.md", "kien-truc-day-du.md"]
+  },
+  "6c": {
+    title: "Bước 6c · Tra case đã duyệt",
+    detail: [
+      "<b>Gom tham số</b> — thu các thông số của bài toán từ nhiều nguồn rồi xếp theo mức tin cậy: con số lấy từ tool_run (lần tính trước) đáng tin hơn ngữ cảnh trang đang xem, ngữ cảnh trang lại đáng tin hơn gợi ý bóc từ câu hỏi; ghép lại để biết sẽ tra case theo những con số nào.",
+      "<b>Kiểm đủ căn cứ trước khi tra</b> — đếm xem đã có ít nhất 2 thông số đáng tin chưa; nếu chưa đủ thì dừng lại và hỏi lại người dùng thay vì đoán, vì tra với quá ít căn cứ dễ ra case sai.",
+      "<b>Lọc cứng dưới RLS</b> — database chỉ lấy các case cùng tổ chức, còn hiệu lực (status active), đã được duyệt đạt (verdict pass), nhiều nhất 200 case; RLS là cơ chế PostgreSQL tự lọc theo tổ chức nên không bao giờ lộ case của công ty khác.",
+      "<b>Chấm điểm bằng CaseSimilarityScorer</b> — so từng thông số của bài toán với từng case, tính khoảng cách trung bình rồi chia cho coverage (số thông số mà hai bên cùng có), điểm càng nhỏ nghĩa là càng giống.",
+      "<b>Giữ top 5, tie-break use_count</b> — giữ 5 case giống nhất; nếu bằng điểm thì ưu tiên case được dùng lại nhiều lần (use_count) rồi tới case gặp gần đây nhất, vì đó là cấu hình công ty thật sự đang dùng.",
+      "<b>Gắn nhãn kinh nghiệm nội bộ</b> — dán rõ nhãn &quot;Kinh nghiệm nội bộ, không phải tiêu chuẩn&quot; lên kết quả để người đọc không nhầm một case cũ với quy định chính thức."
+    ],
+    why: [
+      "Chấm điểm bằng code chứ không tìm kiếm vector vì hàm xếp hạng chỉ tính trên key có ở cả hai phía rồi chia độ phủ, mỗi cặp câu hỏi và case có tập key chung khác nhau; chỉ mục k-NN chỉ tìm theo một metric cố định trên vector đầy chiều, key thiếu phải điền giá trị giả làm sai khoảng cách (ship/12-tra-case.md).",
+      "Chia điểm cho độ phủ để case khớp 4/5 key thắng case khớp 2/5 key (05-case-memory.md §4).",
+      "use_count là tie-break tốt hơn vector: hai case cùng điểm thì case được tính đạt lặp lại là cấu hình công ty đang thật sự dùng, là tín hiệu tất định, không tốn lời gọi embedding; hệ thống đã bỏ summary và bỏ tie-break bằng vector nên PostgreSQL không cần pgvector.",
+      "RLS trên bảng case cách ly theo organization: mọi truy vấn đều bị lọc kể cả truy vấn viết sai, với điều kiện role ứng dụng không phải superuser, không BYPASSRLS, không owner bảng (05-case-memory.md §5)."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "P[Gom tham số] --> C{Đủ 2 key}",
+      "C -->|không| Q[Hỏi lại người dùng]",
+      "C -->|đủ| F[Lọc cứng RLS · status active · verdict pass · tối đa 200]",
+      "F --> S[CaseSimilarityScorer · distance chia coverage]",
+      "S --> T[Top 5 · tie-break use_count]",
+      "T --> N[Nhãn kinh nghiệm nội bộ]"
+    ],
+    sources: ["buoc-6-kien-truc.md", "ship/12-tra-case.md", "05-case-memory.md"]
+  },
+  "7": {
+    title: "Bước 7 · Viết câu trả lời",
+    detail: [
+      "<b>Dựng prompt theo thứ tự cố định</b> — xếp phần cố định (mô tả tool và system prompt) lên trước rồi đánh dấu cachePoint để Bedrock nhớ đệm phần đó, đỡ tốn tiền và nhanh hơn; nếu prompt dài quá ngân sách token thì cắt bớt đoạn tài liệu điểm thấp trước, tuyệt đối không cắt kết quả tính toán.",
+      "<b>Gọi ConverseStream Sonnet 5</b> — nhờ mô hình mạnh Sonnet 5 viết câu trả lời và trả về theo luồng bằng ConverseStream, để chữ hiện dần cho người dùng thấy ngay thay vì phải chờ viết xong hết.",
+      "<b>Soát ngay lúc sinh chữ bằng guardrailConfig</b> — gắn bộ lọc an toàn thẳng vào lời gọi mô hình để kiểm từng đoạn chữ ngay khi vừa sinh ra; đạt thì đẩy tiếp qua SSE về màn hình.",
+      "<b>Guardrail can thiệp thì cắt luồng</b> — nếu bộ lọc phát hiện nội dung vi phạm, dừng luồng ngay, thay bằng thông báo và ghi audit_event (nhật ký kiểm toán) để truy vết về sau.",
+      "<b>Lỗi thì fallback sang Sonnet 4.6</b> — nếu Sonnet 5 lỗi hoặc quá tải, tự dựng lại yêu cầu cho mô hình đời trước Sonnet 4.6 (đường dự phòng) và đánh dấu là đã phải chạy fallback.",
+      "<b>Đường cùng thì Degraded</b> — nếu cả Sonnet 4.6 cũng lỗi, hệ thống không viết nữa mà chỉ trả về danh sách nguồn tài liệu đã tìm được, để người dùng vẫn có cái tự tra."
+    ],
+    why: [
+      "Bắt buộc ConverseStream vì chỉ API này mới gắn được guardrail khi stream, và cho người dùng thấy chữ đầu sớm, mục tiêu khoảng 3 giây (06-tang-bedrock.md §1).",
+      "cachePoint theo thứ tự tools → system → messages và phần trước điểm phải giống từng byte; dưới 1 024 token thì không cache mà không báo lỗi, đổi tools làm mất cache mọi phần phía sau (06-tang-bedrock.md §5).",
+      "Fallback phải dựng lại request theo Sonnet 4.6 chứ không chỉ đổi modelId, vì cấu hình thinking khác nhau giữa các thế hệ Claude, đổi tên trơn dễ ăn ValidationException (06-tang-bedrock.md §3).",
+      "Chọn stream mode sync vì async để nội dung vi phạm, kể cả PII, tới người dùng trước khi guardrail kịp chặn (06-tang-bedrock.md §4)."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "B[Dựng prompt · cachePoint] --> M[ConverseStream Sonnet 5]",
+      "M --> G{guardrailConfig sync}",
+      "G -->|đạt| SS[SSE token stream]",
+      "G -->|can thiệp| ST[Cắt luồng · audit_event]",
+      "M -->|lỗi| FB[Fallback Sonnet 4.6]",
+      "FB -->|vẫn lỗi| DG[Degraded chỉ trả nguồn]"
+    ],
+    sources: ["buoc-7-kien-truc.md", "06-tang-bedrock.md", "ship/03-backend.md"]
+  },
+  "8": {
+    title: "Bước 8 · Soát lại câu trả lời",
+    detail: [
+      "<b>Soát sau khi chữ đã hiện, bằng code</b> — chạy sau khi luồng chữ đã xong, dùng bộ kiểm tất định (code luôn cho cùng một kết quả) chứ không lấy AI chấm AI, và không xoá chữ đã hiển thị.",
+      "<b>NumberValidator kiểm từng con số</b> — mỗi con số trong câu trả lời phải khớp một kết quả tool_run trong sai số cho phép (relTol 0.005, tức lệch không quá nửa phần trăm) hoặc có nguyên văn trong đoạn tài liệu đã tra; không đạt thì gắn cờ unverified_number, nghĩa là số chưa kiểm chứng.",
+      "<b>CitationValidator kiểm từng trích dẫn</b> — mỗi dấu trích dẫn [n] phải trỏ đúng về một đoạn tài liệu đã tra ở chính lượt này; không đạt thì gắn cờ unverified_citation, nghĩa là trích dẫn chưa kiểm chứng.",
+      "<b>VerificationValidator kiểm chữ kết luận đạt</b> — mỗi chỗ nói &quot;đạt&quot; hay &quot;thoả mãn&quot; gắn với một phương án đều phải có một tool_run khớp tham số làm chứng; không đạt thì đánh dấu chưa kiểm chứng.",
+      "<b>Soát phiên bản tiêu chuẩn</b> — so phiên bản tiêu chuẩn mà engine dùng để tính với phiên bản của đoạn tài liệu được trích; nếu lệch nhau thì cảnh báo standard_version_mismatch, tức khập khiễng phiên bản tiêu chuẩn.",
+      "<b>ApplyGuardrail grounding chỉ là lớp phụ</b> — gọi thêm bộ lọc grounding của Bedrock để xem câu trả lời có bám vào nguồn không, nhưng nó chỉ chạy khi câu trả lời đủ ngắn và chỉ gắn cờ, không sửa hay xoá chữ.",
+      "<b>Chốt trạng thái theo cảnh báo</b> — nếu sạch, không cảnh báo nào, thì đóng lượt là Completed (hoàn tất); còn có cảnh báo thì đóng là CompletedUnverified (hoàn tất nhưng có phần chưa kiểm chứng) để nói thẳng với người dùng."
+    ],
+    why: [
+      "Validator tất định thay cho AI chấm AI vì dùng mô hình chấm mô hình lại gặp bài toán không biết khi nào giám khảo sai; code tất định thì viết test được (04-tool-calling.md §3).",
+      "relTol 0.005 vì mô hình làm tròn khi viết; không cho sai số thì số đúng cũng bị gắn cờ oan (19-dac-ta-kien-truc.md §8.6).",
+      "Grounding chỉ là lớp phụ vì AWS ghi rõ tính năng này không hỗ trợ chatbot hội thoại và khi stream chỉ đánh dấu sau khi stream hết, không thay được validator tất định (BE-9).",
+      "Không xoá chữ giữa chừng vì xoá làm người dùng mất niềm tin vào cả những lượt đúng; hệ thống chọn nói rõ phần này chưa kiểm được (ship/02-hop-dong.md §5)."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "IN[Chữ đã hiện] --> N[NumberValidator relTol 0.005]",
+      "N --> CT[CitationValidator]",
+      "CT --> VF[VerificationValidator]",
+      "VF --> SV[Soát phiên bản tiêu chuẩn]",
+      "SV --> GR[ApplyGuardrail grounding]",
+      "GR --> R{Có cảnh báo}",
+      "R -->|không| OK[Completed]",
+      "R -->|có| UN[CompletedUnverified]"
+    ],
+    sources: ["buoc-8-kien-truc.md", "04-tool-calling.md", "ship/03-backend.md"]
+  },
+  "9": {
+    title: "Bước 9 · Gửi kết quả về giao diện",
+    detail: [
+      "<b>SSE writer phát 11 loại event</b> — backend đẩy kết quả về theo luồng SSE, đặt đúng kiểu nội dung và tắt đệm, mỗi mẩu tin (event) gửi đi ngay; cả lượt dùng chung một bộ 11 loại event cố định như trạng thái, đoạn chữ, kết quả tính, cảnh báo, kết thúc.",
+      "<b>BFF chỉ làm ống dẫn</b> — lớp trung gian Next.js (BFF) chuyển tiếp luồng nguyên dạng về trình duyệt, không gom đệm, không kiểm quyền lại, không đếm quota, để chữ chảy thẳng về không bị nghẽn.",
+      "<b>Tắt đệm toàn hạ tầng</b> — các tầng mạng đứng giữa (nginx, ALB, CloudFront) đều phải tắt gom đệm và nới thời gian chờ, vì chỉ cần một tầng gom lại là chữ dồn thành một cục hiện ở cuối, nhìn như bị treo.",
+      "<b>FE đọc luồng bằng fetch</b> — giao diện đọc luồng qua ReadableStream (đọc dần từng mẩu) và kiểm mã trả về trước khi đọc, vì một lỗi có thể tới trước cả luồng chữ.",
+      "<b>Panel AI dựng màn hình</b> — từ các event nhận được, Panel AI (khung trợ lý trên trang) dựng dần màn hình: đoạn chữ, thẻ kết quả tính, danh sách nguồn và cảnh báo.",
+      "<b>done thì mở khoá ô nhập</b> — khi nhận event done báo đã xong, giao diện mở lại ô nhập để người dùng gõ câu hỏi tiếp theo."
+    ],
+    why: [
+      "Dùng SSE để người dùng thấy trạng thái và chữ ngay; hợp đồng 11 event đóng băng từ tuần 1 nên FE dựng mock stream và làm xong giao diện trước khi BE có tool nào chạy được, thay đổi phá vỡ phải lên /v2 (ship/02-hop-dong.md §4).",
+      "X-Accel-Buffering: no và tắt buffer mọi tầng vì bị buffer thì chữ hiện một cục ở cuối, nhìn như treo; timeout 60 giây cắt ngang lượt optimize 90 giây, nghiệm thu bằng curl -N qua tuyến production (ship/02-hop-dong.md §7).",
+      "Không dùng EventSource vì nó chỉ làm được GET và không gửi được header tuỳ ý, còn endpoint này là POST có body JSON (ship/02-hop-dong.md §7).",
+      "FE dựng thẻ từ JSON tool_result vì parse số từ văn bản là vô hiệu toàn bộ validator ở backend (ship/02-hop-dong.md §10)."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "SW[SSE writer 11 event] --> BFF[Next.js BFF không buffer]",
+      "BFF --> IF[nginx · ALB · CloudFront]",
+      "IF --> RS[FE fetch ReadableStream]",
+      "RS --> UI[Panel AI dựng màn hình]",
+      "UI --> D[done · mở khoá ô nhập]"
+    ],
+    sources: ["buoc-9-kien-truc.md", "ship/02-hop-dong.md", "17-guideline-frontend.md"]
+  },
+  "10": {
+    title: "Bước 10 · Ghi sổ",
+    detail: [
+      "<b>Ghi mọi đường kết thúc</b> — dù lượt kết thúc kiểu nào (trả lời xong, từ chối, bị chặn, lỗi, hay người dùng huỷ giữa chừng) đều phải ghi lại, để không lượt nào biến mất khỏi sổ.",
+      "<b>Lưu bản đã che thông tin cá nhân</b> — lưu câu hỏi và câu trả lời (đã che thông tin cá nhân, kèm hạn xoá tự động), cùng retrieval_log (các đoạn tài liệu đã tra) và tool_run (các lần gọi engine tính) vào database.",
+      "<b>Ghi audit_event tách khỏi nội dung</b> — ghi nhật ký kiểm toán audit_event: ai làm gì, khi nào, gọi tool nào, guardrail nào can thiệp; cố ý không chứa nội dung câu hỏi và giữ lâu hơn để vẫn truy vết được sau khi nội dung đã bị xoá.",
+      "<b>Trừ quota an toàn</b> — trừ hạn mức token trong ngày (quota) theo số token thực dùng bằng một câu lệnh nguyên tử ON CONFLICT (ghi và cộng dồn gọn trong một bước, tránh hai request cùng lúc ghi đè lên nhau), và cảnh báo khi dùng tới 50%, 80%, 100%.",
+      "<b>Xoá active_turn trong finally</b> — luôn xoá bản khoá active_turn (khoá bảo đảm mỗi người chỉ một lượt chạy cùng lúc) ở bước dọn cuối cùng dù thành công hay lỗi, vì nếu chỉ xoá khi thành công thì một lượt lỗi sẽ khoá người dùng vĩnh viễn.",
+      "<b>Gửi telemetry qua OTLP</b> — gắn mã lần chạy (correlation_id) rồi gửi số liệu vận hành theo chuẩn OTLP về CloudWatch, để đội vận hành theo dõi và lần ra lỗi khi cần."
+    ],
+    why: [
+      "Trừ quota theo token thực dùng chứ không đếm lượt, vì một lượt gọi tool tốn gấp nhiều lần lượt hỏi thường; có giới hạn một lượt chạy đồng thời nên trừ-sau không tạo kẽ hở để lách (07-auth-bao-mat.md §2a).",
+      "ON CONFLICT chạy nguyên tử vì đọc rồi ghi bằng hai câu riêng thì hai request cùng lúc có thể ghi đè nhau, mất số liệu (07-auth-bao-mat.md §2a).",
+      "Xoá active_turn trong finally vì xoá chỉ ở đường thành công thì một lượt lỗi khoá người dùng vĩnh viễn; job quét dọn thêm phòng khi tiến trình chết giữa chừng (07-auth-bao-mat.md §2a).",
+      "audit_event không chứa nội dung và giữ lâu hơn message để xoá message theo retention vẫn còn dấu vết kiểm toán mà không giữ lại dữ liệu cá nhân (07-auth-bao-mat.md §6)."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "E[Mọi đường kết thúc] --> M[Ghi message · retrieval_log · tool_run]",
+      "M --> AU[audit_event không có nội dung]",
+      "AU --> Q[Trừ quota ON CONFLICT]",
+      "Q --> AT[Xoá active_turn trong finally]",
+      "AT --> OT[OTLP correlation_id tới CloudWatch]"
+    ],
+    sources: ["buoc-10-kien-truc.md", "07-auth-bao-mat.md", "09-eval-quan-sat.md"]
+  },
+  "W": {
+    title: "Bước W · Worker nạp tài liệu",
+    detail: [
+      "<b>Assistant.Worker cắt tài liệu</b> — một tiến trình chạy nền tên Assistant.Worker cắt tài liệu thành từng đoạn theo điều khoản; đây là việc làm sẵn từ trước, không nằm trong lúc đang trả lời người dùng.",
+      "<b>Mỗi chunk kèm sidecar metadata</b> — mỗi đoạn (chunk) đi kèm một file mô tả đặt cạnh (sidecar) ghi phạm vi được phép đọc, tình trạng, số điều và phiên bản tiêu chuẩn, để sau này lọc đúng quyền và đúng phiên bản.",
+      "<b>Ghi lên S3 có mã hoá</b> — đưa các đoạn lên kho lưu trữ S3, bật mã hoá bằng KMS (SSE-KMS) và bật lưu nhiều phiên bản (versioning) để an toàn và không mất bản cũ.",
+      "<b>Managed connector đồng bộ vào Knowledge Base</b> — một bộ nối có sẵn (managed connector) đóng vai một danh tính hẹp quyền (service role) đọc S3 rồi nạp vào Knowledge Base; quyền được ràng chặt để chỉ đúng tài khoản và đúng kho mới đọc được, kể cả quyền giải mã KMS cũng chỉ mở đúng chỗ.",
+      "<b>Knowledge Base tạo embedding</b> — Knowledge Base chuyển mỗi đoạn chữ thành vector (dãy số biểu diễn ngữ nghĩa của đoạn) để sau này tra theo nghĩa chứ không chỉ theo từ khoá.",
+      "<b>Lưu vào vector store có mã hoá</b> — các vector được cất vào một kho vector, mã hoá bằng khoá KMS chỉ định ngay lúc tạo kho (kmsKeyArn).",
+      "<b>Sẵn sàng cho bước 6a</b> — khi kho đã dựng xong thì bước 6a mới có tài liệu để tìm; đó là lý do việc nạp phải hoàn tất từ trước khi có người đặt câu hỏi."
+    ],
+    why: [
+      "Dùng Knowledge Base managed để khỏi tự vận hành vector store (AD-17); cái giá là không đổi được mô hình embedding và không đổi được khoá KMS sau khi tạo kho (03-rag.md).",
+      "Sidecar phải đọc được, nếu không filter theo scope có thể trả tài liệu của mọi organization mà không báo lỗi, là kiểm chứng V-K4 (03-rag.md).",
+      "Trust policy ràng aws:SourceAccount và aws:SourceArn để một KB ở tài khoản khác không mượn được role đọc bucket công ty, chặn confused deputy (ship/00-thuat-ngu-va-nguon.md).",
+      "kmsKeyArn chỉ đặt được lúc tạo KB; quên tham số này thì KB dùng khoá AWS-owned, muốn đổi phải tạo lại KB (20-tai-lieu-thiet-ke-kien-truc.md)."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "WK[Assistant.Worker cắt chunk] --> SC[Chunk + sidecar metadata]",
+      "SC --> S3[S3 nguồn · SSE-KMS · versioning]",
+      "S3 --> MC[Managed connector · service role]",
+      "MC --> EM[KB tạo embedding]",
+      "EM --> VS[Vector store · KMS kmsKeyArn]",
+      "VS --> R6[Sẵn sàng cho bước 6a]"
+    ],
+    sources: ["aws-bedrock-kms-kien-truc.md", "03-rag.md", "ship/05-devops.md", "ship/00-thuat-ngu-va-nguon.md"]
+  }
+};
+
+document.getElementById("fs").onclick = () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+};
+
+const overlay = document.getElementById("overlay");
+const mNum = document.getElementById("m-num");
+const mTtl = document.getElementById("m-ttl");
+const mBd = document.getElementById("m-bd");
+// bỏ mọi tham chiếu văn bản / mã quyết định → thuần presentation
+const stripRefs = t => t
+  .replace(/\s*\((?:[^()]*(?:AD-\d|R\d|BE-\d|V-K\d|§|\.md)[^()]*)\)/g, "")
+  .replace(/\s+([;,.])/g, "$1")
+  .replace(/\s{2,}/g, " ")
+  .trim();
+let rid = 0;
+
+async function openModal(key, numText) {
+  const s = STEP[key];
+  mNum.textContent = numText;
+  if (!s) {
+    mTtl.textContent = "Bước " + numText;
+    mBd.innerHTML = '<p class="m-src">Chưa có nội dung chi tiết cho bước này.</p>';
+    overlay.classList.add("open");
+    return;
+  }
+  mTtl.textContent = s.title || ("Bước " + numText);
+  let html = "";
+  html += '<div class="m-sec"><h3>Sơ đồ kiến trúc</h3><div class="m-diagram" id="m-dia">…</div></div>';
+  const ORD = ["đầu tiên", "thứ hai", "thứ ba", "thứ tư", "thứ năm", "thứ sáu", "thứ bảy", "thứ tám"];
+  if (s.detail?.length)
+    html += '<div class="m-sec"><h3>Diễn giải</h3><ul class="steps">' +
+      s.detail.map((d, i) => {
+        const ord = ORD[i] || ("thứ " + (i + 1));
+        return "<li>" + stripRefs(d.replace(/^<b>/, "<b>Việc " + ord + ": ")) + "</li>";
+      }).join("") + "</ul></div>";
+  if (s.why?.length)
+    html += '<div class="m-sec"><h3>Vì sao quyết định kiến trúc này</h3><div class="m-why"><ul>' +
+      s.why.map(w => "<li>" + stripRefs(w) + "</li>").join("") + "</ul></div></div>";
+  mBd.innerHTML = html;
+  decorateTerms(mBd);
+  overlay.classList.add("open");
+  const dia = document.getElementById("m-dia");
+  if (s.mermaid?.length) {
+    try {
+      const src = s.mermaid.join("\n").replace(/^flowchart\s+(LR|RL)\b/, "flowchart TB");
+      const { svg } = await mermaid.render("m" + (++rid), src);
+      dia.innerHTML = svg +
+        '<div class="dctrl">' +
+        '<button data-a="out" title="Thu nhỏ" aria-label="Thu nhỏ">−</button>' +
+        '<button data-a="in" title="Phóng to" aria-label="Phóng to">+</button>' +
+        '<button data-a="fit" title="Vừa khung" aria-label="Vừa khung"><svg viewBox="0 0 24 24"><path d="M9 3H3v6M21 9V3h-6M3 15v6h6M15 21h6v-6"/></svg></button>' +
+        '<button data-a="fs" title="Toàn màn hình" aria-label="Toàn màn hình"><svg viewBox="0 0 24 24"><path d="M8 3H3v5M21 8V3h-5M3 16v5h5M16 21h5v-5"/></svg></button>' +
+        '</div>';
+      const el = dia.querySelector("svg");
+      el.removeAttribute("width"); el.removeAttribute("height"); el.style.maxWidth = "none";
+      const pz = svgPanZoom(el, {
+        zoomEnabled: true, panEnabled: true, controlIconsEnabled: false,
+        fit: true, center: true, minZoom: 0.2, maxZoom: 20, zoomScaleSensitivity: 0.3,
+      });
+      const refit = () => { pz.resize(); pz.fit(); pz.center(); };
+      dia._refit = refit;
+      dia.querySelector('[data-a="in"]').onclick = () => pz.zoomIn();
+      dia.querySelector('[data-a="out"]').onclick = () => pz.zoomOut();
+      dia.querySelector('[data-a="fit"]').onclick = refit;
+      dia.querySelector('[data-a="fs"]').onclick = () =>
+        document.fullscreenElement === dia ? document.exitFullscreen() : dia.requestFullscreen();
+    } catch (e) { dia.textContent = "Không dựng được sơ đồ."; }
+  } else { dia.textContent = "—"; }
+}
+
+function closeModal() { overlay.classList.remove("open"); }
+document.getElementById("m-close").onclick = closeModal;
+overlay.addEventListener("click", e => { if (e.target === overlay) closeModal(); });
+addEventListener("keydown", e => { if (e.key === "Escape" && !document.fullscreenElement) closeModal(); });
+document.addEventListener("fullscreenchange", () => {
+  const d = document.getElementById("m-dia");
+  if (d && d._refit) setTimeout(d._refit, 120);
+});
+
+document.querySelectorAll(".card").forEach(card => {
+  const num = card.querySelector(".num");
+  if (!num) return;
+  const key = num.textContent.trim();
+  card.tabIndex = 0;
+  card.addEventListener("click", () => openModal(key, key));
+  card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openModal(key, key); } });
+});
+
+decorateTerms(document.querySelector(".board"));
+</script>
+</body>
+</html>
