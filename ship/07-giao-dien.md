@@ -183,6 +183,25 @@ Liên kết mở tài liệu **kiểm tra lại quyền** ở Assistant; không 
 
 ---
 
+## 4b. Cờ rủi ro trong dòng (AD-30)
+
+Nguyên tắc **"gắn cờ, không xóa chữ đã hiện"** giữ nguyên. AD-30 chỉ đẩy việc kiểm lên sớm hơn: câu chứa số hoặc chứa nhãn kết luận được kiểm **trước khi** hiện, nên phần lớn trường hợp cờ xuất hiện cùng lúc với chữ chứ không phải sau đó.
+
+**Hai mức, không gộp làm một**
+
+| Mức | Khi nào | Hiện thế nào |
+| --- | --- | --- |
+| Chưa kiểm chứng được | Thiếu bằng chứng: số không truy được về `tool_run` hay chunk, nhãn kết luận không có lần tính làm chứng | Gạch chân chấm, màu trung tính, tooltip nói rõ thiếu gì |
+| Không khớp kết quả tính | Có mâu thuẫn thật giữa câu chữ và số hoặc `verdict` của engine | Nền cảnh báo, kèm liên kết nhảy tới thẻ kết quả |
+
+Gộp hai mức thì cảnh báo mất trọng lượng: câu trả lời nào cũng có vài chỗ chưa kiểm được, nếu chúng trông giống hệt một mâu thuẫn thật thì người đọc bỏ qua cả hai.
+
+**Thẻ kết quả vẫn là nguồn có thẩm quyền.** Cờ không sửa câu chữ và không thay số trong câu chữ; nó chỉ trỏ người đọc về thẻ dựng từ `tool_result`.
+
+**Không sinh lại câu trả lời khi validator trượt.** Sinh lại vẫn là cùng mô hình trên cùng ngữ cảnh; thiếu căn cứ thì sinh lại không tạo ra căn cứ. Thiếu căn cứ ngay từ đầu đã bị chặn ở ngưỡng retrieval trước khi gọi mô hình trả lời.
+
+---
+
 ## 4a. Chip xác nhận tham số tra case (AD-16)
 
 Khi ý định là `case_lookup` và một giá trị số **chỉ** đến từ `case_hints` do router bóc ra (không có `tool_run` hay `pageContext` xác nhận), giao diện hiện chip tham số **trước khi** chạy truy vấn.

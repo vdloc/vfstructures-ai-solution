@@ -59,6 +59,7 @@
   .side { width: 300px; flex: none; position: sticky; top: 24px; padding-top: 540px;
     display: flex; flex-direction: column; align-items: center; }
   .side .blabel.off { margin-bottom: 12px; }
+  .side .feednote + .blabel.off { margin-top: 30px; }
   .side .card { width: 100%; }
   .feednote { margin-top: 12px; font-size: 12px; color: var(--how); text-align: center;
     border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; background: var(--band); }
@@ -346,6 +347,15 @@
         </div>
       </div>
       <div class="feednote">Dựng Knowledge Base ⟶ cấp cho bước 6a · Tìm tài liệu</div>
+
+      <div class="blabel off">Kênh khác · MCP</div>
+      <div class="card offline">
+        <div class="hd"><div class="num">M</div><div class="ttl">Cổng MCP cho ứng dụng ngoài</div><span class="tag-off">ngoài luồng hỏi</span></div>
+        <div class="bd">
+          <p class="sum">Ngoài panel trong app, hệ thống mở thêm một cổng theo chuẩn MCP để các ứng dụng AI khác gọi vào. Cổng dùng lại đúng Gateway và đúng bộ tool của luồng hỏi, chỉ nhận vé đăng nhập cấp riêng cho nó, và chỉ trả thứ có nguồn: kết quả tính kèm tham số, đoạn tài liệu kèm trích dẫn. Nó không trả câu chữ do mô hình viết, vì mô hình bên kia thuộc ứng dụng ngoài, nằm ngoài tầm của validator và guardrail ở đây.</p>
+        </div>
+      </div>
+      <div class="feednote">Dùng lại Gateway và tool facade của bước 6b · Gọi engine tính toán</div>
     </aside>
 
     </div><!-- /board -->
@@ -432,6 +442,8 @@ const GLOSSARY = {
   "retrieval_log": "Bản ghi các đoạn tài liệu đã tìm ở mỗi lượt.",
   "quota": "Hạn mức token mỗi ngày cho user và tổ chức.",
   "vector": "Biểu diễn số của đoạn văn để so khớp theo ngữ nghĩa.",
+  "MCP client": "Ứng dụng AI bên ngoài gọi vào cổng MCP để dùng tool và lấy dữ liệu.",
+  "MCP": "Model Context Protocol — chuẩn chung để ứng dụng AI gọi tool và lấy dữ liệu từ một server.",
 };
 const _esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const TERM_RX = new RegExp(
@@ -608,7 +620,7 @@ const STEP = {
   "6a": {
     title: "Bước 6a · Tìm tài liệu",
     detail: [
-      "<b>Chuẩn hoá mã điều khoản</b> — ClauseResolver tách số hiệu điều khoản trong câu hỏi rồi tìm mã chuẩn trong bảng clause_ref, chỉ trong các tài liệu người dùng được đọc. Không có mã khớp đúng thì so theo dãy chữ số, nên '6.22' gõ tắt vẫn ra '6.2.2'. Ra đúng một mã thì mã đó thành filter clause_path cho lần tìm tiếp theo; ra nhiều mã hoặc không ra mã nào thì hỏi lại người dùng kèm tối đa năm mã gần nhất theo khoảng cách chỉnh sửa, chứ không đoán. Câu hỏi không có mã thì bỏ qua việc này.",
+      "<b>Chuẩn hoá mã điều khoản</b> — Kỹ sư hay gõ số điều khoản theo kiểu tắt, như '6.22' thay cho điều '6.2.2'. ClauseResolver làm việc giống người thủ thư tra mục lục: nó nhặt con số ấy ra khỏi câu hỏi rồi dò trong danh mục điều khoản, nhưng chỉ trong những tiêu chuẩn người dùng được phép đọc. Không có điều nào mang đúng số ấy thì nó bỏ dấu chấm đi và so dãy chữ số, nên '6.22' vẫn được nhận ra là '6.2.2'. Tìm được đúng một điều thì lần tìm tài liệu ngay sau đó chỉ tìm trong điều ấy. Nếu dãy số khớp với nhiều điều, hoặc không khớp điều nào, thì nó không tự chọn thay người dùng mà hỏi lại, kèm tối đa năm số điều gần giống nhất để chọn. Câu hỏi không nhắc số điều khoản nào thì bỏ qua việc này.",
       "<b>Tìm rộng trong đúng phạm vi</b> — Gọi Retrieve trên Bedrock Knowledge Base để lấy 40 đoạn gần nghĩa nhất, chỉ trong phạm vi tài liệu người dùng được đọc và đúng ấn bản tiêu chuẩn: câu hỏi chung lấy bản đang có hiệu lực, còn lượt gắn dự án lấy đúng ấn bản dự án đó áp dụng. Lấy dư để không bỏ sót.",
       "<b>Chọn hẹp bằng Rerank</b> — Rerank chấm lại 40 đoạn theo độ liên quan và giữ 8 đoạn sát nhất. Bước tìm lo không bỏ sót, bước chấm lại lo đúng trọng tâm.",
       "<b>Áp ngưỡng, thiếu căn cứ thì từ chối</b> — Đoạn điểm cao nhất vẫn dưới ngưỡng (khởi điểm 0.5) nghĩa là không có tài liệu nào thật sự khớp; hệ thống từ chối thay vì trả lời không có căn cứ. Lượt đang lọc theo một mã điều khoản cũng đi đúng đường này, không lặng lẽ bỏ filter để tìm rộng hơn.",
@@ -639,14 +651,14 @@ const STEP = {
     detail: [
       "<b>Mở vòng lặp gọi tool</b> — Nhánh tính toán giao cho Harness, thành phần AgentCore quản lý vòng lặp, chạy cùng Sonnet 5. Mô hình không tự tính mà chỉ yêu cầu gọi tool nào với tham số gì. Vòng lặp có giới hạn thời gian và số vòng.",
       "<b>Kiểm quyền tại Gateway</b> — Mỗi lời gọi tool đi qua Gateway; Gateway dùng chính sách Cedar để kiểm danh tính này có được gọi tool đó không.",
-      "<b>Đổi lấy token hẹp quyền hơn</b> — Qua Gateway thì thực hiện token exchange theo RFC 8693: đổi token của người dùng lấy một token hẹp quyền hơn, vừa đủ cho lần gọi này.",
+      "<b>Đổi lấy token hẹp quyền hơn</b> — Vé đăng nhập của người dùng mở được nhiều cửa trong hệ thống, nên đưa nguyên vé đó cho một lời gọi tool là cho dư quyền. Gateway đổi vé ấy lấy một vé tạm chỉ mở đúng một cửa, vừa đủ cho lần gọi này, theo chuẩn token exchange RFC 8693. Vé tạm có lọt ra ngoài cũng không dùng được vào việc khác.",
       "<b>Chạy sáu lớp kiểm ở tool facade</b> — Trước khi tính, tham số đi qua sáu lớp kiểm: đúng schema, đủ quyền, giá trị trong khoảng hợp lý, bắt buộc khai đơn vị đo, chống gọi lặp, và đọc mã kết quả trả về. Sáu lớp này đặt ở facade vì đây là nơi lời gọi thật sự chạy, cầm token của người dùng và phản hồi của Main API.",
       "<b>Gọi Main API để tính</b> — Request tới Main API, engine tính toán, mang token của người dùng và bị kiểm quyền như mọi request khác. Kết quả trả về nguyên vẹn và được ghi thành một bản ghi tool_run theo toolUseId, nên Harness có gửi lại đúng lời gọi đó thì facade trả kết quả cũ chứ không tính lại.",
-      "<b>Đọc kết quả, ghi case rồi lặp tiếp</b> — Kiểm ApiResult.Code phòng khi server trả HTTP 200 nhưng body là từ chối. Engine kết luận đạt thì facade ghi luôn cấu hình đó thành case trong cùng transaction với tool_run, không chờ ai duyệt, rồi trả kết quả cho mô hình đi tiếp vòng sau."
+      "<b>Đọc kết quả, ghi lại rồi tính tiếp</b> — Một phản hồi có thể mang dấu hiệu thành công ở lớp vỏ mà nội dung bên trong lại là lời từ chối, nên hệ thống đọc mã kết quả trong phản hồi chứ không nhìn mỗi lớp vỏ. Engine kết luận phương án đạt thì hệ thống lưu ngay cấu hình ấy thành một trường hợp mẫu, lưu cùng lúc với bản ghi của lần tính, không chờ ai duyệt — vì kết luận đó do engine đưa ra chứ không phải do mô hình nói. Xong thì kết quả quay về cho mô hình để nó đi tiếp vòng sau nếu còn việc."
     ],
     why: [
       "Dùng Harness để không phải tự viết vòng lặp. Harness có hook before_tool_call, nhưng hook không mang danh tính người dùng và không thấy phản hồi của Main API, nên kiểm tra tham số vẫn đặt ở tool facade.",
-      "L4 (đơn vị đo) và L6 (lỗi ẩn) quan trọng nhất vì sai mà kết quả trông vẫn hợp lý: b = 0.3 là mét hay milimét, và Main API có thể trả HTTP 200 với body mang Code = Forbidden.",
+      "Trong sáu lớp kiểm, lớp bắt khai đơn vị đo và lớp đọc mã kết quả là hai lớp đáng ngại nhất, vì sai ở đó mà kết quả nhìn vẫn hợp lý. Bề rộng 0,3 là 0,3 mét hay 0,3 milimét thì cũng là con số 0,3, nhưng ra hai cấu kiện khác hẳn nhau; còn một phản hồi báo thành công ở lớp vỏ vẫn có thể mang lời từ chối ở bên trong.",
       "Cedar kiểm các thuộc tính đã xác thực, không kiểm giá trị mà một hội thoại bị prompt injection có thể tác động.",
       "ApplyGuardrail chạy riêng trên nội dung search_documents và find_similar_cases vì guardrailConfig không soát toolResult."
     ],
@@ -664,18 +676,17 @@ const STEP = {
   "6c": {
     title: "Bước 6c · Tra case đã tính đạt",
     detail: [
-      "<b>Gom tham số</b> — Thu thông số của bài toán từ nhiều nguồn và xếp theo độ tin cậy: số từ tool_run (lần tính trước) tin cậy hơn ngữ cảnh trang, ngữ cảnh trang tin cậy hơn số bóc từ câu hỏi. Kết quả là tập thông số dùng để tra case.",
+      "<b>Gom tham số</b> — Cùng một thông số, ví dụ nhịp dầm, có thể nằm ở ba chỗ: trong lần tính vừa chạy, trên màn hình người dùng đang xem, và trong câu chữ của câu hỏi. Hệ thống lấy cả ba nhưng xếp theo độ tin cậy: số do engine tính ra đứng trước, số trên màn hình đứng sau, số đọc từ câu hỏi đứng cuối, vì người hỏi có thể gõ vội hoặc nhớ nhầm. Tập thông số đã xếp hạng đó là thứ dùng để tra case.",
       "<b>Kiểm đủ căn cứ trước khi tra</b> — Cần ít nhất 2 thông số tin cậy. Chưa đủ thì hỏi lại người dùng thay vì đoán, vì tra với quá ít căn cứ dễ ra case sai.",
-      "<b>Lọc cứng dưới RLS</b> — Database chỉ lấy case cùng tổ chức, còn hiệu lực (status active) và đã được engine tính đạt (verdict pass), tối đa 200 case. RLS để PostgreSQL tự lọc theo tổ chức, nên case của công ty khác không bao giờ lộ ra.",
+      "<b>Lọc cứng dưới RLS</b> — Database chỉ lấy case cùng tổ chức, còn hiệu lực (status active) và đã được engine tính đạt (verdict pass), tối đa 200 case. RLS để PostgreSQL tự lọc theo tổ chức, nên case của khách hàng khác không bao giờ lộ ra.",
       "<b>Chấm điểm bằng CaseSimilarityScorer</b> — So từng thông số của bài toán với từng case, tính khoảng cách trung bình rồi chia cho coverage (số thông số hai bên cùng có). Điểm càng nhỏ càng giống.",
-      "<b>Giữ top 5, tie-break bằng use_count</b> — Giữ 5 case giống nhất. Bằng điểm thì ưu tiên case được dùng lại nhiều hơn (use_count), rồi tới case gần đây nhất, vì đó là cấu hình công ty đang thực sự dùng.",
-      "<b>Gắn nhãn kinh nghiệm nội bộ</b> — Kết quả mang nhãn &quot;Kinh nghiệm nội bộ, không phải tiêu chuẩn&quot; để người đọc không nhầm case cũ với quy định chính thức."
+      "<b>Giữ top 5, tie-break bằng use_count</b> — Giữ 5 case giống nhất. Bằng điểm thì ưu tiên case được dùng lại nhiều hơn (use_count), rồi tới case gần đây nhất, vì đó là cấu hình đang thực sự được dùng."
     ],
     why: [
-      "Chấm điểm bằng code thay cho vector search vì hàm xếp hạng chỉ tính trên key có ở cả hai phía rồi chia cho độ phủ, và mỗi cặp câu hỏi–case có tập key chung khác nhau. Chỉ mục k-NN tìm theo một metric cố định trên vector đủ chiều; key thiếu phải điền giá trị giả, làm sai khoảng cách.",
+      "Việc chấm điểm giống nhau viết bằng code chứ không giao cho tìm kiếm theo vector, vì mỗi cặp câu hỏi–case chỉ so được trên những thông số cả hai cùng có, rồi chia cho số thông số ấy, mà mỗi cặp lại có tập chung khác nhau. Tìm theo vector thì mọi case phải quy về một dãy số dài bằng nhau và đo bằng một thước cố định, nên thông số nào thiếu cũng phải điền đại một giá trị, và chính giá trị điền đại đó làm sai kết quả so sánh.",
       "Chia điểm cho độ phủ để case khớp 4/5 key thắng case khớp 2/5 key.",
-      "use_count là tie-break tốt hơn vector: giữa hai case cùng điểm, case được tính đạt nhiều lần là cấu hình công ty đang thực sự dùng. Đây là tín hiệu tất định, không tốn lời gọi embedding, và vì việc tra case không dùng vector ở bước nào nên PostgreSQL không cần pgvector.",
-      "RLS trên bảng case cách ly theo organization: mọi truy vấn đều bị lọc, kể cả truy vấn viết sai, với điều kiện role ứng dụng không phải superuser, không có BYPASSRLS và không là owner của bảng."
+      "use_count là tie-break tốt hơn vector: giữa hai case cùng điểm, case được tính đạt nhiều lần là cấu hình đang thực sự được dùng. Đây là tín hiệu tất định, không tốn lời gọi embedding, và vì việc tra case không dùng vector ở bước nào nên PostgreSQL không cần pgvector.",
+      "RLS trên bảng case cách ly theo tenant, tức theo từng khách hàng: mọi truy vấn đều bị lọc, kể cả truy vấn viết sai, với điều kiện role ứng dụng không phải superuser, không có BYPASSRLS và không là owner của bảng."
     ],
     mermaid: [
       "flowchart LR",
@@ -804,6 +815,38 @@ const STEP = {
       "AT --> OT[OTLP correlation_id tới CloudWatch]"
     ],
   },
+  "M": {
+    title: "Cổng MCP · ứng dụng ngoài gọi vào",
+    detail: [
+      "<b>Mở cổng bằng Gateway sẵn có</b> — Gateway vốn đã nói được MCP, nên cổng cho ứng dụng ngoài là chính Gateway mà bước 6b đang dùng, mở thêm một đường vào chứ không phải một server viết tay mới.",
+      "<b>Ứng dụng ngoài xin vé đúng cửa</b> — Gọi vào mà chưa có vé thì cổng trả lời kèm địa chỉ nơi cấp vé. Ứng dụng tới Keycloak xin vé, ghi rõ vé này để dùng ở cổng MCP chứ không phải ở dịch vụ nào khác.",
+      "<b>Cổng chỉ nhận vé cấp cho chính nó</b> — Vé được cấp cho một dịch vụ khác, dù còn hạn và chữ ký thật, vẫn bị từ chối. Nhờ vậy một vé lấy được ở chỗ khác không mở được cổng này.",
+      "<b>Không chuyển tiếp vé của ứng dụng ngoài</b> — Cổng không đưa nguyên vé đó xuống dưới mà đổi lấy vé tạm hẹp quyền cho từng lời gọi, y như đường đi trong app ở bước 6b.",
+      "<b>Tool y hệt luồng trong nhà</b> — Lời gọi rơi vào đúng tool facade với sáu lớp kiểm, đúng phạm vi tài liệu và case của người dùng ghi trong vé, đúng hạn mức ngày của người đó. Ứng dụng ngoài không tự khai mình thuộc khách hàng nào.",
+      "<b>Chỉ trả thứ có nguồn</b> — Cổng trả kết quả tính kèm tham số đã dùng, và đoạn tài liệu kèm trích dẫn. Nó không trả câu chữ do mô hình viết, vì mô hình bên kia thuộc ứng dụng ngoài, không đi qua validator và guardrail của hệ thống.",
+      "<b>Ghi log như một lượt hỏi</b> — Mỗi lời gọi vào cổng đều có bản ghi kiểm toán: ứng dụng nào, người nào, gọi tool gì, lúc nào; token dùng hết cũng trừ vào chung hạn mức với lượt hỏi trong app."
+    ],
+    why: [
+      "Mở cổng bằng Gateway thay vì tự viết một MCP server vì Gateway đã lo phần dịch giao thức, phần xác thực vào và phần xác thực ra; tự viết thì phải tự đuổi theo các bản mới của chuẩn MCP.",
+      "Cổng chỉ nhận vé cấp đúng cho nó và không chuyển tiếp vé ấy xuống dưới, vì nhận vé của dịch vụ khác là mở đường cho một vé lấy trộm ở nơi khác dùng được ở đây, còn chuyển tiếp thì dịch vụ phía sau tưởng lời gọi đã được kiểm.",
+      "Phạm vi đọc lấy từ vé chứ không từ tham số ứng dụng ngoài gửi lên, vì tham số đó do phía bên kia tự đặt; cùng một bộ lọc quyền và RLS như luồng trong app thì không sinh ra một biên phân quyền thứ hai dễ quên.",
+      "Chỉ trả dữ liệu có nguồn vì các lớp soát của hệ thống nằm trên đường trả lời trong app; ứng dụng ngoài không có những lớp đó, nên thứ đi ra phải là con số kèm tham số và đoạn trích kèm nguồn, để người bên kia kiểm được.",
+      "Hạn mức và bản ghi kiểm toán dùng chung với lượt hỏi trong app, vì một ứng dụng ngoài gọi trong vòng lặp có thể đốt token nhanh hơn người ngồi gõ nhiều lần."
+    ],
+    mermaid: [
+      "flowchart LR",
+      "CL[Ứng dụng MCP] --> GW[Gateway · đường vào MCP]",
+      "GW -->|chưa có vé · chỉ nơi cấp| CL",
+      "CL --> KC[Keycloak · vé cho đúng cổng này]",
+      "KC --> CL",
+      "CL -->|kèm vé| GW",
+      "GW --> AU{Vé cấp cho cổng này}",
+      "AU -->|không| RJ[Từ chối]",
+      "AU -->|có| TX[Đổi vé tạm hẹp quyền]",
+      "TX --> TG[Tool facade · 6 lớp kiểm · phạm vi theo người dùng]",
+      "TG --> RS[Kết quả có nguồn · ghi audit_event · trừ hạn mức]"
+    ],
+  },
   "W": {
     title: "Bước W · Worker nạp tài liệu",
     detail: [
@@ -921,6 +964,12 @@ const SRC = {
   "os-pricing": { t: "Amazon OpenSearch Service pricing · Serverless", a: "AWS",
     u: "https://aws.amazon.com/opensearch-service/pricing/",
     n: "OCU tính theo giờ, indexing và search tách riêng. Đơn giá khoảng $0,34 mỗi OCU-giờ ở eu-central-1, lấy từ AWS Price List Bulk API; 2 OCU chạy 730 giờ ra khoảng $495." },
+  "ac-gateway": { t: "Amazon Bedrock AgentCore Gateway", a: "AWS docs",
+    u: "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway.html",
+    n: "Gateway \"converts APIs, Lambda functions, and existing services into Model Context Protocol (MCP)-compatible tools\"; quản lý cả xác thực vào và xác thực ra." },
+  "mcp-auth": { t: "Model Context Protocol · Authorization (bản 2025-06-18)", a: "Đặc tả MCP",
+    u: "https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization",
+    n: "\"MCP servers MUST only accept tokens specifically intended for themselves\"; \"The MCP server MUST NOT pass through the token it received from the MCP client.\"" },
   "harness": { t: "AgentCore harness", a: "AWS docs",
     u: "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness.html",
     n: "Harness quản lý sẵn vòng lặp gọi model và tool." },
@@ -1007,6 +1056,7 @@ const CITE = {
   "8":   [["b-bedrock-judge"], ["internal"], ["grounding"], ["b-ui-midstream"]],
   "9":   [["internal"], ["nginx"], ["mdn-es"], ["internal"], ["mdn-abort", "ms-requestaborted"], ["ms-linkedtoken"], ["harness", "internal"]],
   "10":  [["burndown"], ["pg-insert"], ["ms-finally"], ["b-usingbedrock"]],
+  "M":   [["ac-gateway"], ["mcp-auth"], ["b-rag-ac", "pg-rls"], ["internal"], ["burndown"]],
   "W":   [["kb-build", "b-rag-hybrid", "b-rag-platform"], ["os-scaling", "os-pricing", "b-rag-tco"], ["kb-create", "internal"], ["kb-s3"], ["kb-perm"], ["kb-enc"]],
 };
 

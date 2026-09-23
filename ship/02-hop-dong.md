@@ -99,7 +99,7 @@ Khung SSE tách bằng dòng trống. Backend flush sau mỗi event.
 | --- | --- | --- | --- |
 | `status` | `{ phase, text }` | Đổi trạng thái | Dòng status một dòng |
 | `retrieval` | `{ chunks: [{docId,title,page,clause}], scores }`<br/>nhánh `case_lookup` thêm `params: [{key,value,unit,source,confirmed}]` | Sau retrieval, hoặc sau khi gom tham số | Danh sách source bấm được; với `case_lookup` là chip tham số |
-| `token` | `{ text }` | Mỗi delta chữ | Nối vào bubble |
+| `token` | `{ text, risk? }` | Mỗi delta chữ; câu có số hoặc có nhãn kết luận thì phát nguyên câu sau khi kiểm (AD-30) | Nối vào bubble; có `risk` thì gắn cờ ngay trên đoạn chữ đó |
 | `tool_call` | `{ toolId, version, inputs }` | Trước khi chạy tool | Thẻ "Đang tính B12…" kèm input. Không phải spinner câm |
 | `tool_result` | `{ toolRunId, outputs, units, standard }` | Sau khi tool xong | **Dựng thẻ kết quả từ JSON này** |
 | `approval_required` | `{ toolRunId, summary }` | **v1.2: không phát cho case** (AD-28). Giữ trong hợp đồng cho tool nhóm C | Nút Approve / Bỏ qua. FE giữ code xử lý, không giả định event này có mặt |
@@ -146,6 +146,21 @@ Mock stream phải phát lại **với độ trễ thật**, không phát một 
 **Bổ sung v1.1, cần hai đội ký lại:** mã `unverified_verdict` là mã mới. Thêm mã `warning` là thay đổi cộng thêm, không breaking, nhưng chỉ an toàn khi FE xử lý mã lạ. Luật từ bản này: **FE gặp mã `warning` không biết thì hiện banner chung** "Một phần câu trả lời chưa đối chiếu được", không bỏ qua và không làm hỏng giao diện.
 
 Thẻ kết quả hiện nhãn đạt/không đạt từ `tool_result.outputs.verdict`, dạng `{ "pass": true, "field": "utilization", "value": 0.87 }`. Backend dựng khối này từ trường mà manifest khai báo là verdict. Tool chưa khai báo verdict thì không có khối này, và thẻ không hiện nhãn. FE không lấy nhãn từ văn bản `token`.
+
+---
+
+## 5a. `risk` trong `token` (AD-30)
+
+| `risk` | Nghĩa | UI hiện |
+| --- | --- | --- |
+| `unverified` | Câu chứa số hoặc nhãn kết luận nhưng chưa truy được về `tool_run` hay chunk đã retrieval | Gạch chân chấm, tooltip "chưa kiểm chứng được" |
+| `mismatch` | Số trong câu mâu thuẫn với `tool_run` đã tham chiếu, hoặc nhãn kết luận trái `verdict` | Nền cảnh báo, liên kết nhảy tới thẻ kết quả |
+
+**Nhịp phát.** Câu không chứa số và không chứa nhãn kết luận stream theo delta như cũ. Câu chứa số hoặc nhãn kết luận được giữ tới khi viết trọn, tối đa 400 ms hoặc 200 ký tự, rồi phát cả câu kèm `risk` nếu có. FE **không** được giả định mỗi `token` là một delta nhỏ.
+
+**Quan hệ với `warning`.** `risk` gắn vào đúng đoạn chữ; `warning` là banner tổng kết phát sau khi stream xong. Hai thứ không thay nhau: một câu bị `mismatch` vừa có cờ trong dòng vừa được tính vào `unverified_number`.
+
+**Bổ sung v1.2, cần hai đội ký lại:** `risk` là field mới trên event cũ, không breaking, nhưng FE và BE phải ký cùng lúc vì nhịp `token` đổi.
 
 ---
 

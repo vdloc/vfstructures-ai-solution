@@ -268,6 +268,23 @@ Kể từ AD-17, recall phải đo **theo từng scope** chặt hơn trước, v
 
 ---
 
+## 4b. Nghiệm thu đường kiểm lúc stream (AD-30)
+
+| # | Kịch bản | Đạt khi |
+| --- | --- | --- |
+| 1 | Mô hình viết một số lệch quá `relTol` so với `tool_run` | Số đó không bao giờ hiện mà thiếu cờ `mismatch` |
+| 2 | Mô hình viết nhãn kết luận khi không có `tool_run` khớp tham số | Câu hiện kèm cờ `unverified` ngay từ lúc hiện |
+| 3 | Câu trả lời thuần giải thích, không số | Thời gian tới chữ đầu và nhịp chữ không chậm đi đo được so với trước AD-30 |
+| 4 | Một câu dài bất thường, không kết thúc trong trần | Chạm trần thì vẫn phát, không treo stream |
+| 5 | Guardrail cắt giữa chừng | Phần chữ đã hiện giữ nguyên |
+| 6 | Toàn bộ lượt | Chữ đầu tiên vẫn trong mục tiêu khoảng 3 giây |
+
+**Chỉ số theo dõi khi chạy thật:** tỉ lệ câu bị giữ trên tổng số câu, thời gian giữ trung vị và p95, tỉ lệ chạm trần, tỉ lệ câu mang `risk` theo từng mức.
+
+**Chưa làm, ghi rõ:** đường kiểm này không trả lời được câu hỏi "citation có thật nhưng có đỡ được câu này không". Contextual grounding của Bedrock không bịt được chỗ đó vì tài liệu AWS ghi rõ tính năng này không hỗ trợ hỏi đáp hội thoại. Chỗ này để cho golden set và đánh giá độ chính xác trích dẫn, không hứa trong v1.
+
+---
+
 ## 5. Vòng phản hồi
 
 **Sơ đồ 9.6 — Luồng F5: từ phản hồi tới bộ eval**

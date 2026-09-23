@@ -9,7 +9,7 @@
 | # | File | Ai đọc | Trả lời câu hỏi gì |
 | --- | --- | --- | --- |
 | 00 | [Thuật ngữ và nguồn](00-thuat-ngu-va-nguon.md) | Tất cả | Mỗi từ lạ nghĩa là gì, vì sao hệ thống cần nó, quyết định dựa trên nguồn nào |
-| 01 | [**Kiến trúc tổng thể**](01-kien-truc.md) | Tất cả — **điểm vào của bộ** | Vì sao hệ thống có hình dạng này, nó gồm gì, chạy thế nào, 28 quyết định kiến trúc (mã tới AD-29). Mỗi mục có đường dẫn sang file con giữ chi tiết |
+| 01 | [**Kiến trúc tổng thể**](01-kien-truc.md) | Tất cả — **điểm vào của bộ** | Vì sao hệ thống có hình dạng này, nó gồm gì, chạy thế nào, 30 quyết định kiến trúc (mã tới AD-31). Mỗi mục có đường dẫn sang file con giữ chi tiết |
 | 02 | [Hợp đồng API](02-hop-dong.md) | **Backend + Frontend cùng ký** | Endpoint, schema, 11 SSE event, mã lỗi |
 | 03 | [Thi công Backend](03-backend.md) | Backend | Sáu bước, nghiệm thu từng bước, rủi ro phải canh |
 | 04 | [Thi công Frontend](04-frontend.md) | Frontend | Dựng UI từ 11 event, trạng thái phải xử lý |

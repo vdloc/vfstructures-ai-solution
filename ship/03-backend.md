@@ -258,6 +258,8 @@ Ba nhánh, ba khối công việc tách biệt. Có thể chia cho ba người.
 - `NumberValidator` với số lấy từ chunk: số phải nằm trong chunk mà **chính câu đó** trích. Câu không có `[n]` thì chỉ chấp nhận số từ `tool_run`. Số chỉ có trong tóm tắt lịch sử (AD-22) không phải nguồn hợp lệ.
 - `VerificationValidator` (AD-24): nhãn kết luận trong văn bản phải khớp `verdict.pass` của `tool_run` được tham chiếu, không chỉ khớp tham số. Dò nhãn bằng danh sách từ tiếng Pháp và tiếng Anh, kể cả dạng phủ định (*non conforme*, *ne vérifie pas*, *fails*). Trượt thì `warning: unverified_verdict`. Tool chưa khai báo verdict mà văn bản vẫn kết luận thì cũng trượt.
 - Kiểm phiên bản theo chế độ retrieval: hiện hành thì so `standardRef` của engine với `edition` của chunk; theo dự án thì citation phải cùng ấn bản dự án áp dụng.
+- Đường kiểm theo câu (AD-30): cùng hàm so sánh của `NumberValidator` và `VerificationValidator`, nhưng đầu vào là một câu đã viết trọn thay vì cả câu trả lời. Chỉ giữ câu chứa số hoặc nhãn kết luận; trần giữ 400 ms hoặc 200 ký tự rồi phát kèm `risk`. Không gọi mô hình trong đường này.
+- Post-validation sau stream vẫn chạy đủ và vẫn phát `warning`: đường theo câu không thay nó, vì kiểm phiên bản tiêu chuẩn và grounding chỉ có nghĩa trên cả câu trả lời.
 - Lượt `aborted` **không** chạy post-validation.
 - Ghi `message`, `retrieval_log`, `tool_run`, `audit_event` trên **mọi** đường kết thúc, kể cả khi lỗi.
 - Chế độ `Degraded`: mô hình không dùng được thì trả **danh sách nguồn đã retrieval**, không trả lỗi trắng.

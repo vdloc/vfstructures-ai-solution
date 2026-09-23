@@ -1,4 +1,4 @@
-# Audit nguồn — toàn bộ quyết định kiến trúc AD-01 … AD-28
+# Audit nguồn — toàn bộ quyết định kiến trúc AD-01 … AD-31
 
 **Ngày audit:** 22/09/2026. **Phạm vi:** bảng quyết định §9 của `01-kien-truc.md`, đối chiếu bảng nguồn `00-thuat-ngu-va-nguon.md` (Phần F) và các file chi tiết trong thư mục này.
 **Quy tắc phân loại:**
@@ -6,7 +6,7 @@
 - **internal** — lựa chọn build, biện minh bằng lập luận/tradeoff hoặc pattern trong sách; không cần nguồn ngoài.
 - **assumption** — số tự khai, hiệu chỉnh bằng golden set; không lấy từ nguồn ngoài (theo thiết kế).
 
-**Tổng: 28 mã hiện diện (không có AD-04), AD-09 đã superseded → 27 quyết định active.**
+**Tổng: 30 mã hiện diện (không có AD-04), AD-09 đã superseded → 29 quyết định active.**
 
 ## Phủ nguồn 100%
 
@@ -40,10 +40,12 @@
 | AD-27 | internal | NONE (`toolUseId` khái niệm Converse; idempotency = thiết kế nội bộ) | không cần nguồn ngoài |
 | AD-28 | internal + Postgres | https://www.postgresql.org/docs/current/ddl-rowsecurity.html (21/09/2026); *Vector Databases: A Practical Introduction* (Nitin Borwankar) — loại phương án pgvector | confirmed |
 | AD-29 | internal + Postgres | https://www.postgresql.org/docs/current/pgtrgm.html · https://www.postgresql.org/docs/current/fuzzystrmatch.html · https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-extensions.html (22/09/2026); đo trực tiếp trên PostgreSQL 16 (22/09/2026, [00](00-thuat-ngu-va-nguon.md) Phần F); *Designing AI Interfaces* (Louise Macfadyen) ch3, tr. 61–62 và 71 | confirmed |
+| AD-30 | internal | NONE (đường kiểm tất định trên dữ liệu đã có; không có tài liệu ngoài nói trực tiếp) | không cần nguồn ngoài |
+| AD-31 | AWS-capability + spec | https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway.html · https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization (23/09/2026) | Gateway nói MCP; quy tắc audience và cấm chuyển tiếp token lấy nguyên văn từ đặc tả |
 
-## Tổng kết đếm (27 mã)
+## Tổng kết đếm (29 mã)
 
-- **Confirmed — có nguồn xác minh:** 17 — AD-02, 03, 06, 10, 12, 13, 17, 18, 19, 20, 21, 22, 23, 24, 26, 28, 29.
+- **Confirmed — có nguồn xác minh:** 18 — AD-02, 03, 06, 10, 12, 13, 17, 18, 19, 20, 21, 22, 23, 24, 26, 28, 29, 31.
 - **Internal — không cần nguồn ngoài:** 9 — AD-01, 05, 07, 08, 11, 15, 16, 25, 27.
 - **Superseded:** 1 — AD-09.
 - **KHÔNG CĂN CỨ:** 0 — sau vá 22/09/2026, mọi quyết định đều truy được nguồn. AD-14 có trích dẫn pháp lý nội bộ (Luật 91/2025/QH15 + Nghị định 356, 10 §1 Q1); chỉ cần luật sư xác nhận phạm vi, không phải lỗ hổng nguồn.

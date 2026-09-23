@@ -115,6 +115,19 @@ Cache scope 60 giây trong bộ nhớ tiến trình. Hệ quả chấp nhận đ
 
 ---
 
+### 1a. Cổng MCP cho ứng dụng ngoài (AD-31)
+
+| Luật | Vì sao |
+| --- | --- |
+| Token phải có `aud` đúng endpoint MCP; token cấp cho dịch vụ khác bị từ chối kể cả khi chữ ký và hạn còn hợp lệ | Đặc tả MCP: *"MCP servers MUST only accept tokens specifically intended for themselves"* |
+| Không chuyển tiếp token của client xuống Main API; facade nhận token hẹp quyền đổi qua RFC 8693 | Đặc tả MCP: *"The MCP server MUST NOT pass through the token it received from the MCP client."* Chuyển tiếp thì dịch vụ phía sau tưởng lời gọi đã được kiểm |
+| `scope` và tenant lấy từ token, không lấy từ tham số client gửi lên | Tham số do phía ngoài tự đặt; một biên phân quyền thứ hai là một chỗ nữa để quên |
+| Mỗi tool lộ ra cổng MCP phải duyệt riêng; mặc định không lộ | Tool ghi dữ liệu hoặc tốn tiền không nên mở cho vòng lặp của một agent ngoài |
+| Quota, `active_turn` và `audit_event` dùng chung với lượt hỏi trong app | Một client gọi trong vòng lặp đốt token nhanh hơn người gõ tay |
+| Cổng chỉ trả `tool_result` và chunk kèm citation, không trả văn bản mô hình sinh | Mô hình bên kia không đi qua guardrail và validator của hệ thống |
+
+---
+
 ## 2. Thứ tự middleware
 
 Thứ tự cố định: **CORS → giới hạn tốc độ → xác thực → hạn mức theo ngày**. Đặt hạn mức trước giới hạn tốc độ thì bộ đếm vẫn tăng trên request đã bị từ chối, người dùng bị trừ quota cho lần gọi chưa từng được phục vụ; lỗi khó thấy vì mọi thứ khác vẫn chạy đúng.

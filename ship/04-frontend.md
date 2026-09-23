@@ -195,6 +195,12 @@ Cảnh báo đến **sau** khi chữ đã hiện xong. Banner phải chèn đư�
 
 Xóa chữ đã hiện là trải nghiệm tệ và làm người dùng mất tin. Hệ thống chọn gắn cờ thay vì xóa — giao diện phải thực hiện đúng lựa chọn đó.
 
+### Cờ trong dòng (AD-30)
+
+Một số câu đến kèm `risk` ngay trong event `token`: `unverified` là thiếu bằng chứng, `mismatch` là mâu thuẫn với kết quả tính. Hai mức hiện khác nhau — gạch chân chấm cho mức thứ nhất, nền cảnh báo kèm liên kết tới thẻ kết quả cho mức thứ hai — và **không** thay cho banner cuối câu trả lời.
+
+Kèm theo đó, nhịp `token` không còn đều: câu chứa số hoặc nhãn kết luận đến nguyên câu thay vì từng mẩu nhỏ. FE không được giả định mỗi `token` là vài ký tự.
+
 ### Phải làm
 
 - Banner cảnh báo chèn lên câu trả lời đã đầy đủ.
