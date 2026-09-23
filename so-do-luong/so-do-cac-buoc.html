@@ -819,7 +819,8 @@ const STEP = {
     title: "Cổng MCP · ứng dụng ngoài gọi vào",
     detail: [
       "<b>Mở cổng bằng Gateway sẵn có</b> — Gateway vốn đã nói được MCP, nên cổng cho ứng dụng ngoài là chính Gateway mà bước 6b đang dùng, mở thêm một đường vào chứ không phải một server viết tay mới.",
-      "<b>Ứng dụng ngoài xin vé đúng cửa</b> — Gọi vào mà chưa có vé thì cổng trả lời kèm địa chỉ nơi cấp vé. Ứng dụng tới Keycloak xin vé, ghi rõ vé này để dùng ở cổng MCP chứ không phải ở dịch vụ nào khác.",
+      "<b>Ứng dụng ngoài xin vé đúng cửa</b> — Gọi vào mà chưa có vé thì cổng trả lời 401 kèm địa chỉ một trang mô tả chính nó: nơi cấp vé ở đâu, cần quyền gì. Ứng dụng đọc trang đó, tới Keycloak xin vé ghi rõ dùng cho cổng MCP, rồi gọi lại. Nhờ vậy một ứng dụng MCP viết đúng chuẩn tự tìm được đường, không phải khai tay.",
+      "<b>Vé do Keycloak cấp, không phải một kho tài khoản riêng</b> — Cổng nhận JWT của nhà cung cấp danh tính bất kỳ, nên vẫn là Keycloak đang dùng cho app, khai bằng địa chỉ discovery cùng danh sách client và audience được phép. Keycloak đặt trong mạng riêng thì cổng vẫn gọi tới được qua đường riêng, không phải phơi nó ra internet.",
       "<b>Cổng chỉ nhận vé cấp cho chính nó</b> — Vé được cấp cho một dịch vụ khác, dù còn hạn và chữ ký thật, vẫn bị từ chối. Nhờ vậy một vé lấy được ở chỗ khác không mở được cổng này.",
       "<b>Không chuyển tiếp vé của ứng dụng ngoài</b> — Cổng không đưa nguyên vé đó xuống dưới mà đổi lấy vé tạm hẹp quyền cho từng lời gọi, y như đường đi trong app ở bước 6b.",
       "<b>Tool y hệt luồng trong nhà</b> — Lời gọi rơi vào đúng tool facade với sáu lớp kiểm, đúng phạm vi tài liệu và case của người dùng ghi trong vé, đúng hạn mức ngày của người đó. Ứng dụng ngoài không tự khai mình thuộc khách hàng nào.",
@@ -831,7 +832,9 @@ const STEP = {
       "Cổng chỉ nhận vé cấp đúng cho nó và không chuyển tiếp vé ấy xuống dưới, vì nhận vé của dịch vụ khác là mở đường cho một vé lấy trộm ở nơi khác dùng được ở đây, còn chuyển tiếp thì dịch vụ phía sau tưởng lời gọi đã được kiểm.",
       "Phạm vi đọc lấy từ vé chứ không từ tham số ứng dụng ngoài gửi lên, vì tham số đó do phía bên kia tự đặt; cùng một bộ lọc quyền và RLS như luồng trong app thì không sinh ra một biên phân quyền thứ hai dễ quên.",
       "Chỉ trả dữ liệu có nguồn vì các lớp soát của hệ thống nằm trên đường trả lời trong app; ứng dụng ngoài không có những lớp đó, nên thứ đi ra phải là con số kèm tham số và đoạn trích kèm nguồn, để người bên kia kiểm được.",
-      "Hạn mức và bản ghi kiểm toán dùng chung với lượt hỏi trong app, vì một ứng dụng ngoài gọi trong vòng lặp có thể đốt token nhanh hơn người ngồi gõ nhiều lần."
+      "Hạn mức và bản ghi kiểm toán dùng chung với lượt hỏi trong app, vì một ứng dụng ngoài gọi trong vòng lặp có thể đốt token nhanh hơn người ngồi gõ nhiều lần.",
+      "Cổng phải đặt ở chế độ kiểm JWT. Có hai chế độ buông mà cổng không tự phân quyền, chỉ chuyển tiếp lời gọi xuống dưới; chọn nhầm một trong hai thì ai gọi cũng tới được tool, và chỗ hỏng nằm ở cấu hình chứ không nằm trong mã nguồn nên đọc code không thấy.",
+      "Định danh trong vé nên là một mã, không phải email hay tên người, vì nhật ký của AWS lưu lại trường định danh này. Dữ liệu cá nhân rơi vào nhật ký thì không xoá theo hạn được như dữ liệu trong database."
     ],
     mermaid: [
       "flowchart LR",
@@ -967,6 +970,12 @@ const SRC = {
   "ac-gateway": { t: "Amazon Bedrock AgentCore Gateway", a: "AWS docs",
     u: "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway.html",
     n: "Gateway \"converts APIs, Lambda functions, and existing services into Model Context Protocol (MCP)-compatible tools\"; quản lý cả xác thực vào và xác thực ra." },
+  "ac-gw-mcp": { t: "Use an AgentCore gateway", a: "AWS docs",
+    u: "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-using.html",
+    n: "Gateway phục vụ các bản MCP 2026-07-28, 2025-11-25, 2025-06-18, 2025-03-26, với tools/list, tools/call, prompts, resources, elicitation, sampling và tìm tool bằng câu hỏi tự nhiên." },
+  "ac-gw-auth": { t: "Set up inbound authorization for your gateway", a: "AWS docs",
+    u: "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-inbound-auth.html",
+    n: "\"AgentCore supports JWTs from all identity providers\"; thiếu token thì trả 401 kèm WWW-Authenticate có resource_metadata trỏ tới /.well-known/oauth-protected-resource (RFC 9728); IdP trong VPC dùng privateEndpoint; kiểu NONE và AUTHENTICATE_ONLY thì cổng không tự phân quyền." },
   "mcp-auth": { t: "Model Context Protocol · Authorization (bản 2025-06-18)", a: "Đặc tả MCP",
     u: "https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization",
     n: "\"MCP servers MUST only accept tokens specifically intended for themselves\"; \"The MCP server MUST NOT pass through the token it received from the MCP client.\"" },
@@ -1056,7 +1065,7 @@ const CITE = {
   "8":   [["b-bedrock-judge"], ["internal"], ["grounding"], ["b-ui-midstream"]],
   "9":   [["internal"], ["nginx"], ["mdn-es"], ["internal"], ["mdn-abort", "ms-requestaborted"], ["ms-linkedtoken"], ["harness", "internal"]],
   "10":  [["burndown"], ["pg-insert"], ["ms-finally"], ["b-usingbedrock"]],
-  "M":   [["ac-gateway"], ["mcp-auth"], ["b-rag-ac", "pg-rls"], ["internal"], ["burndown"]],
+  "M":   [["ac-gateway", "ac-gw-mcp"], ["mcp-auth", "ac-gw-auth"], ["b-rag-ac", "pg-rls"], ["internal"], ["burndown"], ["ac-gw-auth"], ["ac-gw-auth", "b-usingbedrock"]],
   "W":   [["kb-build", "b-rag-hybrid", "b-rag-platform"], ["os-scaling", "os-pricing", "b-rag-tco"], ["kb-create", "internal"], ["kb-s3"], ["kb-perm"], ["kb-enc"]],
 };
 

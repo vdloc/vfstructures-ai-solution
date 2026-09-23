@@ -125,6 +125,10 @@ Cache scope 60 giây trong bộ nhớ tiến trình. Hệ quả chấp nhận đ
 | Mỗi tool lộ ra cổng MCP phải duyệt riêng; mặc định không lộ | Tool ghi dữ liệu hoặc tốn tiền không nên mở cho vòng lặp của một agent ngoài |
 | Quota, `active_turn` và `audit_event` dùng chung với lượt hỏi trong app | Một client gọi trong vòng lặp đốt token nhanh hơn người gõ tay |
 | Cổng chỉ trả `tool_result` và chunk kèm citation, không trả văn bản mô hình sinh | Mô hình bên kia không đi qua guardrail và validator của hệ thống |
+| `authorizerType = CUSTOM_JWT` với `discoveryUrl` của Keycloak, `allowedClients`, `allowedAudience`, `allowedScopes` khai tường minh | Gateway nhận JWT của IdP bất kỳ, nên không phải dựng kho tài khoản thứ hai. Keycloak trong VPC thì khai `privateEndpoint`, không mở IdP ra internet |
+| **Cấm** `authorizerType = NONE` và `AUTHENTICATE_ONLY` ở mọi môi trường có dữ liệu thật; chặn bằng SCP trên condition key `bedrock-agentcore:GatewayAuthorizerType` | Hai chế độ này để cổng không tự phân quyền, mọi caller đi thẳng tới target. Đây là lỗi cấu hình, đọc mã nguồn không phát hiện được |
+| Claim `sub` trong token là mã định danh, không phải email hay tên đăng nhập | CloudTrail lưu `sub` của JWT; dữ liệu cá nhân rơi vào nhật ký thì không xóa theo hạn retention như dữ liệu trong database |
+| Client MCP dò đường bằng 401 kèm `WWW-Authenticate` và `/.well-known/oauth-protected-resource` (RFC 9728) do Gateway phát | Không phải phát tay cấu hình cho từng client; đúng cơ chế đặc tả MCP yêu cầu |
 
 ---
 

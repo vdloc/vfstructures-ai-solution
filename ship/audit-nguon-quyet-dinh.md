@@ -41,7 +41,7 @@
 | AD-28 | internal + Postgres | https://www.postgresql.org/docs/current/ddl-rowsecurity.html (21/09/2026); *Vector Databases: A Practical Introduction* (Nitin Borwankar) — loại phương án pgvector | confirmed |
 | AD-29 | internal + Postgres | https://www.postgresql.org/docs/current/pgtrgm.html · https://www.postgresql.org/docs/current/fuzzystrmatch.html · https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-extensions.html (22/09/2026); đo trực tiếp trên PostgreSQL 16 (22/09/2026, [00](00-thuat-ngu-va-nguon.md) Phần F); *Designing AI Interfaces* (Louise Macfadyen) ch3, tr. 61–62 và 71 | confirmed |
 | AD-30 | internal | NONE (đường kiểm tất định trên dữ liệu đã có; không có tài liệu ngoài nói trực tiếp) | không cần nguồn ngoài |
-| AD-31 | AWS-capability + spec | https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway.html · https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization (23/09/2026) | Gateway nói MCP; quy tắc audience và cấm chuyển tiếp token lấy nguyên văn từ đặc tả |
+| AD-31 | AWS-capability + spec | https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway.html · https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-using.html · https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-inbound-auth.html · https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization (23/09/2026) | Gateway là MCP server quản lý sẵn: bản giao thức, danh sách operation, JWT của IdP bất kỳ, 401 kèm RFC 9728, hai chế độ buông. Quy tắc audience và cấm chuyển tiếp token lấy nguyên văn từ đặc tả MCP |
 
 ## Tổng kết đếm (29 mã)
 
