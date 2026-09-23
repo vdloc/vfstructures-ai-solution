@@ -29,6 +29,8 @@ Trước khi dựng bất cứ thứ gì, phải biết **tài khoản AWS của
 2. **Biểu mẫu mô tả trường hợp sử dụng** của nhà cung cấp mô hình.
 3. **Hạn mức bằng 0** — có quyền gọi nhưng AWS chưa cấp dung lượng.
 
+**Cổng thứ nhất đã đổi hình dạng, không biến mất.** Trang *Model access* của console Bedrock **đã bị gỡ** (đọc trực tiếp trên console ngày 23/09/2026, xem [16](16-huong-dan-console.md) §C.1): model serverless nay tự bật khi được gọi lần đầu trong tài khoản. Thao tác "vào Model access, tick model, Save" trong mọi hướng dẫn cũ không còn. Thay vào đó, với model bán qua Marketplace, **một người có quyền Marketplace phải gọi model một lần** để bật cho cả tài khoản; và người dùng lần đầu gọi model Anthropic **vẫn có thể phải nộp biểu mẫu use case**. Bốn lệnh gọi thử dưới đây vì vậy càng đáng chạy trước: chúng vẫn là cách duy nhất biết tài khoản đang vướng cổng nào.
+
 Ba thứ này hay bị gộp thành một dòng trong kế hoạch. Chúng không phải một việc. Bốn lệnh ở đầu tài liệu mất vài phút và **không ai trả lời thay được** — chỉ có gọi thật mới biết.
 
 ## Vì sao phần lớn việc nằm ở bước 4
@@ -104,8 +106,8 @@ aws service-quotas list-service-quotas --region $REGION \
 
 | Lỗi nhận được | Nghĩa là | Cách gỡ | Thời gian chờ |
 | --- | --- | --- | --- |
-| `AccessDeniedException` | Chưa có thỏa thuận Marketplace cho nhà cung cấp | Đăng ký qua AWS Marketplace, cần phương thức thanh toán | Khó đoán |
-| `ResourceNotFoundException` + "Model use case details have not been submitted" | Chưa gửi biểu mẫu mô tả trường hợp sử dụng | Điền biểu mẫu trong console Bedrock | Vài giờ đến vài ngày |
+| `AccessDeniedException` | Chưa có thỏa thuận Marketplace cho nhà cung cấp | Đăng ký qua AWS Marketplace, cần phương thức thanh toán. Người **có quyền Marketplace** gọi model một lần là bật cho cả tài khoản | Khó đoán |
+| `ResourceNotFoundException` + "Model use case details have not been submitted" | Chưa gửi biểu mẫu mô tả trường hợp sử dụng | Điền biểu mẫu trong console Bedrock — **không phải ở trang Model access**, trang đó đã bị gỡ | Vài giờ đến vài ngày |
 | `ThrottlingException`, hoặc quota `0.0` | Có quyền nhưng quota bằng 0 | Mở ticket tăng quota | 1–3 ngày làm việc |
 
 **R43 · Ba cổng này hay bị gộp thành một việc.** Chúng là ba thủ tục độc lập với ba thời gian chờ khác nhau. Biết sớm là đáng giá — đó là lý do việc này đứng đầu danh sách.

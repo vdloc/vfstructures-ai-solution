@@ -3,7 +3,8 @@
   "_ngay_cong_bo": {
     "AmazonBedrockFoundationModels": "2026-09-11",
     "AmazonBedrock": "2026-09-17",
-    "AmazonBedrockAgentCore": "2026-09-15"
+    "AmazonBedrockAgentCore": "2026-09-15",
+    "AmazonS3": "2026-09-24"
   },
   "_quy_uoc": "Profile eu.* dung dong gia 'Standard' / 'Regional' / 'cross-region-geo', khong dung dong 'Global'.",
   "model_per_1M_tokens": {
@@ -20,6 +21,7 @@
   "agentcore": {"runtime_vcpu_hour": 0.0895, "runtime_GB_hour": 0.00945, "gateway_per_invocation": 0.000005, "gateway_search_per_invocation": 0.000025},
   "aurora_postgresql": {"serverless_v2_ACU_hour": 0.14, "serverless_v2_io_optimized_ACU_hour": 0.19, "storage_GB_month": 0.119, "io_per_1M": 0.22, "backup_GB_month": 0.023, "db_t4g_medium_hour": 0.085},
   "opensearch_serverless": {"search_OCU_hour": 0.339, "indexing_OCU_hour": 0.339},
+  "s3_vectors": {"storage_GB_month": 0.064, "put_per_GB": 0.214, "query_request": 0.0000027, "query_processed_GB_tier1": 0.000004185, "query_returned_GB": 0.01},
   "kms": {"key_month": 1.00, "per_10K_requests": 0.03},
   "cloudwatch": {"logs_ingest_GB": 0.63, "logs_storage_GB_month": 0.0324, "metric_month": 0.30, "alarm_month": 0.10},
   "vpc": {"interface_endpoint_hour_per_AZ": 0.012, "endpoint_data_GB": 0.01},

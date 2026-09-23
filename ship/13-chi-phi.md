@@ -94,6 +94,20 @@ Mọi phép tính chạy bằng script, không tính tay. Đổi một giả đ�
 
 Giá riêng cho AgentCore **Harness** và **Policy** không có trong Price List. Mô hình giả định Harness tính theo Runtime; Policy chưa có giá để đưa vào.
 
+### 3a. Kho vector: ba ứng viên, ba cơ cấu giá khác hẳn nhau
+
+AD-17 đổi sang customer-managed KB nên phải tự nuôi kho vector. Ba ứng viên còn lại sau khi loại OpenSearch Managed Cluster (xem [01](01-kien-truc.md) V-K7) có cơ cấu giá khác nhau về bản chất, không chỉ khác con số:
+
+| Kho | Trả tiền cho cái gì | Khi không ai hỏi | Ước tính tháng |
+| --- | --- | --- | --- |
+| **OpenSearch Serverless** | OCU-giờ, chạy liên tục | **Vẫn tính tiền** trừ khi đặt sàn 0 OCU, và khi đó lượt hỏi đầu chịu cold start | 494,94 $ với 2 search OCU; 989,88 $ nếu thêm 2 indexing OCU |
+| **Aurora PostgreSQL Serverless v2** | ACU-giờ + dung lượng | Co xuống ACU tối thiểu, vẫn là khoản chạy nền | ~204 $ với 2 ACU chạy cả tháng, cộng lưu trữ |
+| **S3 Vectors** | Dung lượng, byte nạp, và từng truy vấn | **Gần bằng 0** — không có sàn theo giờ | Vài đô cho kho nhỏ; tiền đi theo lưu lượng thật |
+
+Ba con số trên không so sánh được trực tiếp: hai kho đầu là **chi phí cố định**, kho thứ ba là **chi phí biến đổi**. Với dự án mà lưu lượng đầu còn thấp và chưa đo được, cơ cấu biến đổi an toàn hơn cho hóa đơn — nhưng AWS mô tả S3 Vectors *"ideal for workloads where queries are less frequent"*, tức phải đo độ trễ trên lượt thật trước khi chốt, vì tra tài liệu nằm trên đường trả lời người dùng.
+
+Chưa chốt kho nào: đó là V-K7.
+
 **Hạ tầng:**
 
 | Khoản | Đơn giá |
@@ -101,6 +115,9 @@ Giá riêng cho AgentCore **Harness** và **Policy** không có trong Price List
 | Aurora PostgreSQL Serverless v2 | $0,14 mỗi ACU-giờ |
 | Aurora lưu trữ | $0,119 mỗi GB-tháng |
 | OpenSearch Serverless | $0,339 mỗi OCU-giờ (search và indexing tính riêng) |
+| S3 Vectors · lưu trữ | $0,064 mỗi GB-tháng |
+| S3 Vectors · nạp | $0,214 mỗi GB ghi vào |
+| S3 Vectors · truy vấn | $0,0000027 mỗi request, cộng $0,000004185 mỗi GB quét (bậc 1) và $0,01 mỗi GB trả về |
 | Fargate ARM | $0,03725 mỗi vCPU-giờ; $0,00409 mỗi GB-giờ |
 | VPC interface endpoint | $0,012 mỗi giờ, cho mỗi AZ |
 | KMS | $1 mỗi khóa customer-managed mỗi tháng; $0,03 mỗi 10 000 request |

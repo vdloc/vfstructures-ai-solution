@@ -24,6 +24,7 @@
 | 13 | [Chi phí](13-chi-phi.md) | Lãnh đạo, DevOps, Backend | Đơn giá thật ở Frankfurt, chi phí một lượt, ba kịch bản, đòn bẩy giảm chi phí |
 | 14 | [Chi tiết cài đặt Backend](14-chi-tiet-backend.md) | Backend | Cấu trúc solution, mã mẫu cho từng lời gọi AWS, SQL |
 | 15 | [Chi tiết cài đặt DevOps](15-chi-tiet-devops.md) | DevOps AWS | Hạ tầng dưới dạng CDK, IAM, KMS, mạng, quan sát, chi phí |
+| 16 | [Hướng dẫn cấu hình trên console](16-huong-dan-console.md) | DevOps, Backend | Thao tác trên giao diện AWS: ảnh chụp từng bước, trường nào điền gì |
 | — | [Hồ sơ đề xuất cho lãnh đạo/CTO](kien-truc-day-du.md) | Ban lãnh đạo, CTO, Giám đốc Kỹ thuật | Vì sao xây, vận hành thế nào, chi phí và rủi ro — hồ sơ trình duyệt đầu tư, song song bộ này |
 
 **Thứ tự đọc lần đầu**
