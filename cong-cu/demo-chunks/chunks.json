@@ -1,0 +1,125 @@
+[
+  {
+    "id": "demo-EN1992-1-1_6.2.2_c01",
+    "prefix": "EN 1992-1-1:2004 · 6.2.2 Cắt · trang 84",
+    "text": "[VĂN BẢN DEMO — không phải nguyên văn tiêu chuẩn] Khả năng chịu cắt của cấu kiện không có cốt thép chịu cắt được lấy bằng giá trị thiết kế V_Rd,c. Giá trị này phụ thuộc vào chiều cao làm việc d, hàm lượng cốt thép dọc rho_l và cường độ chịu nén đặc trưng f_ck. Khi lực cắt thiết kế V_Ed nhỏ hơn hoặc bằng V_Rd,c thì không cần bố trí cốt thép chịu cắt tính toán, nhưng vẫn phải đặt cốt thép chịu cắt cấu tạo theo quy định về cấu tạo.",
+    "metadata": {
+      "scope_key": "org-42/EN1992",
+      "standard": "EN 1992-1-1",
+      "family_key": "EN1992-1-1+NA-FR",
+      "edition": "2004",
+      "clause_path": "6.2.2",
+      "page": 84,
+      "doc_id": "demo-doc-en1992",
+      "chunk_index": 1,
+      "chunk_type": "clause",
+      "doc_type": "standard",
+      "status": "active",
+      "effective_from": 20050101,
+      "effective_to": 99991231
+    }
+  },
+  {
+    "id": "demo-EN1992-1-1_6.2.3_c02",
+    "prefix": "EN 1992-1-1:2004 · 6.2.3 Cấu kiện có cốt thép chịu cắt · trang 87",
+    "text": "[VĂN BẢN DEMO — không phải nguyên văn tiêu chuẩn] Với cấu kiện có cốt thép chịu cắt, mô hình giàn ảo được dùng để xác định khả năng chịu lực. Góc nghiêng theta của thanh nén xiên được chọn trong khoảng cho phép; chọn góc nhỏ làm giảm lượng cốt đai nhưng làm tăng lực trong thanh nén bê tông. Khả năng chịu lực thiết kế lấy bằng giá trị nhỏ hơn giữa khả năng của cốt đai V_Rd,s và khả năng của thanh nén bê tông V_Rd,max.",
+    "metadata": {
+      "scope_key": "org-42/EN1992",
+      "standard": "EN 1992-1-1",
+      "family_key": "EN1992-1-1+NA-FR",
+      "edition": "2004",
+      "clause_path": "6.2.3",
+      "page": 87,
+      "doc_id": "demo-doc-en1992",
+      "chunk_index": 2,
+      "chunk_type": "clause",
+      "doc_type": "standard",
+      "status": "active",
+      "effective_from": 20050101,
+      "effective_to": 99991231
+    }
+  },
+  {
+    "id": "demo-EN1993-1-1_6.2.6_c03",
+    "prefix": "EN 1993-1-1:2005 · 6.2.6 Cắt · trang 56",
+    "text": "[VĂN BẢN DEMO — không phải nguyên văn tiêu chuẩn] Với tiết diện thép cán chữ I chịu cắt theo phương bụng, diện tích chịu cắt A_v được lấy theo công thức riêng cho từng dạng tiết diện. Khả năng chịu cắt dẻo thiết kế V_pl,Rd tỷ lệ với A_v và cường độ chảy f_y, chia cho căn bậc ba và hệ số an toàn vật liệu gamma_M0. Khi lực cắt thiết kế vượt quá một nửa khả năng chịu cắt dẻo thì phải xét tương tác giữa cắt và uốn.",
+    "metadata": {
+      "scope_key": "org-42/EN1993",
+      "standard": "EN 1993-1-1",
+      "family_key": "EN1993-1-1+NA-FR",
+      "edition": "2005",
+      "clause_path": "6.2.6",
+      "page": 56,
+      "doc_id": "demo-doc-en1993",
+      "chunk_index": 1,
+      "chunk_type": "clause",
+      "doc_type": "standard",
+      "status": "active",
+      "effective_from": 20060101,
+      "effective_to": 99991231
+    }
+  },
+  {
+    "id": "demo-EN1993-1-1_6.2.6_c04-superseded",
+    "prefix": "EN 1993-1-1:1992 · 6.2.6 Cắt · trang 51",
+    "text": "[VĂN BẢN DEMO — bản cũ, dùng để kiểm bộ lọc status] Bản ấn hành cũ dùng cách lấy diện tích chịu cắt khác với bản hiện hành. Chunk này tồn tại để kiểm tra rằng bộ lọc theo status và theo ngày hiệu lực loại được bản đã thay thế ra khỏi kết quả tra cứu.",
+    "metadata": {
+      "scope_key": "org-42/EN1993",
+      "standard": "EN 1993-1-1",
+      "family_key": "EN1993-1-1+NA-FR",
+      "edition": "1992",
+      "clause_path": "6.2.6",
+      "page": 51,
+      "doc_id": "demo-doc-en1993-old",
+      "chunk_index": 1,
+      "chunk_type": "clause",
+      "doc_type": "standard",
+      "status": "superseded",
+      "effective_from": 19930101,
+      "effective_to": 20051231
+    }
+  },
+  {
+    "id": "demo-scope-khac_c05",
+    "prefix": "Quy trình nội bộ VF · QT-07 Kiểm tra dầm · trang 3",
+    "text": "[VĂN BẢN DEMO — tài liệu nội bộ, scope khác] Trước khi phát hành hồ sơ, kỹ sư phải chạy lại bài toán kiểm tra dầm trên bộ số liệu cuối cùng và đính kèm biên bản kết quả. Chunk này thuộc một scope_key khác, dùng để kiểm tra rằng bộ lọc scope không cho nó lọt vào kết quả của người dùng chỉ có quyền trên EN 1992 và EN 1993.",
+    "metadata": {
+      "scope_key": "org-99/noi-bo",
+      "standard": "QT-07",
+      "family_key": "VF-QT-07",
+      "edition": "2026",
+      "clause_path": "7.1",
+      "page": 3,
+      "doc_id": "demo-doc-qt07",
+      "chunk_index": 1,
+      "chunk_type": "procedure",
+      "doc_type": "internal_procedure",
+      "status": "active",
+      "effective_from": 20260101,
+      "effective_to": 99991231
+    }
+  },
+  {
+    "id": "demo-app-help_c06",
+    "prefix": "Hướng dẫn VF Structures 12.4 · Dầm > Kiểm tra cắt · trang 1",
+    "text": "[VĂN BẢN DEMO — tài liệu hướng dẫn phần mềm] Để chạy kiểm tra cắt cho một dầm: mở thẻ Kết cấu, chọn dầm trên sơ đồ, vào menu Kiểm tra rồi chọn Cắt. Bảng kết quả hiện tỷ số sử dụng của từng mặt cắt. Ô màu đỏ nghĩa là tỷ số lớn hơn 1 và mặt cắt không đạt.",
+    "metadata": {
+      "scope_key": "public",
+      "standard": "VF-HELP",
+      "family_key": "VF-HELP-12",
+      "edition": "12.4",
+      "clause_path": "3.2",
+      "page": 1,
+      "doc_id": "demo-doc-help",
+      "chunk_index": 1,
+      "chunk_type": "help",
+      "doc_type": "app_help",
+      "status": "active",
+      "effective_from": 20260101,
+      "effective_to": 99991231,
+      "app_version": "12.4",
+      "module": "Dam",
+      "ui_path": "Ket cau > Kiem tra > Cat"
+    }
+  }
+]

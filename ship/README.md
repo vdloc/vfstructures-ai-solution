@@ -57,7 +57,7 @@ Bộ tài liệu ghi rõ chỗ nào là số đo, chỗ nào là ước lượng
 Ba verification **đã trả lời** bằng tài liệu AWS đọc trực tiếp — xem [00](00-thuat-ngu-va-nguon.md):
 
 - **V-K2** — MKB có ở `eu-central-1`.
-- **V-K5** — MKB **luôn tìm hybrid** và không có `overrideSearchType`, nên không còn gì để kiểm.
+- **V-K5** — chỉ **OpenSearch Serverless** có `HYBRID`; mọi kho vector khác chỉ có `SEMANTIC`. Nên chọn kho (V-K7) là chọn luôn có hybrid hay không.
 - **V-A10** — Harness ở chế độ VPC **không cần NAT gateway** để kéo image; cần endpoint `ecr.dkr`, `ecr.api`, `s3`, `bedrock-runtime`.
 
 Fetch trực tiếp cũng làm lộ ra **V-K6**: MKB kèm sẵn một reranker không tính thêm tiền, nên phải đo trước khi trả tiền cho Cohere Rerank. Reranker này **chỉ dùng được khi KB dùng embedding do AWS quản**, nên V-K6 gắn với quyết định embedding (AD-06).
