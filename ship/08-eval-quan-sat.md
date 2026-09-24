@@ -285,6 +285,22 @@ Kể từ AD-17, recall phải đo **theo từng scope** chặt hơn trước, v
 
 ---
 
+## 4c. Chỉ số thành công: một North Star và một chỉ số chặn
+
+Bốn nhóm chỉ số, mỗi nhóm ít nhất một số, cộng một **chỉ số chặn** để North Star không được tối ưu bằng một cái giá ẩn.
+
+| Vai trò | Chỉ số | Mục tiêu cho đợt dùng thật đầu tiên |
+| --- | --- | --- |
+| **North Star** | Tỉ lệ lượt hỏi mà kỹ sư đánh giá Tốt, hoặc mở nguồn ra đọc | Đặt sau khi có số đo của hai tuần đầu |
+| Sức khỏe sản phẩm | Số kỹ sư quay lại trong tuần kế tiếp; số lượt hỏi mỗi kỹ sư mỗi tuần | ≥ 6/10 kỹ sư nói sẽ dùng tiếp |
+| Sức khỏe hệ thống | Thời gian tới chữ đầu tiên p95; tỉ lệ lỗi; tỉ lệ rơi về nhánh dự phòng | p95 ≲ 3 giây; lỗi < 1% |
+| Chất lượng phần AI | recall@k, tỉ lệ trích dẫn hợp lệ, tỉ lệ `unverified`, số lần khớp engine | Theo §3 |
+| **Chỉ số chặn** | Tỉ lệ từ chối trên **câu hỏi nằm trong phạm vi** | ≤ 30% |
+
+Chỉ số chặn là cái giữ cho P3 không biến hệ thống thành cỗ máy từ chối: siết ngưỡng điểm cho đẹp bảng trích dẫn thì tỉ lệ từ chối leo lên, và người dùng bỏ đi trước khi ai kịp nhìn bảng.
+
+Bốn con số đầu **không phải cổng CI** — cổng CI nằm ở §3. Đây là số theo dõi theo tuần, đọc cùng nhau; một mình North Star tăng mà tỉ lệ từ chối cũng tăng thì hệ thống đang tệ đi, không phải tốt lên.
+
 ## 5. Vòng phản hồi
 
 **Sơ đồ 9.6 — Luồng F5: từ phản hồi tới bộ eval**

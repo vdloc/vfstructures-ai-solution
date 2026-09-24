@@ -103,6 +103,23 @@ Hai mã mới, **không chặn**, chỉ ảnh hưởng chi phí và chạy lại
 
 ---
 
+## Bốn yêu cầu công ty đặt ra, và chỗ đáp ứng
+
+Bốn yêu cầu chức năng lấy từ tài liệu "Mục tiêu triển khai trợ lý AI cho phần mềm VF" của cuộc họp triển khai. Bảng này để người đặt hàng đối chiếu: yêu cầu nào nằm ở đâu, và còn vướng gì.
+
+| Yêu cầu | Đáp ứng bằng | Còn vướng |
+| --- | --- | --- |
+| 1. Tìm tiêu chuẩn và công thức; giải thích ý nghĩa, điều kiện áp dụng, dẫn nguồn | Ý định `doc_qa`: [01](01-kien-truc.md) luồng một lượt, [02](02-hop-dong.md), trích dẫn tới trang ở [07](07-giao-dien.md) | **Q2** — quyền nạp tiêu chuẩn có bản quyền. Trượt là mất cả nhánh tài liệu |
+| 2. Hỏi đáp về chức năng phần mềm VF; hướng dẫn thao tác | Ý định `app_help`, corpus tách riêng theo `doc_type` | **Q5** — có tài liệu hướng dẫn ở dạng nạp được không, phiên bản nào |
+| 3. Truy vấn và giải thích kết quả tính toán của **đúng dự án và cấu kiện đang xét** | `pageContext` mang `projectId` và `memberId` ([02](02-hop-dong.md)); tool đọc kết quả đã lưu; tra case ở [12](12-tra-case.md) | Main API phải có endpoint đọc kết quả theo dự án và cấu kiện |
+| 4. Gợi ý tối ưu phương án, **kiểm chứng bằng bộ tính trước khi kết luận đạt** | Ý định `optimize`: mô hình đề xuất, engine kết luận, không bao giờ ngược lại (P1, P2) | Chỉ với module đã có tool tính toán và có kỹ sư kết cấu ký manifest |
+
+Ba tiêu chí triển khai đi kèm: **ưu tiên dịch vụ có sẵn của AWS** (Bedrock, Guardrails, CloudWatch thay vì tự viết), **tái sử dụng engine và phân quyền của Main API** thay vì làm lại, và **theo dõi được chi phí mỗi lượt** — [13](13-chi-phi.md) có đơn giá thật và chi phí từng loại lượt.
+
+Yêu cầu 4 là yêu cầu dễ hiểu sai nhất: hệ thống **không** tự kết luận phương án nào đạt. Nó đề xuất, engine tính, và chỉ kết quả của engine mới được gọi là đạt.
+
+---
+
 ## Ba thứ công ty phải chốt trước khi bắt đầu
 
 Ba câu chặn nặng nhất, trích từ bộ tám câu hỏi mở (Q1–Q8). Bảng gốc, kèm hệ quả của từng câu và mức chặn, ở [10-rui-ro.md](10-rui-ro.md) mục 1.

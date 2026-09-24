@@ -63,7 +63,7 @@ Bảy quyết định dưới đây **không thuộc đội kỹ thuật** và c
 
 Điểm: **X** = xác suất, **T** = tác động (T/V/C = thấp/vừa/cao). Luôn hỏi thêm: rủi ro này có **dây chuyền** sang tầng khác không (ví dụ ảo giác → hồ sơ sai → thiệt hại pháp lý và uy tín)? Rủi ro dây chuyền gây thiệt hại lớn nhất vì khung một tầng dễ bỏ sót; chúng được đánh dấu T = C ngay cả khi X thấp. **R27 đến R33 và R39 phụ thuộc trực tiếp vào AD-13 (AgentCore Harness là đường chính); R28, R29 và R32 phải quyết trước khi làm bất kỳ việc nào khác của nhánh Harness, ở cổng hạ tầng.**
 
-> **Mã chủ sở hữu (cột cuối) là ký hiệu vai trò, chưa phải bảng RACI đã chốt.** L, B1, B2, E, F, M do đội đặt khi lập bảng gốc — không có bảng ánh xạ sang tên người hoặc chức danh thật trong bộ tài liệu này. Suy đoán hợp lý theo cách dùng trong tài liệu: L = người phụ trách chung (lead), B1/B2 = hai kỹ sư Backend, E = kỹ sư kết cấu chuyên môn (domain expert), F = kỹ sư Frontend, M = người phụ trách mô hình/routing, DPO = data protection officer (xuất hiện riêng ở R40). Đây là suy đoán từ ngữ cảnh, không phải xác nhận từ đội — công ty phải điền bảng ánh xạ thật trước beta.
+> **Mã chủ sở hữu (cột cuối) là ký hiệu vai trò.** Bảng phân trách nhiệm đầy đủ ở [09](09-trien-khai.md) §12.
 
 | # | Rủi ro | X | T | Giảm thiểu | Chủ sở hữu |
 | --- | --- | --- | --- | --- | --- |
