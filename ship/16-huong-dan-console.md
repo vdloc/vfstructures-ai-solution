@@ -1,6 +1,6 @@
 # 16 · Hướng dẫn cấu hình trên console AWS
 
-**Ai đọc:** người thực thi trên giao diện, không dùng CLI. Ngoài ra, mỗi phần mở đầu bằng một khung **"Giải thích cho người không chuyên"** viết bằng ngôn ngữ thường ngày, để quản lý và người không rành kỹ thuật nắm được phần đó làm gì và vì sao quan trọng trước khi đọc chi tiết thao tác.
+**Ai đọc:** người thực thi trên giao diện, không dùng CLI.
 
 Tài liệu này đi theo thứ tự của [05-devops.md](05-devops.md). Mỗi mục có link console, ảnh chụp từng bước, và giá trị phải điền. Mọi giá trị đều lấy từ [05](05-devops.md) §2A, [09](09-trien-khai.md), [15](15-chi-tiet-devops.md); chỗ nào thiết kế chưa chốt thì ghi rõ là chưa chốt, không tự đặt.
 
@@ -10,10 +10,62 @@ Tài liệu này đi theo thứ tự của [05-devops.md](05-devops.md). Mỗi m
 
 ---
 
-## A · Bedrock Guardrails
+## Mục lục
 
-> **Giải thích cho người không chuyên**
-> Guardrails là lớp lọc an toàn của trợ lý: nó kiểm cả câu hỏi người dùng gửi vào lẫn câu trả lời gửi ra, nhằm chặn nội dung ngoài phạm vi kết cấu, ngăn yêu cầu nguy hiểm và che thông tin cá nhân. Điểm cần nhớ xuyên suốt phần này: AWS không bật sẵn bất kỳ bộ lọc nào, và nhiều công tắc để mặc định ở trạng thái tắt. Nếu không chủ động bật đúng, hệ thống vẫn chạy bình thường nhưng thực chất không có rào chắn nào, và cũng không có thông báo lỗi để cảnh báo.
+- [A · Bedrock Guardrails](#a--bedrock-guardrails)
+  - [A.1 Mở trình tạo](#a1-mở-trình-tạo)
+  - [A.2 Bước 1 — Guardrail details](#a2-bước-1--guardrail-details)
+  - [A.3 Bước 2 — Content filters](#a3-bước-2--content-filters)
+  - [A.4 Bước 3 — Denied topics](#a4-bước-3--denied-topics)
+  - [A.5 Bước 5 — Sensitive information](#a5-bước-5--sensitive-information)
+  - [A.6 Bước 6 — Contextual grounding](#a6-bước-6--contextual-grounding)
+  - [A.7 Hai việc console không làm thay](#a7-hai-việc-console-không-làm-thay)
+- [B · Knowledge Base — nạp chunk tự cắt, bỏ parse/chunk mặc định](#b--knowledge-base--nạp-chunk-tự-cắt-bỏ-parsechunk-mặc-định)
+  - [B.1 Hai loại KB, chỉ một loại cho tự cắt chunk](#b1-hai-loại-kb-chỉ-một-loại-cho-tự-cắt-chunk)
+  - [B.2 Tạo KB có chọn chunking](#b2-tạo-kb-có-chọn-chunking)
+  - [B.3 Bước 2 — chọn No chunking](#b3-bước-2--chọn-no-chunking)
+  - [B.4 Bước 3 — vector store](#b4-bước-3--vector-store)
+  - [B.4a Quick create dựng index S3 Vectors bằng tham số gì](#b4a-quick-create-dựng-index-s3-vectors-bằng-tham-số-gì)
+  - [B.4b Lỗi quyền đầu tiên gặp phải](#b4b-lỗi-quyền-đầu-tiên-gặp-phải)
+  - [B.5 Nạp chunk lên: hai cách](#b5-nạp-chunk-lên-hai-cách)
+- [C · Cổng truy cập và hạn mức](#c--cổng-truy-cập-và-hạn-mức)
+  - [C.1 Model access — trang này đã bị gỡ](#c1-model-access--trang-này-đã-bị-gỡ)
+  - [C.2 Service Quotas](#c2-service-quotas)
+- [D · Khoá, kho và sổ ghi](#d--khoá-kho-và-sổ-ghi)
+  - [D.1 KMS — khoá customer-managed](#d1-kms--khoá-customer-managed)
+  - [D.2 S3 — bucket nguồn](#d2-s3--bucket-nguồn)
+  - [D.3 CloudWatch Logs](#d3-cloudwatch-logs)
+  - [D.4 Parameter Store — kill switch](#d4-parameter-store--kill-switch)
+  - [D.5 CloudTrail — data event](#d5-cloudtrail--data-event)
+  - [D.6 Bedrock — Model invocation logging](#d6-bedrock--model-invocation-logging)
+- [E · AgentCore](#e--agentcore)
+  - [E.1 Advanced configurations — số vòng và thời gian chờ](#e1-advanced-configurations--số-vòng-và-thời-gian-chờ)
+  - [E.2 Inbound Auth — danh tính gọi vào](#e2-inbound-auth--danh-tính-gọi-vào)
+  - [E.3 Gateway](#e3-gateway)
+- [F · Mạng, container, mạng biên](#f--mạng-container-mạng-biên)
+  - [F.1 VPC endpoint](#f1-vpc-endpoint)
+  - [F.2 ECR](#f2-ecr)
+  - [F.3 ECS](#f3-ecs)
+  - [F.4 ALB — cho SSE đi qua](#f4-alb--cho-sse-đi-qua)
+  - [F.5 CloudFront](#f5-cloudfront)
+- [G · Chi phí](#g--chi-phí)
+  - [G.1 Cost Explorer — đã bật, đang chờ dữ liệu](#g1-cost-explorer--đã-bật-đang-chờ-dữ-liệu)
+  - [G.2 Cost Anomaly Detection — còn một việc phải làm](#g2-cost-anomaly-detection--còn-một-việc-phải-làm)
+  - [G.3 Kích hoạt cost allocation tags](#g3-kích-hoạt-cost-allocation-tags)
+- [H · IAM — role và policy least-privilege](#h--iam--role-và-policy-least-privilege)
+  - [H.1 Chọn loại thực thể tin cậy](#h1-chọn-loại-thực-thể-tin-cậy)
+  - [H.2 Dán policy least-privilege (tab JSON)](#h2-dán-policy-least-privilege-tab-json)
+  - [H.3 Trust policy chống confused-deputy](#h3-trust-policy-chống-confused-deputy)
+- [I · Cơ sở dữ liệu — RDS/Aurora PostgreSQL](#i--cơ-sở-dữ-liệu--rdsaurora-postgresql)
+  - [I.1 Engine và template](#i1-engine-và-template)
+  - [I.2 Connectivity — trong VPC, không public](#i2-connectivity--trong-vpc-không-public)
+  - [I.3 Encryption at-rest](#i3-encryption-at-rest)
+  - [I.4 Row-Level Security và extension — [SQL], không có trên Console](#i4-row-level-security-và-extension--sql-không-có-trên-console)
+- [Nguồn](#nguồn)
+
+---
+
+## A · Bedrock Guardrails
 
 Link: `https://eu-central-1.console.aws.amazon.com/bedrock/home?region=eu-central-1#/guardrails`
 
@@ -38,9 +90,6 @@ Danh sách trống nghĩa là **chưa có guardrail nào được áp**. AWS kh�
 Trình tạo có 8 bước: details → content filters → denied topics → word filters → sensitive information → contextual grounding → automated reasoning → review and create.
 
 ### A.3 Bước 2 — Content filters
-
-> **Giải thích cho người không chuyên**
-> Bước này bật các bộ lọc chặn nội dung có hại. Điều đáng lưu ý là cả hai công tắc đều mặc định tắt, nên bỏ qua bước này đồng nghĩa với không lọc gì cả. Riêng loại "bạo lực" được cố ý đặt ở mức thấp, vì ngành kết cấu dùng các từ như "phá hoại", "sập đổ" làm thuật ngữ kỹ thuật bình thường; đặt mức cao sẽ chặn nhầm chính những câu hỏi chuyên môn hợp lệ.
 
 ![Bộ lọc nội dung](huong-dan-console/anh/guardrail-03-content-filter.png)
 
@@ -79,9 +128,6 @@ AWS có sẵn 31 loại PII nhưng **không có loại nào cho Pháp và Việt
 
 ### A.6 Bước 6 — Contextual grounding
 
-> **Giải thích cho người không chuyên**
-> Đây là lớp chống bịa: hệ thống chấm xem câu trả lời có thực sự bám vào tài liệu nguồn hay không. Ngưỡng khởi đầu 0.7 chỉ là điểm xuất phát theo khuyến nghị, còn phải hiệu chỉnh bằng thử nghiệm thực tế. Một điều kiện dễ quên là mỗi lời gọi phải gắn nhãn cho biết đâu là nguồn, đâu là câu hỏi; thiếu nhãn thì lớp kiểm tra này im lặng không làm gì, nên cần có kiểm thử tự động bắt lỗi đó.
-
 ![Chống bịa](huong-dan-console/anh/guardrail-06-grounding.png)
 
 Grounding và Relevance, ngưỡng khởi đầu **0.7** cho cả hai. Đây là **điểm khởi đầu theo khuyến nghị, không phải số đo** — hiệu chỉnh bằng eval.
@@ -100,15 +146,9 @@ Grounding và Relevance, ngưỡng khởi đầu **0.7** cho cả hai. Đây là
 
 ## B · Knowledge Base — nạp chunk tự cắt, bỏ parse/chunk mặc định
 
-> **Giải thích cho người không chuyên**
-> Knowledge Base là kho tài liệu để trợ lý tra cứu rồi trả lời có nguồn (cơ chế RAG). "Chunk" là các đoạn nhỏ mà tài liệu gốc được cắt ra, để máy tìm kiếm theo ý nghĩa. Phần này quan trọng nhất và cũng khó nhất, vì nhiều lựa chọn ở đây không sửa được sau khi tạo: chọn sai thì phải xoá kho và nạp lại toàn bộ tài liệu từ đầu. Dự án chọn tự cắt đoạn theo cách riêng thay vì để AWS cắt tự động, nên phải chấp nhận một số thứ AWS vốn cho sẵn thì nay phải tự làm và tự trả tiền.
-
 Đây là phần cần đọc kỹ nhất, vì **lựa chọn loại KB quyết định có được tự cắt chunk hay không**, và chọn xong thì không đổi được.
 
 ### B.1 Hai loại KB, chỉ một loại cho tự cắt chunk
-
-> **Giải thích cho người không chuyên**
-> AWS có hai kiểu kho tài liệu. Kiểu "quản lý sẵn" (Managed) tiện nhưng không cho tự quyết định cách cắt đoạn. Kiểu "tự quản" (customer-managed) cho toàn quyền, kể cả lựa chọn "không cắt thêm" mà dự án cần. Vì mục tiêu là tự kiểm soát cách cắt đoạn, dự án chọn kiểu tự quản. Đánh đổi là phải tự chọn mô hình xử lý văn bản, tự trả tiền cho bước sắp xếp lại kết quả, và tự vận hành thêm một kho dữ liệu — những thứ kiểu quản lý sẵn vốn cho không.
 
 Console có hai đường tạo khác nhau:
 
@@ -163,9 +203,6 @@ Chọn **Unstructured Vector Store KB** — đây là tên console đặt cho đ
 Chọn **Custom** là mấu chốt: mô tả của AWS ngay trong ô đó — *"A custom data source allows the flexibility to automatically ingest documents into your vector database directly"*.
 
 ### B.3 Bước 2 — chọn No chunking
-
-> **Giải thích cho người không chuyên**
-> "No chunking" nghĩa là mỗi tài liệu nạp vào được giữ nguyên thành một đoạn, đúng như đã cắt sẵn từ trước, thay vì để AWS cắt lại. Lựa chọn này không sửa được sau khi tạo — chọn sai buộc phải làm lại từ đầu. Một hệ quả cần biết: khi chọn cách này, số trang của tài liệu không còn được AWS tự gắn, nên phần mềm của dự án phải tự ghi số trang vào dữ liệu để phần kiểm tra trích dẫn còn hoạt động.
 
 Mở **Advanced settings** → **Content parsing and chunking**.
 
@@ -279,9 +316,6 @@ Lời gọi `lambda:ListFunctions` ở bước 2 cũng bị từ chối, nhưng 
 
 ### B.5 Nạp chunk lên: hai cách
 
-> **Giải thích cho người không chuyên**
-> Đây là bước đưa các đoạn tài liệu đã cắt lên kho. Một rủi ro cần nhớ: nếu hai tài liệu trùng mã định danh, tài liệu mới sẽ ghi đè tài liệu cũ mà không hề báo trước. Đây vừa là cách cập nhật một đoạn, vừa là cách mất dữ liệu nếu sinh mã định danh cẩu thả — nên quy tắc đặt mã phải chặt chẽ.
-
 Sau khi KB có data source loại Custom, chunk được đẩy thẳng bằng `IngestKnowledgeBaseDocuments` — không có bước sync, không cần file nằm trên S3.
 
 **Cách 1 — nội dung nằm ngay trong lời gọi**, kèm metadata inline:
@@ -332,9 +366,6 @@ Sáu chunk demo dựng sẵn cho việc này nằm ở [`cong-cu/demo-chunks/`](
 
 ## C · Cổng truy cập và hạn mức
 
-> **Giải thích cho người không chuyên**
-> Phần này lo hai việc: mở quyền để tài khoản được dùng các mô hình AI, và xin nâng hạn mức số lượt gọi mô hình cho phép mỗi phút. Cả hai nên chuẩn bị sớm, vì đều có thời gian chờ và thủ tục hành chính.
-
 ### C.1 Model access — trang này đã bị gỡ
 
 ![Trang Model access đã bị gỡ](huong-dan-console/anh/model-access-01.png)
@@ -351,9 +382,6 @@ Hệ quả cho [05](05-devops.md): ba loại cổng ở đầu tài liệu đó 
 
 ### C.2 Service Quotas
 
-> **Giải thích cho người không chuyên**
-> "Quota" là hạn mức số lượt gọi mô hình được phép trong mỗi phút. Tài khoản mới có thể bị đặt hạn mức bằng 0, tức chưa gọi được gì cho tới khi xin nâng; AWS duyệt trong 1–3 ngày làm việc. Vì vậy phải nộp đơn xin nâng ngay từ đầu, đừng đợi tới lúc cần dùng mới xin.
-
 ![Quota Bedrock](huong-dan-console/anh/quota-01-bedrock.png)
 
 `https://eu-central-1.console.aws.amazon.com/servicequotas/home/services/bedrock/quotas?region=eu-central-1`
@@ -366,13 +394,7 @@ Quota của Sonnet 5 ở vùng này nằm dưới dạng **cross-region inferenc
 
 ## D · Khoá, kho và sổ ghi
 
-> **Giải thích cho người không chuyên**
-> Phần này gom bốn nền tảng bảo vệ dữ liệu: khoá mã hoá của công ty (KMS), kho tệp tài liệu gốc (S3), sổ ghi nhật ký hoạt động (CloudWatch Logs và CloudTrail), và một công tắc dừng khẩn cấp (Parameter Store). Điểm chung của cả phần: nhiều giá trị mặc định ở đây không phù hợp với yêu cầu bảo mật và tuân thủ, nên phải chủ động sửa.
-
 ### D.1 KMS — khoá customer-managed
-
-> **Giải thích cho người không chuyên**
-> KMS tạo khoá mã hoá do chính công ty quản lý để bảo vệ dữ liệu lưu trữ; ai không có quyền dùng khoá thì không đọc được dữ liệu, kể cả khi lấy được tệp. Một điểm dễ nhầm: khoá bảo vệ kho tài liệu và khoá bảo vệ kho tệp nguồn là hai vai trò khác nhau, cấp quyền ở hai nơi khác nhau, không nên gộp làm một.
 
 ![Danh sách khoá](huong-dan-console/anh/kms-01-danh-sach.png)
 
@@ -387,9 +409,6 @@ Key type **Symmetric**, Key usage **Encrypt and decrypt**. Đây là mặc đị
 Một khoá dùng lại cho nhiều dịch vụ được, nhưng **khoá mã hoá KB và khoá mã hoá bucket nguồn là hai vai trò khác nhau** ([05](05-devops.md) §4A): quyền của khoá KB nằm ở key policy cấp cho danh tính **tạo KB**, còn quyền đọc bucket SSE-KMS phải cấp `kms:Decrypt` cho **service role**. Hai chỗ này hay bị gộp làm một.
 
 ### D.2 S3 — bucket nguồn
-
-> **Giải thích cho người không chuyên**
-> S3 là kho cất các tệp tài liệu gốc. Ba thiết lập cốt lõi: bật mã hoá, chặn hoàn toàn truy cập công khai, và giữ lại bản cũ mỗi khi một tệp bị ghi đè. Để lộ công khai thì tài liệu nội bộ ai trên internet cũng đọc được; không giữ bản cũ thì một lần ghi đè nhầm là mất bản gốc.
 
 ![Danh sách bucket](huong-dan-console/anh/s3-01-danh-sach.png)
 
@@ -409,9 +428,6 @@ Bucket policy phải kèm điều kiện `aws:SourceAccount`; phần này không
 
 ### D.3 CloudWatch Logs
 
-> **Giải thích cho người không chuyên**
-> Đây là sổ ghi nhật ký hoạt động của hệ thống. Cả ba thiết lập quan trọng đều mặc định sai với dự án: nhật ký mặc định giữ vô thời hạn (vi phạm yêu cầu tối thiểu hoá dữ liệu của GDPR), mặc định chưa mã hoá (trong khi nhật ký có thể chứa thông tin cá nhân chưa được che), và mặc định chưa bật chống xoá. Cả ba đều phải chủ động sửa.
-
 ![Danh sách log group](huong-dan-console/anh/logs-01-danh-sach.png)
 
 ![Tạo log group](huong-dan-console/anh/logs-02-tao-log-group.png)
@@ -428,9 +444,6 @@ Log group tên bắt đầu bằng `/aws/vendedlogs/` được tạo tự độn
 
 ### D.4 Parameter Store — kill switch
 
-> **Giải thích cho người không chuyên**
-> "Kill switch" là công tắc dừng khẩn cấp: khi có sự cố, người vận hành gạt công tắc này để tắt nhanh một chức năng mà không phải triển khai lại phần mềm. Vì đây là công tắc quyền lực, phải giới hạn thật chặt ai được phép gạt.
-
 ![Tạo tham số](huong-dan-console/anh/ssm-01-tao-tham-so.png)
 
 `https://eu-central-1.console.aws.amazon.com/systems-manager/parameters?region=eu-central-1`
@@ -438,9 +451,6 @@ Log group tên bắt đầu bằng `/aws/vendedlogs/` được tạo tự độn
 Dùng dấu `/` để phân cấp, ví dụ `/vf-assistant/kill-switch`. Type `String` cho cờ bật/tắt. Siết ai gạt được bằng IAM trên đúng đường dẫn tham số đó, không cấp `ssm:PutParameter` rộng.
 
 ### D.5 CloudTrail — data event
-
-> **Giải thích cho người không chuyên**
-> CloudTrail ghi lại ai đã làm gì trên hệ thống, phục vụ kiểm toán. Một số hoạt động quan trọng — như việc tra cứu tài liệu hay gọi bộ điều phối — mặc định không được ghi, phải chủ động bật. Không bật thì khi cần điều tra sẽ không có dấu vết, mà lúc đó thì đã muộn.
 
 ![Bước 1 — tên trail](huong-dan-console/anh/ct-01-tao-trail.png)
 
@@ -462,9 +472,6 @@ Không bật thì không truy được ai đã truy vấn cái gì, và khi cầ
 
 ### D.6 Bedrock — Model invocation logging
 
-> **Giải thích cho người không chuyên**
-> Đây là công tắc bật ghi nhật ký mọi lời gọi mô hình. Ở production chỉ nên ghi metadata, vì bản gốc chưa che thông tin cá nhân sẽ vào log nguyên văn. Thiết lập này tính theo cả tài khoản và region, nên dự án dùng một tài khoản AWS riêng cho trợ lý.
-
 ![Bedrock model invocation logging](huong-dan-console/anh/bedrock-logging-01-settings.png)
 
 `https://eu-central-1.console.aws.amazon.com/bedrock/home?region=eu-central-1#/settings`
@@ -483,9 +490,6 @@ Thiết lập theo **cả tài khoản và region**; **không** áp cho Knowledg
 
 ## E · AgentCore
 
-> **Giải thích cho người không chuyên**
-> AgentCore là bộ máy điều phối vòng lặp "hỏi mô hình — gọi công cụ — trả lời" (gọi là Harness), cùng cổng để mô hình gọi công cụ bên ngoài một cách an toàn (Gateway). Đây là nơi tập trung loại lỗi nguy hiểm nhất của cả tài liệu: nhiều giá trị mặc định đều không phù hợp dự án, nhưng để nguyên thì hệ thống vẫn chạy bình thường nên không ai phát hiện. Chẳng hạn mô hình mặc định định tuyến dữ liệu ra ngoài châu Âu, bộ nhớ hội thoại bị bật sẵn gây trùng lặp, và các công cụ nguy hiểm được mở sẵn.
-
 `https://eu-central-1.console.aws.amazon.com/bedrock-agentcore/home?region=eu-central-1` — thanh bên có Harness, Runtime, Gateways, Memory, Policy, Identity, Payments.
 
 Hai đường tạo Harness: **Quick create** và **Advanced create**. Dùng Advanced, vì sáu giá trị phải sửa nằm ở đó.
@@ -503,9 +507,6 @@ Model mặc định là **`global.anthropic.claude-sonnet-4-6`** — đúng nguy
 
 ### E.1 Advanced configurations — số vòng và thời gian chờ
 
-> **Giải thích cho người không chuyên**
-> Hai con số ở đây giới hạn trợ lý được lặp bao nhiêu vòng và chờ tối đa bao lâu cho mỗi câu hỏi. Mặc định của AWS quá rộng (tối đa 75 vòng, chờ tới 60 phút), dễ khiến một câu hỏi chạy lan man và tốn kém; dự án siết xuống mức vừa đủ. Đồng thời loại bỏ các công cụ cho phép chạy lệnh hệ thống và thao tác tệp — vốn được bật sẵn nhưng trợ lý không cần đến.
-
 Mở **Advanced configurations** → **Invocation limits** và **Allowed tools**.
 
 ![Giới hạn thực thi](huong-dan-console/anh/agentcore-05-advanced.png)
@@ -519,9 +520,6 @@ Hai con số mặc định trên màn hình đúng bằng hai con số [05](05-d
 | **Allowed tools** | — | Loại `shell` và `file_operations` |
 
 ### E.2 Inbound Auth — danh tính gọi vào
-
-> **Giải thích cho người không chuyên**
-> Đây là bước kiểm tra "vé điện tử" (token) của bên gọi vào để xác nhận danh tính. Mặc định chỉ ràng buộc một điều kiện; nếu chỉ đặt một, token hợp lệ của một ứng dụng khác trên cùng hệ thống đăng nhập vẫn có thể gọi vào. Vì vậy đặt cả hai ràng buộc để chỉ đúng ứng dụng của dự án mới gọi được.
 
 ![Inbound Auth của Harness](huong-dan-console/anh/agentcore-06-inbound-auth.png)
 
@@ -548,13 +546,7 @@ Keycloak token exchange (V-A6) không có trang console AWS: làm bên Keycloak.
 
 ## F · Mạng, container, mạng biên
 
-> **Giải thích cho người không chuyên**
-> Phần này dựng hạ tầng mạng để hệ thống chạy khép kín trong mạng riêng của công ty, không phơi ra internet. Gồm các "cửa nội bộ" để các dịch vụ nói chuyện với nhau (VPC endpoint), kho chứa phần mềm đóng gói (ECR), nơi chạy ứng dụng (ECS), và các thiết lập ở mạng biên để dữ liệu trả về theo luồng liên tục, hiển thị mượt cho người dùng.
-
 ### F.1 VPC endpoint
-
-> **Giải thích cho người không chuyên**
-> Mỗi "endpoint" là một cửa nội bộ để hệ thống truy cập một dịch vụ AWS mà không cần đi ra internet. Phải tạo đủ cả năm cửa; thiếu một cửa là bộ điều phối không khởi động được vì không tải nổi phần mềm cần chạy. Cửa dễ sót nhất là cửa dành cho việc tra cứu tài liệu.
 
 ![Danh sách endpoint](huong-dan-console/anh/vpce-01-danh-sach.png)
 
@@ -602,9 +594,6 @@ Với phân phối đã có: mở nó → tab **Behaviors** → thêm behavior c
 
 ## G · Chi phí
 
-> **Giải thích cho người không chuyên**
-> Phần này đặt phanh chi phí: ngân sách có cảnh báo, và cơ chế phát hiện chi tiêu bất thường. Nguyên tắc là dựng trước khi tăng lưu lượng, không phải sau — vì không có hai thứ này thì chi phí có thể tăng vọt mà không ai hay cho tới khi nhận hoá đơn.
-
 ![Budgets](huong-dan-console/anh/budget-01.png)
 
 Budgets và Cost Anomaly Detection là dịch vụ toàn cục; URL vùng sẽ tự chuyển về `us-east-1`.
@@ -612,9 +601,6 @@ Budgets và Cost Anomaly Detection là dịch vụ toàn cục; URL vùng sẽ t
 **Dựng trước khi tăng lưu lượng, không phải sau.** Không có hai thứ này thì không có phanh chi phí.
 
 ### G.1 Cost Explorer — đã bật, đang chờ dữ liệu
-
-> **Giải thích cho người không chuyên**
-> Cost Explorer là công cụ xem chi phí. Chỉ riêng việc mở nó lần đầu đã là thao tác bật; sau đó AWS cần tới 24 giờ để dựng dữ liệu, trong thời gian này chưa xem được gì. Vì công cụ phát hiện bất thường đọc dữ liệu từ đây, nó cũng phải chờ cùng khoảng thời gian đó.
 
 ![Cost Explorer vừa bật](huong-dan-console/anh/ce-01-bat.png)
 
@@ -625,9 +611,6 @@ Mở Cost Explorer lần đầu **chính là thao tác bật** nó cho cả tài
 Sau khi Cost Explorer sẵn sàng, vào **Cost Anomaly Detection**, kiểm xem AWS đã tự tạo monitor mặc định chưa rồi mới tạo thêm. Một monitor chỉ hữu ích khi có **alert subscription**, và subscription cần địa chỉ người nhận — chưa chốt, phải hỏi chủ tài khoản trước khi tạo.
 
 ### G.3 Kích hoạt cost allocation tags
-
-> **Giải thích cho người không chuyên**
-> Đây là bước bật nhãn chi phí để theo dõi mỗi dự án, mỗi đội tiêu tốn bao nhiêu. Tạo nhãn là việc làm bằng CLI (mục §4 của tài liệu 05); còn kích hoạt nhãn để nó hiện trong báo cáo chi phí là thao tác trên Console tại đây.
 
 ![Kích hoạt cost allocation tags](huong-dan-console/anh/costtag-01-activate.png)
 
@@ -642,9 +625,6 @@ Sau khi tạo application inference profile và gắn tag `CostCenter`/`Project`
 ---
 
 ## H · IAM — role và policy least-privilege
-
-> **Giải thích cho người không chuyên**
-> IAM cấp cho mỗi thành phần đúng quyền tối thiểu cần dùng, không hơn — nguyên tắc "chìa khoá nào chỉ mở đúng cửa nấy". Cấp quá rộng thì một tài khoản bị lộ chạm được nhiều dữ liệu hơn mức cần; cấp thiếu thì thành phần không chạy. Ngoài quyền, mỗi role còn có một "trust policy" quy định ai được phép đóng vai role đó, kèm điều kiện chống bị lợi dụng nhầm (confused deputy).
 
 Bốn role tách biệt: `assistant-runtime` (Assistant.Api), `assistant-ingest` (Worker), service role của KB, và execution role của Harness. Giá trị policy đầy đủ ở [05](05-devops.md) §2A.7 và [15](15-chi-tiet-devops.md).
 
@@ -692,9 +672,6 @@ Với role của KB và Harness, dán trust policy tự viết kèm điều ki�
 ---
 
 ## I · Cơ sở dữ liệu — RDS/Aurora PostgreSQL
-
-> **Giải thích cho người không chuyên**
-> Đây là cơ sở dữ liệu lưu hồ sơ tài liệu, hồ sơ vụ việc, lịch sử hội thoại và nhật ký kiểm toán. Dữ liệu mã hoá khi lưu; một cơ chế cách ly bảo đảm mỗi công ty chỉ đọc được dữ liệu của mình, do chính cơ sở dữ liệu ép buộc chứ không phó mặc ứng dụng.
 
 > **Ghi chú AD-17:** không còn cần `pgvector` (vector store nằm ở KB), nên bỏ ràng buộc phiên bản vốn sinh ra vì pgvector. Extension thật sự cần là **`fuzzystrmatch`** (cho `levenshtein()` gợi ý mã điều khoản, AD-29). **Không** dùng Aurora DSQL vì không hỗ trợ extension.
 
