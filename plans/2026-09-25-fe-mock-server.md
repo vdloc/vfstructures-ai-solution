@@ -33,6 +33,7 @@
 - The UI languages are French (default) and English only (GĐ-1). The mock chooses fixture text by `locale`, and **no Vietnamese text appears in any payload**. Citation `quote`s stay in French in both locales (07 §8).
 - `context` is untrusted. The mock never uses it for authorization; identity comes from the Bearer token only.
 - Every shell command in this plan is prefixed with `rtk` (repo AGENTS.md).
+- Every commit message ends with the trailer `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. The `git commit -m` lines in the tasks show only the subject; add the trailer as a second `-m` argument.
 
 ## Open questions for BE/FE sign-off (mock-only assumptions)
 
@@ -1008,7 +1009,10 @@ Expected: all tests PASS, and tsc exits 0.
 
 - [ ] **Step 5: Smoke-run the server**
 
-Run: `cd /home/vdloc/Documents/vfstructures-ai-solution/mock-server && (PORT=8799 timeout 3 pnpm start &) ; sleep 1.5; rtk curl -s http://localhost:8799/health/live`
+Start the server as a background command (Bash tool with `run_in_background: true`; a foreground `sleep` is blocked in this harness):
+`cd /home/vdloc/Documents/vfstructures-ai-solution/mock-server && PORT=8799 timeout 30 pnpm start`
+
+Then run: `timeout 10 bash -c 'until curl -sf http://localhost:8799/health/live; do :; done'`
 Expected: `{"status":"live"}`
 
 - [ ] **Step 6: Commit**
@@ -3043,7 +3047,10 @@ Run: `chmod +x /home/vdloc/Documents/vfstructures-ai-solution/mock-server/script
 
 - [ ] **Step 2: Run the acceptance script against a live server**
 
-Run: `cd /home/vdloc/Documents/vfstructures-ai-solution/mock-server && (MOCK_DELAY_SCALE=1 timeout 60 pnpm start &) ; sleep 2; ./scripts/acceptance.sh`
+Start the server as a background command (Bash tool with `run_in_background: true`):
+`cd /home/vdloc/Documents/vfstructures-ai-solution/mock-server && MOCK_DELAY_SCALE=1 timeout 90 pnpm start`
+
+Then run: `cd /home/vdloc/Documents/vfstructures-ai-solution/mock-server && timeout 10 bash -c 'until curl -sf http://localhost:8787/health/live; do :; done' && ./scripts/acceptance.sh`
 Expected: three sections of output, the event timestamps visibly spread over more than 1.5 s, and a final `OK`.
 
 - [ ] **Step 3: Write the README**
