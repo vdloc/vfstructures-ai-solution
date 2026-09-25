@@ -1,6 +1,7 @@
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import { fail, newRequestId, sendJson } from "./http.ts";
 import { handleChat } from "./routes/chat.ts";
+import { SIDE_ROUTES } from "./routes/side.ts";
 import { MockState } from "./store.ts";
 
 export interface MockServerOptions {
@@ -27,6 +28,7 @@ export const ROUTES: Route[] = [
   { method: "GET", pattern: /^\/health\/live$/, handle: ({ res }) => sendJson(res, 200, { status: "live" }) },
   { method: "GET", pattern: /^\/health\/ready$/, handle: ({ res }) => sendJson(res, 200, { status: "ready" }) },
   { method: "POST", pattern: /^\/v1\/chat$/, handle: handleChat },
+  ...SIDE_ROUTES,
 ];
 
 export function createMockServer(options: MockServerOptions): http.Server {
