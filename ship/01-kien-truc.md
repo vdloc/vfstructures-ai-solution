@@ -115,6 +115,24 @@ Nguồn: tài liệu cuộc họp "Mục tiêu triển khai trợ lý AI cho ph�
 
 ---
 
+### 2.1 Hiện trạng hệ thống VF, và nó ép thiết kế thế nào
+
+Ràng buộc ở bảng trên phần lớn bắt nguồn từ đây. Cột cuối mới là cột đáng đọc.
+
+| Thành phần | Hiện trạng | Ép thiết kế thế nào |
+| --- | --- | --- |
+| Backend | .NET 8, Clean Architecture, nhiều service tách rời (Main, Admin, Authorization, Payment, Notification, File) | Assistant là một service .NET 8 mới, cùng khuôn mẫu, không phải một nhánh trong Main API |
+| Tính toán | Repository tính toán là **hàm thuần** — DTO vào, DTO ra, không truy vấn DB — và đã có Swagger | Tool calling rẻ hơn tưởng: chỉ cần bọc endpoint sẵn có, không phải viết lại engine |
+| Phân quyền | `[ApiAccess("Module.View")]` → `IPermissionService` tra DB mỗi request. **Thiếu quyền trả `Forbidden` trong thân phản hồi nhưng HTTP vẫn 200** | Tool client phải đọc mã trong thân, không được tin mã HTTP. Đây là nguồn lỗi im lặng nguy hiểm nhất ở tầng tool |
+| Định danh | Keycloak OIDC + PKCE, token trong cookie HttpOnly, Next.js BFF gắn `Authorization: Bearer` | Assistant nằm sau BFF và validate JWT qua JWKS như mọi service khác |
+| Database | PostgreSQL dùng chung, **không có Redis, không có message broker** | Job nền chạy bằng bảng trong PostgreSQL; cache nằm trong bộ nhớ tiến trình |
+| Real-time | SignalR ở Notification API, stateful, cần backplane khi scale | Stream token bằng SSE, không mượn SignalR |
+| Frontend | Next.js 16, React 19, Ant Design 5, i18next (**gốc là `fr`**, thêm `en`), Zustand | Giao diện chat viết bằng React và Ant Design; tiếng Pháp là ngôn ngữ chính |
+| Triển khai | Docker, dev bằng `docker compose` trên máy chủ tự quản, image đẩy lên GHCR, production có nginx và API gateway | Dev và staging **không chạy trong AWS** — cần đường cấp credential riêng, xem [09](09-trien-khai.md) §3 |
+| Quan sát | Elasticsearch và APM đang tạm ngưng dùng | Dùng OpenTelemetry, đích là CloudWatch |
+
+---
+
 ## 3. Bối cảnh và phạm vi
 
 > **Mục này trả lời:** hệ thống đứng ở đâu giữa các hệ thống sẵn có, và ranh giới ngoài phạm vi nằm ở đâu.
@@ -171,6 +189,21 @@ flowchart TB
 ### 3.3 Ngoài phạm vi
 
 Sinh bản vẽ; ký hồ sơ; thay thế phán đoán kỹ sư; sinh SQL bằng mô hình; MCP server công khai; case công khai giữa các organization.
+
+### 3.4 Cố tình không có, và khi nào xem lại
+
+Khác với §3.3: những thứ dưới đây **làm được** và có người đề xuất, nhưng bị cắt có chủ đích. Ghi lại để lần sau ai hỏi thì không phải bàn lại từ đầu.
+
+| Cắt | Lý do | Khi nào xem lại |
+| --- | --- | --- |
+| Tool nhóm C (ghi dữ liệu nghiệp vụ) | Để AI ghi vào hồ sơ chính thức là rủi ro pháp lý lớn nhất trong cả thiết kế, mà giá trị chưa chứng minh | Sau khi nhóm A và B chạy ổn ít nhất một tháng |
+| Multi-agent | Một agent là mặc định. Chưa có ranh giới bảo mật hay quyền sở hữu nào buộc phải tách | Khi số tool vượt khoảng 20, hoặc khi có ranh giới tổ chức thật |
+| Fine-tuning | RAG cho phép trích dẫn và cập nhật tức thì; fine-tuning không cho cả hai (P5) | Không đặt ra |
+| Knowledge graph | Chưa đạt đủ điều kiện đầu tư | Khi đánh giá cho thấy lỗi bắc cầu nhiều chặng lặp lại |
+| AgentCore Memory, Browser, Code Interpreter; công cụ `shell` và `file_operations` của Harness | Kho hội thoại đã nằm ở PostgreSQL — thêm Memory là nhân đôi kho và làm việc xóa dữ liệu phức tạp hơn. Ba cái còn lại không có việc trong luồng này | Khi có nhu cầu cụ thể, không phải vì nó có sẵn |
+| Bedrock Agents (classic) | AWS đã đưa vào maintenance mode và đóng với khách hàng mới | Không dùng |
+| Semantic Kernel, Microsoft Agent Framework, `IChatClient` làm lớp điều phối | Gói `AWSSDK.Extensions.Bedrock.MEAI` đưa Bedrock Runtime vào `IChatClient` nên về kỹ thuật là khả thi. Nhưng vòng lặp tool ở đây cần tham số riêng của Bedrock mà lớp trừu tượng chung che mất | Khi lớp trừu tượng đó mang đủ tham số Bedrock cần |
+| Câu hỏi đa phương thức (ảnh bản vẽ) | Cần một pipeline riêng | Pha sau |
 
 ---
 
@@ -1126,10 +1159,12 @@ Mục tiêu chất lượng nằm ở §1.2. Mục này là các kịch bản ch
 | V-K2 | ~~MKB có GA ở `eu-central-1`~~ — **không còn liên quan** sau khi AD-17 chuyển sang customer-managed KB | Bỏ |
 | V-K3 | AWS SDK for .NET gửi được `vectorIngestionConfiguration.chunkingConfiguration.chunkingStrategy = NONE` lúc tạo data source, và gửi được `retrievalConfiguration.vectorSearchConfiguration.filter` lúc truy vấn | **Chặn** |
 | V-K4 | Managed S3 connector đọc được sidecar có kiểu, và `managedSearchConfiguration.filter` lọc đúng theo `scope_key`, và toán tử số lọc đúng trên `effective_from`, `effective_to` (AD-26). Kiểm thêm ba điều chưa có trong tài liệu: lọc trên thuộc tính không có trong sidecar thì rỗng hay lỗi; `startsWith` / `stringContains` thì lỗi hay bị bỏ qua; `listContains` có chạy không | **Chặn** |
-| V-K5 | `overrideSearchType: HYBRID` — **mở lại**: câu trả lời cũ chỉ đúng cho MKB. Customer-managed tự chọn chiến lược tìm kiếm, và hybrid có chạy được hay không phụ thuộc vector store được chọn. Kiểm cùng lúc với V-K7 | **Chặn** |
+| V-K5 | ~~`overrideSearchType: HYBRID`~~ — **đã tự trả lời**: tài liệu API ghi *"If you're using an Amazon OpenSearch Serverless vector store that contains a filterable text field, you can specify whether to query the knowledge base with a `HYBRID` search … For other vector store configurations, only `SEMANTIC` search is available."* Tức **chọn S3 Vectors hay Aurora là mất hybrid**, chỉ còn tìm theo vector. Đây là một đầu vào của V-K7, không phải mã kiểm riêng | Không chặn |
 | V-K6 | ~~Reranker quản lý sẵn của MKB~~ — **đã tự trả lời**: customer-managed KB **không có** reranker quản lý sẵn (AWS ghi "None"). Rerank nay là khoản phải trả tiền, mặc định Cohere Rerank 3.5, hoặc chấp nhận không rerank | Bỏ |
-| V-K7 | Vector store nào cho customer-managed KB. **Không đổi được sau khi tạo KB.** Console cho sáu lựa chọn; **OpenSearch Managed Cluster đã loại** — tài liệu AWS ghi *"For Network, you must choose Public access. OpenSearch domains that are behind a VPC are not supported for your Knowledge Base"*, trái với thiết kế chạy trong VPC. Ba ứng viên còn lại và cơ cấu giá ở [13](13-chi-phi.md) §3a: OpenSearch Serverless (0,339 $/OCU-giờ, ~495 $/tháng với 2 OCU), Aurora PostgreSQL Serverless v2 (0,14 $/ACU-giờ, cần pgvector ≥ 0.8.0 cho `hnsw.iterative_scan`, nếu không thì filter chọn lọc mạnh trả thiếu kết quả — OPS-5), **S3 Vectors** (không có sàn theo giờ; 0,064 $/GB-tháng, 0,214 $/GB nạp, 0,0000027 $/truy vấn; **đã xác nhận có ở `eu-central-1`** ngày 24/09/2026 bằng console). Phải đo độ trễ của S3 Vectors trên lượt thật vì AWS mô tả nó hợp với truy vấn thưa | **Chặn** |
+| V-K7 | Vector store nào cho customer-managed KB. **Không đổi được sau khi tạo KB.** Console cho sáu lựa chọn; **OpenSearch Managed Cluster đã loại** — tài liệu AWS ghi *"For Network, you must choose Public access. OpenSearch domains that are behind a VPC are not supported for your Knowledge Base"*, trái với thiết kế chạy trong VPC. Ba ứng viên còn lại và cơ cấu giá ở [13](13-chi-phi.md) §3a: OpenSearch Serverless (0,339 $/OCU-giờ, ~495 $/tháng với 2 OCU), Aurora PostgreSQL Serverless v2 (0,14 $/ACU-giờ, cần pgvector ≥ 0.8.0 cho `hnsw.iterative_scan`, nếu không thì filter chọn lọc mạnh trả thiếu kết quả — OPS-5), **S3 Vectors** (không có sàn theo giờ; 0,064 $/GB-tháng, 0,214 $/GB nạp, 0,0000027 $/truy vấn; **đã xác nhận có ở `eu-central-1`** ngày 24/09/2026 bằng console). Phải đo độ trễ của S3 Vectors trên lượt thật vì AWS mô tả nó hợp với truy vấn thưa. **S3 Vectors chỉ dựng được qua nhánh *Quick create* của console** và chỉ hiện sau khi đã chọn mô hình embedding; nhánh *Use an existing vector store* không có nó. Index do Quick create tạo dùng `distanceMetric: euclidean`, `dataType: float32`, và không đổi được sau đó — xem [16](16-huong-dan-console.md) §B.4a. **Chọn S3 Vectors hay Aurora là mất hybrid search** (V-K5): chỉ OpenSearch Serverless có `HYBRID` | **Chặn** |
+| V-K8 | ~~Hạn mức metadata của một vector trong S3 Vectors~~ — **đã tự trả lời**: bản thân S3 Vectors cho 40 KB metadata, 2 KB phần lọc được, 50 khoá, và 10 khoá non-filterable mỗi index; **nhưng dùng với Bedrock KB thì trần là 1 KB metadata tuỳ biến và 35 khoá mỗi vector**, vượt là ingestion job ném lỗi. Quick create đánh dấu `AMAZON_BEDROCK_TEXT` là non-filterable, tức nguyên văn chunk nằm trong metadata. Mười hai khoá lọc ở §8.2 vẫn lọt. Còn phải chốt kích thước chunk theo trần này | Không chặn |
 
+| V-A13 | `InvokeHarness` với cùng một `runtimeSessionId`: phải gửi đủ `messages` mỗi lượt hay phiên tự giữ lịch sử. Gọi hai lần trong một phiên mà vẫn gửi đủ thì lịch sử có bị nhân đôi không | Không chặn. Trượt thì hợp đồng lịch sử phải ghi rõ trước khi viết `HarnessClient`; nhân đôi lịch sử là lỗi im lặng, chỉ lộ ra ở hóa đơn token |
 | V-A11 | Hủy việc đọc stream `InvokeHarness` có dừng tool loop ở phía AWS không. Nếu không, có API nào dừng một phiên đang chạy không (skill `amazon-bedrock` không nêu API nào như vậy) | Không chặn. Chỉ ảnh hưởng chi phí, và đã có trần `maxIterations`, `timeoutSeconds` |
 | V-A12 | Gateway có chuyển `toolUseId` xuống facade không (header hoặc body) | Không chặn. Thiếu thì dùng khóa thay thế ở §8.11 |
 

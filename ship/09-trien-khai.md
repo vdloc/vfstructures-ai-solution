@@ -345,6 +345,38 @@ Bộ tài liệu chưa có phần vận hành. Không bắt buộc cho giai đo�
 
 ---
 
+## 11. Phạm vi đợt phát hành đầu: làm gì, không làm gì
+
+Hàng rào phạm vi này tồn tại để chặn một kiểu hỏng cụ thể: mỗi tuần thêm một tính năng "nhỏ" cho tới lúc không kịp làm xong cái nào cho ra hồn.
+
+| Mức | Hạng mục |
+| --- | --- |
+| **Bắt buộc có** | Hỏi đáp có dẫn chứng; từ chối đúng khi không đủ căn cứ (P3); ToolGate; cách ly tenant theo `scope_key`; guardrail; bộ đánh giá và cổng CI; kill switch |
+| **Nên có** | Tool nhóm B; giải thích kết quả tính toán tại chỗ; ghi nhận case tự động khi engine kết luận đạt (AD-28); rerank |
+| **Có thì tốt** | Truy xuất case tương tự; chỉnh tham số rồi tính lại ngay trong hội thoại |
+| **Không làm đợt này** | Tool nhóm C (ghi dữ liệu); multi-agent; fine-tuning (P5); câu hỏi về ảnh bản vẽ; semantic cache; tự động áp kết quả vào form của phần mềm; giao diện tiếng Việt (Q8 đã trả lời) |
+
+Thêm một hạng mục vào cột "bắt buộc có" thì phải bỏ một hạng mục khác ra, hoặc dời ngày nghiệm thu. Không có đường thứ ba.
+
+## 12. Ai chịu trách nhiệm việc gì
+
+R làm, **A** chịu trách nhiệm cuối cùng, C được hỏi ý kiến, I được báo. Vai: **L** dẫn dắt kỹ thuật · **B1** backend truy xuất · **B2** backend tool và bảo mật · **F** frontend · **E** kỹ sư kết cấu · **DPO** pháp chế và dữ liệu cá nhân · **AWS** quản trị tài khoản AWS.
+
+| Việc | L | B1 | B2 | F | E | DPO | AWS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Quyết định residency và bản quyền (Q1, Q2) | A | I | I | I | C | R | C |
+| Golden set và chấm chất lượng | I | R | I | I | A | I | — |
+| Nạp tài liệu và chỉ mục | A | R | I | — | C | C | — |
+| Tool registry và manifest | A | I | R | I | R (duyệt chuyên môn) | — | — |
+| Guardrail, IAM, mạng | A, R | I | C | — | — | C | R |
+| Giao diện và đa ngôn ngữ | C | — | C | A, R | C | — | — |
+| Retention và dữ liệu cá nhân | C | I | R | I | — | A | — |
+| Nghiệm thu trước beta | A | R | R | R | R | C | I |
+
+Bảng này thay cho mã chủ sở hữu ghi tắt ở [10](10-rui-ro.md) §2. Một dòng có hai chữ **A** là một dòng chưa chốt xong — đúng ra mỗi việc chỉ một người chịu trách nhiệm cuối.
+
+---
+
 ## Liên quan
 
 | Cần gì | Đọc |

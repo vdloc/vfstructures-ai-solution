@@ -57,7 +57,7 @@ Bộ tài liệu ghi rõ chỗ nào là số đo, chỗ nào là ước lượng
 Ba verification **đã trả lời** bằng tài liệu AWS đọc trực tiếp — xem [00](00-thuat-ngu-va-nguon.md):
 
 - **V-K2** — MKB có ở `eu-central-1`.
-- **V-K5** — MKB **luôn tìm hybrid** và không có `overrideSearchType`, nên không còn gì để kiểm.
+- **V-K5** — chỉ **OpenSearch Serverless** có `HYBRID`; mọi kho vector khác chỉ có `SEMANTIC`. Nên chọn kho (V-K7) là chọn luôn có hybrid hay không.
 - **V-A10** — Harness ở chế độ VPC **không cần NAT gateway** để kéo image; cần endpoint `ecr.dkr`, `ecr.api`, `s3`, `bedrock-runtime`.
 
 Fetch trực tiếp cũng làm lộ ra **V-K6**: MKB kèm sẵn một reranker không tính thêm tiền, nên phải đo trước khi trả tiền cho Cohere Rerank. Reranker này **chỉ dùng được khi KB dùng embedding do AWS quản**, nên V-K6 gắn với quyết định embedding (AD-06).
@@ -100,6 +100,23 @@ Hai mã mới, **không chặn**, chỉ ảnh hưởng chi phí và chạy lại
 | P3 | **Không có căn cứ thì không có câu trả lời** | Score threshold, refusal trước khi gọi model trả lời |
 | P4 | Hàng rào nằm ngoài model | Scope filter, guardrail ở Bedrock, ToolGate. Câu dặn trong prompt **không** phải biện pháp kiểm soát |
 | P5 | Leo thang từ rẻ đến đắt | prompt → RAG → tool → case memory. Không fine-tuning |
+
+---
+
+## Bốn yêu cầu công ty đặt ra, và chỗ đáp ứng
+
+Bốn yêu cầu chức năng lấy từ tài liệu "Mục tiêu triển khai trợ lý AI cho phần mềm VF" của cuộc họp triển khai. Bảng này để người đặt hàng đối chiếu: yêu cầu nào nằm ở đâu, và còn vướng gì.
+
+| Yêu cầu | Đáp ứng bằng | Còn vướng |
+| --- | --- | --- |
+| 1. Tìm tiêu chuẩn và công thức; giải thích ý nghĩa, điều kiện áp dụng, dẫn nguồn | Ý định `doc_qa`: [01](01-kien-truc.md) luồng một lượt, [02](02-hop-dong.md), trích dẫn tới trang ở [07](07-giao-dien.md) | **Q2** — quyền nạp tiêu chuẩn có bản quyền. Trượt là mất cả nhánh tài liệu |
+| 2. Hỏi đáp về chức năng phần mềm VF; hướng dẫn thao tác | Ý định `app_help`, corpus tách riêng theo `doc_type` | **Q5** — có tài liệu hướng dẫn ở dạng nạp được không, phiên bản nào |
+| 3. Truy vấn và giải thích kết quả tính toán của **đúng dự án và cấu kiện đang xét** | `pageContext` mang `projectId` và `memberId` ([02](02-hop-dong.md)); tool đọc kết quả đã lưu; tra case ở [12](12-tra-case.md) | Main API phải có endpoint đọc kết quả theo dự án và cấu kiện |
+| 4. Gợi ý tối ưu phương án, **kiểm chứng bằng bộ tính trước khi kết luận đạt** | Ý định `optimize`: mô hình đề xuất, engine kết luận, không bao giờ ngược lại (P1, P2) | Chỉ với module đã có tool tính toán và có kỹ sư kết cấu ký manifest |
+
+Ba tiêu chí triển khai đi kèm: **ưu tiên dịch vụ có sẵn của AWS** (Bedrock, Guardrails, CloudWatch thay vì tự viết), **tái sử dụng engine và phân quyền của Main API** thay vì làm lại, và **theo dõi được chi phí mỗi lượt** — [13](13-chi-phi.md) có đơn giá thật và chi phí từng loại lượt.
+
+Yêu cầu 4 là yêu cầu dễ hiểu sai nhất: hệ thống **không** tự kết luận phương án nào đạt. Nó đề xuất, engine tính, và chỉ kết quả của engine mới được gọi là đạt.
 
 ---
 

@@ -94,17 +94,59 @@ Mọi phép tính chạy bằng script, không tính tay. Đổi một giả đ�
 
 Giá riêng cho AgentCore **Harness** và **Policy** không có trong Price List. Mô hình giả định Harness tính theo Runtime; Policy chưa có giá để đưa vào.
 
-### 3a. Kho vector: ba ứng viên, ba cơ cấu giá khác hẳn nhau
+### 3a. Kho vector: tám lựa chọn, còn lại ba
 
-AD-17 đổi sang customer-managed KB nên phải tự nuôi kho vector. Ba ứng viên còn lại sau khi loại OpenSearch Managed Cluster (xem [01](01-kien-truc.md) V-K7) có cơ cấu giá khác nhau về bản chất, không chỉ khác con số:
+AD-17 đổi sang customer-managed KB nên phải tự nuôi kho vector. Tài liệu AWS liệt kê **tám** kho dùng được; sáu cái rụng trước khi bàn tới tiền.
+
+| Kho | Vì sao loại |
+| --- | --- |
+| OpenSearch Managed Cluster | *"For Network, you must choose **Public access**. OpenSearch domains that are behind a VPC are not supported for your Knowledge Base"* — trái thiết kế chạy trong VPC |
+| Pinecone | Bên thứ ba, dữ liệu rời tài khoản AWS. Q1 chưa trả lời thì không mở đường này |
+| Redis Enterprise Cloud | Như trên, lại còn đòi endpoint công khai |
+| MongoDB Atlas | Như trên. Thêm một bẫy: lọc theo metadata **không chạy mặc định**, phải tự cấu hình trong vector index |
+| Neptune Analytics | Dành cho GraphRAG. Sàn nhỏ nhất 16 m-NCU = 0,581 $/giờ ≈ **424 $/tháng** ở Frankfurt, đắt hơn OpenSearch Serverless mà không giải bài toán của mình |
+| OpenSearch Serverless *(giữ lại)* | — |
+
+Ba ứng viên thật: **OpenSearch Serverless**, **Aurora PostgreSQL Serverless v2**, **S3 Vectors**.
+
+**Khác nhau ở tính năng, không chỉ ở giá**
+
+| | OpenSearch Serverless | Aurora PG Serverless v2 | S3 Vectors |
+| --- | --- | --- | --- |
+| Hybrid search (`overrideSearchType: HYBRID`) | **Có** — kho duy nhất | Không | Không |
+| Vector nhị phân | Có | Không | Không (chỉ float32) |
+| Độ đo khoảng cách | AWS khuyến nghị Euclidean | `vector_cosine_ops` | Cosine **hoặc** Euclidean |
+| Số chiều | Theo mô hình embedding | Theo mô hình | 1 – 4096 |
+| Trần metadata mỗi vector | Không nêu | Hạn mức của PostgreSQL | **1 KB và 35 khoá** khi dùng với Bedrock KB |
+| Lọc theo metadata | Sẵn | Cần cột `custom_metadata` JSONB + chỉ mục GIN | Sẵn, trừ khoá đánh dấu non-filterable |
+| Chạy trong VPC | Được (chọn VPC endpoint lúc tạo collection) | Trong VPC của mình | Gọi qua endpoint AWS |
+| Khoá KMS | Lúc tạo collection | Của cluster | Lúc tạo bucket, **không đổi được sau đó** |
+
+Dòng đầu là dòng đắt nhất: theo tài liệu API, *"If you're using an Amazon OpenSearch Serverless vector store that contains a filterable text field, you can specify whether to query the knowledge base with a `HYBRID` search … **For other vector store configurations, only `SEMANTIC` search is available**"*. Chọn Aurora hay S3 Vectors là chấp nhận tìm thuần ngữ nghĩa.
+
+Với dự án này, mất hybrid **không chí mạng**: mã điều khoản không tìm bằng vector mà do ClauseResolver tra trên `clause_ref` trong PostgreSQL trước khi gọi `Retrieve` (AD-29). Hybrid chỉ giúp khi người dùng gõ đúng một chuỗi ký tự hiếm mà embedding làm nhoè.
+
+**Khác nhau ở cơ cấu giá**
 
 | Kho | Trả tiền cho cái gì | Khi không ai hỏi | Ước tính tháng |
 | --- | --- | --- | --- |
-| **OpenSearch Serverless** | OCU-giờ, chạy liên tục | **Vẫn tính tiền** trừ khi đặt sàn 0 OCU, và khi đó lượt hỏi đầu chịu cold start | 494,94 $ với 2 search OCU; 989,88 $ nếu thêm 2 indexing OCU |
-| **Aurora PostgreSQL Serverless v2** | ACU-giờ + dung lượng | Co xuống ACU tối thiểu, vẫn là khoản chạy nền | ~204 $ với 2 ACU chạy cả tháng, cộng lưu trữ |
-| **S3 Vectors** | Dung lượng, byte nạp, và từng truy vấn | **Gần bằng 0** — không có sàn theo giờ | Vài đô cho kho nhỏ; tiền đi theo lưu lượng thật |
+| **OpenSearch Serverless** | OCU-giờ | Đặt được sàn **0 OCU**, khi đó lượt đầu chịu cold start | 494,94 $ với 2 search OCU; 989,88 $ nếu thêm 2 indexing OCU |
+| **Aurora PG Serverless v2** | ACU-giờ + dung lượng | Đặt sàn **0 ACU** thì tự ngủ; lúc ngủ không tính tiền compute, **vẫn tính lưu trữ** | ~204 $ nếu giữ 2 ACU chạy cả tháng; gần 0 $ compute nếu để ngủ |
+| **S3 Vectors** | Dung lượng, byte nạp, từng request | **Gần bằng 0** — không có sàn theo giờ | Vài đô cho kho nhỏ; tiền đi theo lưu lượng thật |
 
-Ba con số trên không so sánh được trực tiếp: hai kho đầu là **chi phí cố định**, kho thứ ba là **chi phí biến đổi**. Với dự án mà lưu lượng đầu còn thấp và chưa đo được, cơ cấu biến đổi an toàn hơn cho hóa đơn — nhưng AWS mô tả S3 Vectors *"ideal for workloads where queries are less frequent"*, tức phải đo độ trễ trên lượt thật trước khi chốt, vì tra tài liệu nằm trên đường trả lời người dùng.
+Cả ba nay đều **co được về 0** khi rảnh, nhưng trả giá khác nhau lúc thức dậy:
+
+- **OpenSearch Serverless** sàn 0 OCU: tài liệu chỉ nói *"avoid cold start delays when scaling from zero"*, không nêu con số. Chưa đo được.
+- **Aurora** sàn 0 ACU: ngủ sau ít nhất 5 phút không kết nối (đặt được tới 1 ngày), **thức dậy khoảng 15 giây**; ngủ quá 24 giờ thì 30 giây trở lên. Cần Aurora PostgreSQL ≥ 16.3 / 15.7 / 14.12 / 13.15. Một request qua RDS Data API cũng đủ đánh thức. Mười lăm giây trên đường trả lời người dùng là **không chấp nhận được**, nên hoặc giữ sàn khác 0, hoặc phải có cơ chế hâm nóng.
+- **S3 Vectors** không có khái niệm ngủ: không request thì không tính tiền, có request thì tính ngay.
+
+Ba con số ước tính trên không so trực tiếp được: hai kho đầu là **chi phí cố định**, kho thứ ba **biến đổi theo lưu lượng**. Lưu lượng dự án còn chưa đo, nên cơ cấu biến đổi an toàn hơn cho hóa đơn — đổi lại AWS mô tả S3 Vectors *"best suited for infrequent query workloads"*, mà tra tài liệu nằm ngay trên đường trả lời người dùng. Phải đo độ trễ trên lượt thật.
+
+**Hai cái bẫy riêng của S3 Vectors**
+
+Trần **1 KB metadata tuỳ biến và 35 khoá mỗi vector** là trần của Bedrock KB, chặt hơn nhiều so với trần 40 KB / 50 khoá của bản thân S3 Vectors. Mười hai khoá lọc ở [01](01-kien-truc.md) §8.2 vẫn lọt, nhưng không còn nhiều chỗ thừa. Vượt trần thì **ingestion job ném lỗi**, không phải bỏ qua âm thầm.
+
+AWS cảnh báo riêng: hierarchical chunking dễ vượt trần metadata vì quan hệ chunk cha–con được lưu dưới dạng metadata non-filterable. Dự án chọn `NONE` nên không dính, nhưng đừng quay lại hierarchical mà quên điều này.
 
 Chưa chốt kho nào: đó là V-K7.
 

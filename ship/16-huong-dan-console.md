@@ -144,7 +144,11 @@ Ghi chú của Managed KB về *Default chunking*: *"Automatically splits text i
 
 ### B.2 Tạo KB có chọn chunking
 
-Mở `https://eu-central-1.console.aws.amazon.com/bedrock/home?region=eu-central-1#/knowledge-bases/create-knowledge-base`
+Ở trang **Knowledge Bases (KB)**, đừng bấm thẳng nút *Create Managed KB* — bấm mũi tên bên phải nút đó. Menu đổ xuống chia hai nhóm: *Bedrock-managed KB* và *Self-managed KB*.
+
+![Menu chọn loại KB](huong-dan-console/anh/kbs3v-01-chon-loai.png)
+
+Chọn **Unstructured Vector Store KB** — đây là tên console đặt cho đường customer-managed, và là chỗ duy nhất tắt được chunking của AWS. Đường tắt: `https://eu-central-1.console.aws.amazon.com/bedrock/home?region=eu-central-1#/knowledge-bases/create-knowledge-base`
 
 ![Bước 1 — chi tiết KB](huong-dan-console/anh/kbcm-01-chi-tiet.png)
 
@@ -183,9 +187,31 @@ Năm lựa chọn: Default, Fixed-size, Hierarchical, Semantic, **No chunking**.
 
 ### B.4 Bước 3 — vector store
 
-![Bước 3 — embeddings và vector store](huong-dan-console/anh/kbcm-05-vector-store.png)
+![Bước 3 — embeddings và vector store](huong-dan-console/anh/kbs3v-08-embedding-va-s3vectors.png)
 
-Đường này bắt buộc có vector store riêng. *Quick create* chỉ dựng được **OpenSearch Serverless**. *Use an existing vector store* cho sáu lựa chọn: **Aurora PostgreSQL Serverless, Neptune Analytics, OpenSearch Serverless, OpenSearch Managed Cluster, Pinecone, Redis Enterprise Cloud**.
+Đường này bắt buộc có vector store riêng. Màn hình hỏi hai thứ theo đúng thứ tự đó: **embeddings model** trước, **vector store** sau — và thứ tự này quan trọng, vì danh sách kho phụ thuộc vào mô hình đã chọn.
+
+**Chọn embeddings model.** Bấm *Select model*, hộp thoại mở ra hai nhà cung cấp serverless ở Frankfurt là Amazon và Cohere.
+
+![Hộp thoại chọn embeddings model](huong-dan-console/anh/kbs3v-06-chon-embedding.png)
+
+| Ô | Đặt gì | Vì sao |
+| --- | --- | --- |
+| **Model** | `Titan Embeddings G2 - Text v2.0` | 8k token đầu vào — trần này chính là trần độ dài chunk |
+| **Embeddings type** | *Floating-point vector embeddings* | S3 Vectors chỉ nhận float32 |
+| **Vector dimensions** | `1024` | Chọn được 256 / 512 / 1024; cao hơn thì chính xác hơn và tốn kho hơn |
+
+**Rồi mới mở danh sách vector store.** *Quick create* dựng kho hộ trong chính tài khoản này; *Use an existing vector store* đấu vào kho có sẵn.
+
+![Danh sách kho ở nhánh Quick create](huong-dan-console/anh/kbs3v-07-vector-store-types.png)
+
+Nhánh **Quick create** cho bốn kho: OpenSearch Serverless, **S3 Vectors**, Aurora PostgreSQL Serverless (đang bị khoá), Neptune Analytics.
+
+![Danh sách kho ở nhánh Use an existing vector store](huong-dan-console/anh/kbs3v-11-existing-store.png)
+
+Nhánh *Use an existing vector store* cho sáu kho khác hẳn: Aurora PostgreSQL Serverless, Neptune Analytics, OpenSearch Serverless, OpenSearch Managed Cluster, Pinecone, Redis Enterprise Cloud — **không có S3 Vectors**, kể cả khi đã chọn xong mô hình embedding (kiểm trên console 24/09/2026).
+
+Nên nhớ hai điều: **trên console, S3 Vectors chỉ dựng được qua Quick create**, và nó chỉ hiện ra sau khi đã chọn mô hình embedding. Lần dò trước không thấy nó là vì chưa chọn mô hình.
 
 Cả embeddings model lẫn vector store **không đổi được sau khi tạo KB**.
 
@@ -199,11 +225,57 @@ Ba ứng viên còn lại, cơ cấu giá khác nhau về bản chất (chi ti�
 | Aurora PostgreSQL Serverless v2 | 0,14 $/ACU-giờ | Co xuống ACU tối thiểu |
 | S3 Vectors | 0,064 $/GB-tháng + 0,214 $/GB nạp + 0,0000027 $/truy vấn | Gần bằng 0, không có sàn theo giờ |
 
-S3 Vectors **có ở `eu-central-1`** (kiểm trên console 24/09/2026) nhưng chưa xuất hiện trong danh sách kho của màn hình này — có thể do chưa chọn mô hình embedding. Chọn kho nào là V-K7, chưa chốt.
+Chọn kho nào là V-K7, chưa chốt.
 
-**Embeddings model: chưa chốt.** AD-06 nói chốt bằng đo trên bộ 50 câu trước khi tạo KB, hai nhánh `MANAGED` và `CUSTOM`; nhánh `CUSTOM` làm mất managed reranker. Đừng chọn đại ở màn hình này.
+**Embeddings model: chưa chốt.** AD-06 nói chốt bằng đo trên bộ 50 câu trước khi tạo KB. Đừng chọn đại ở màn hình này.
 
-Đây chính là phần chi phí và vận hành mà AD-17 đã bỏ đi khi chuyển sang MKB. Con số phải đưa vào lại [13](13-chi-phi.md) trước khi chốt.
+### B.4a Quick create dựng index S3 Vectors bằng tham số gì
+
+Bấm *Create Knowledge Base* thì console gọi `CreateVectorBucket` rồi `CreateIndex` trước, sau đó mới tạo IAM role và KB. Thân lời gọi `CreateIndex` mà console gửi đi:
+
+```json
+{
+  "vectorBucketName": "bedrock-knowledge-base-<hậu tố ngẫu nhiên>",
+  "indexName": "bedrock-knowledge-base-default-index",
+  "dimension": 1024,
+  "distanceMetric": "euclidean",
+  "dataType": "float32",
+  "metadataConfiguration": {
+    "nonFilterableMetadataKeys": ["AMAZON_BEDROCK_TEXT", "AMAZON_BEDROCK_METADATA"]
+  }
+}
+```
+
+Bốn điều đọc ra được từ đây:
+
+- **`distanceMetric` là `euclidean`**, không phải cosine, và console không cho đổi. Cosine vẫn lấy được nhưng phải đi đường API: `S3VectorsConfiguration` của `CreateKnowledgeBase` nhận `vectorBucketArn` và `indexArn`, nên CDK dựng index cosine trước rồi trỏ KB vào đó. Chỉ riêng console là không được.
+- **Hai khoá metadata bị đánh dấu non-filterable**: `AMAZON_BEDROCK_TEXT` giữ nguyên văn chunk, `AMAZON_BEDROCK_METADATA` giữ metadata hệ thống. Non-filterable nghĩa là không lọc được theo chúng, nhưng vẫn đọc ra được khi truy vấn. Một index được tối đa 10 khoá non-filterable, nên còn tám chỗ trống.
+- **Nguyên văn chunk nằm trong metadata của vector.** Bản thân S3 Vectors cho 40 KB metadata và 50 khoá mỗi vector, nhưng tài liệu Bedrock ghi trần chặt hơn khi dùng chung: *"you can attach up to **1 KB of custom metadata** (including both filterable and non-filterable metadata) and **35 metadata keys per vector**"*. Vượt trần thì **ingestion job ném lỗi**, không bỏ qua âm thầm. Mười hai khoá lọc ở [01](01-kien-truc.md) §8.2 vẫn lọt, nhưng không dư nhiều.
+- **Tên bucket và index do console đặt**, không sửa được ở màn hình này.
+
+Không đổi được sau khi index đã tạo: `dimension`, `distanceMetric`, `dataType`, và danh sách khoá non-filterable.
+
+![Review trước khi tạo](huong-dan-console/anh/kbs3v-10-review-vector-store.png)
+
+### B.4b Lỗi quyền đầu tiên gặp phải
+
+Thử dựng thật ngày 24/09/2026 bằng một IAM user thường: hai lời gọi S3 Vectors đi qua, rồi dừng ở IAM.
+
+```
+AccessDeniedException: User: arn:aws:iam::<account>:user/<iam-user> is not authorized to
+perform: iam:CreateRole on resource:
+arn:aws:iam::<account>:role/service-role/AmazonBedrockExecutionRoleForKnowledgeBase_<hậu tố>
+because no identity-based policy allows the iam:CreateRole action
+```
+
+Console báo gọn lỏn *"Knowledge Base: … was failed to create"*, không nói vì sao — muốn biết phải mở tab Network của DevTools đọc phản hồi của `iam.amazonaws.com`.
+
+Hai hệ quả phải xử lý:
+
+- **Vector bucket và index vẫn còn lại** sau khi KB tạo hỏng. Console không dọn hộ. Phải vào console S3 → *Vector buckets* xoá tay, nếu không sẽ tích dần mỗi lần thử.
+- **Chọn *Create and use a new service role* đòi người bấm có `iam:CreateRole`** trên tiền tố `role/service-role/AmazonBedrockExecutionRoleForKnowledgeBase_*`. Đây là quyền duy nhất đã kiểm chứng; console gọi `CreateServiceRole` kèm một policy template, và lời gọi tạo KB phía sau gần như chắc chắn còn cần `iam:PassRole` — **chưa kiểm được**, vì dừng ở lỗi đầu tiên. Không cấp được thì dựng sẵn role bằng CDK rồi chọn *Use an existing service role*.
+
+Lời gọi `lambda:ListFunctions` ở bước 2 cũng bị từ chối, nhưng vô hại: nó chỉ để đổ danh sách vào ô *Select Lambda function*, mà ô đó để trống.
 
 ### B.5 Nạp chunk lên: hai cách
 
@@ -253,6 +325,8 @@ Bốn ràng buộc của AWS phải nhớ:
 Với data source loại Custom thì không có `StartIngestionJob`: nạp xong là tài liệu thuộc cả data source lẫn KB.
 
 Nạp thử vài chunk qua console để xem hình dạng trước khi viết mã: vào KB → chọn data source → **Documents** → **Add documents** → *Add documents directly*.
+
+Sáu chunk demo dựng sẵn cho việc này nằm ở [`cong-cu/demo-chunks/`](../cong-cu/demo-chunks/README.md): chạy `build-ingest-payload.py` là ra thân lời gọi `IngestKnowledgeBaseDocuments` và bộ file `.txt` kèm sidecar để kéo thả. Sáu chunk đó cố tình có một bản đã thay thế, một chunk khác `scope_key` và một tài liệu hướng dẫn phần mềm, để thấy ngay bộ lọc có chặn đúng không.
 
 ---
 
