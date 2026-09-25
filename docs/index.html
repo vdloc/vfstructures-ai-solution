@@ -122,23 +122,23 @@ ul,ol{padding-left:1.4em;}
 <div class="scrim"></div>
 <main class="main"><div class="inner">
 <h1 id="16--hướng-dẫn-cấu-hình-trên-console-aws">16 · Hướng dẫn cấu hình trên console AWS</h1>
-<p><strong>Ai đọc:</strong> người thực thi trên giao diện, không dùng CLI.</p>
-<p>Tài liệu này đi theo thứ tự của <a href="05-devops.md">05-devops.md</a>. Mỗi mục có link console, ảnh chụp từng bước, và giá trị phải điền. Mọi giá trị đều lấy từ <a href="05-devops.md">05</a> §2A, <a href="09-trien-khai.md">09</a>, <a href="15-chi-tiet-devops.md">15</a>; chỗ nào thiết kế chưa chốt thì ghi rõ là chưa chốt, không tự đặt.</p>
-<p><strong>Vùng: <code>eu-central-1</code> (Europe — Frankfurt).</strong> Kiểm góc trên bên phải trước mỗi thao tác. Link không kèm vùng sẽ mở đúng vùng đang chọn của phiên, và tài nguyên của dự án không nằm ở vùng khác.</p>
-<p>Ảnh chụp đã che tên và số tài khoản. Số trong khung đỏ là thứ tự thao tác; chữ bên cạnh nói trường đó dùng làm gì.</p>
+<p><strong>Đối tượng đọc:</strong> tài liệu này dành cho người thực thi trực tiếp trên giao diện console, không sử dụng CLI.</p>
+<p>Tài liệu này được trình bày theo đúng thứ tự của <a href="05-devops.md">05-devops.md</a>. Mỗi mục bao gồm một link console, ảnh chụp từng bước và giá trị cần điền. Mọi giá trị trong tài liệu đều được lấy từ <a href="05-devops.md">05</a> §2A, <a href="09-trien-khai.md">09</a> và <a href="15-chi-tiet-devops.md">15</a>; những chỗ mà thiết kế chưa chốt đều được ghi rõ là chưa chốt và không được tự đặt.</p>
+<p><strong>Vùng làm việc là <code>eu-central-1</code> (Europe — Frankfurt).</strong> Vùng này cần được kiểm ở góc trên bên phải trước mỗi thao tác. Một link không kèm tham số vùng sẽ mở ở đúng vùng đang chọn của phiên, và tài nguyên của dự án không nằm ở vùng nào khác.</p>
+<p>Ảnh chụp trong tài liệu đã được che tên và số tài khoản. Con số trong khung đỏ là thứ tự thao tác, còn dòng chữ bên cạnh giải thích trường đó dùng để làm gì.</p>
 <hr />
 <h2 id="a--bedrock-guardrails">A · Bedrock Guardrails</h2>
 <p>Link: <code>https://eu-central-1.console.aws.amazon.com/bedrock/home?region=eu-central-1#/guardrails</code></p>
 <h3 id="a1-mở-trình-tạo">A.1 Mở trình tạo</h3>
 <p><img alt="Danh sách guardrail" src="anh/guardrail-01-danh-sach.png" /></p>
-<p>Danh sách trống nghĩa là <strong>chưa có guardrail nào được áp</strong>. AWS không bật sẵn cái nào (<a href="05-devops.md">05</a> §2A.1).</p>
+<p>Danh sách trống có nghĩa là <strong>chưa có guardrail nào được áp dụng</strong>. AWS không bật sẵn guardrail nào cho tài khoản (<a href="05-devops.md">05</a> §2A.1).</p>
 <h3 id="a2-bước-1--guardrail-details">A.2 Bước 1 — Guardrail details</h3>
 <p><img alt="Bước chi tiết guardrail" src="anh/guardrail-02-chi-tiet.png" /></p>
 <table>
 <thead>
 <tr>
 <th>Ô</th>
-<th>Điền gì</th>
+<th>Giá trị</th>
 <th>Vì sao</th>
 </tr>
 </thead>
@@ -146,63 +146,63 @@ ul,ol{padding-left:1.4em;}
 <tr>
 <td><strong>Name</strong></td>
 <td><code>vf-assistant-guardrail</code></td>
-<td>Tên dùng lại trong IAM policy chặn gọi model thiếu guardrail</td>
+<td>Tên này được dùng lại trong IAM policy để chặn các lời gọi model thiếu guardrail</td>
 </tr>
 <tr>
 <td><strong>Description</strong></td>
 <td><code>Garde-fou de l'assistant VF Structures</code></td>
-<td>Mô tả tối đa 200 ký tự</td>
+<td>Phần mô tả có độ dài tối đa 200 ký tự</td>
 </tr>
 <tr>
 <td><strong>Messaging for blocked prompts</strong></td>
 <td><code>Je ne traite que les questions de calcul de structure et de consultation de normes.</code></td>
-<td>Người dùng gõ tiếng Pháp; giữ chung chung, không nêu bộ lọc nào kích hoạt</td>
+<td>Người dùng gõ tiếng Pháp nên thông điệp được giữ ở mức chung chung và không nêu bộ lọc nào đã kích hoạt</td>
 </tr>
 <tr>
 <td><strong>Apply the same blocked message for responses</strong></td>
-<td>Bật sẵn — bỏ chọn nếu muốn thông điệp chiều ra khác</td>
-<td>Tương ứng <code>--blocked-outputs-messaging</code></td>
+<td>Được bật sẵn, và có thể bỏ chọn khi cần một thông điệp riêng cho chiều ra</td>
+<td>Ô này tương ứng với tham số <code>--blocked-outputs-messaging</code></td>
 </tr>
 <tr>
 <td><strong>KMS key selection → Customize encryption settings</strong></td>
-<td>Chọn khóa customer-managed của công ty</td>
-<td>Cấu hình chứa chủ đề cấm và mẫu nhận dạng tự viết (<a href="06-bao-mat.md">06</a> §13)</td>
+<td>Khoá customer-managed của công ty</td>
+<td>Cấu hình chứa các chủ đề cấm và mẫu nhận dạng tự viết nên cần được mã hoá bằng khoá riêng (<a href="06-bao-mat.md">06</a> §13)</td>
 </tr>
 </tbody>
 </table>
-<p>Trình tạo có 8 bước: details → content filters → denied topics → word filters → sensitive information → contextual grounding → automated reasoning → review and create.</p>
+<p>Trình tạo gồm 8 bước theo thứ tự: details → content filters → denied topics → word filters → sensitive information → contextual grounding → automated reasoning → review and create.</p>
 <h3 id="a3-bước-2--content-filters">A.3 Bước 2 — Content filters</h3>
 <p><img alt="Bộ lọc nội dung" src="anh/guardrail-03-content-filter.png" /></p>
-<p>Hai công tắc và một lựa chọn tier. Cả hai công tắc <strong>mặc định tắt</strong>: không bật thì bước này không áp gì.</p>
+<p>Bước này gồm hai công tắc và một lựa chọn tier. Cả hai công tắc đều <strong>mặc định tắt</strong>, nên nếu không được bật thì bước này không áp dụng bộ lọc nào.</p>
 <table>
 <thead>
 <tr>
 <th>Ô</th>
-<th>Đặt gì</th>
+<th>Giá trị</th>
 <th>Vì sao</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Configure harmful categories filters</strong></td>
-<td>Bật, rồi đặt từng loại: <code>MISCONDUCT</code>, <code>HATE</code>, <code>INSULTS</code>, <code>SEXUAL</code> ở Medium; <strong><code>VIOLENCE</code> ở Low</strong></td>
-<td>Ngành kết cấu dùng "rupture par cisaillement", "effondrement" làm thuật ngữ. Đặt cao sẽ chặn nhầm câu hỏi kỹ thuật hợp lệ</td>
+<td>Được bật, với từng loại được đặt như sau: <code>MISCONDUCT</code>, <code>HATE</code>, <code>INSULTS</code>, <code>SEXUAL</code> ở mức Medium, và <strong><code>VIOLENCE</code> ở mức Low</strong></td>
+<td>Ngành kết cấu dùng "rupture par cisaillement" và "effondrement" làm thuật ngữ, nên nếu đặt ở mức cao thì bộ lọc sẽ chặn nhầm các câu hỏi kỹ thuật hợp lệ</td>
 </tr>
 <tr>
 <td><strong>Configure prompt attacks filter</strong></td>
-<td>Bật. Chiều vào High, chiều ra tắt hẳn</td>
-<td>Loại này chỉ có nghĩa ở chiều vào. Tắt hẳn chiều ra thì không bị tính phí phần đó</td>
+<td>Được bật, với chiều vào ở mức High và chiều ra tắt hẳn</td>
+<td>Loại bộ lọc này chỉ có ý nghĩa ở chiều vào, và việc tắt hẳn chiều ra giúp phần đó không bị tính phí</td>
 </tr>
 <tr>
 <td><strong>Content filters tier</strong></td>
 <td><strong>Classic</strong></td>
-<td>Hỗ trợ tiếng Pháp và không đòi cross-Region inference — giữ dữ liệu trong EU (Q1)</td>
+<td>Tier này hỗ trợ tiếng Pháp và không đòi hỏi cross-Region inference, nhờ đó dữ liệu được giữ trong EU (Q1)</td>
 </tr>
 </tbody>
 </table>
 <h3 id="a4-bước-3--denied-topics">A.4 Bước 3 — Denied topics</h3>
 <p><img alt="Chủ đề cấm" src="anh/guardrail-04-denied-topics.png" /></p>
-<p>Thêm hai chủ đề, <strong>mô tả và ví dụ viết bằng tiếng Pháp</strong> vì người dùng gõ tiếng Pháp:</p>
+<p>Hai chủ đề được thêm vào, với <strong>phần mô tả và ví dụ được viết bằng tiếng Pháp</strong> vì người dùng gõ tiếng Pháp:</p>
 <table>
 <thead>
 <tr>
@@ -213,28 +213,28 @@ ul,ol{padding-left:1.4em;}
 <tbody>
 <tr>
 <td><code>Contournement-verification</code></td>
-<td>Hỏi cách làm sai lệch dữ liệu đầu vào, khai thiếu tải, hạ hệ số an toàn, né quy trình kiểm định</td>
+<td>Các câu hỏi về cách làm sai lệch dữ liệu đầu vào, khai thiếu tải, hạ hệ số an toàn hoặc né quy trình kiểm định</td>
 </tr>
 <tr>
 <td><code>Conseil-juridique-ou-assurance</code></td>
-<td>Hỏi về trách nhiệm dân sự, bảo hiểm, bảo hành mười năm, hậu quả tranh chấp</td>
+<td>Các câu hỏi về trách nhiệm dân sự, bảo hiểm, bảo hành mười năm hoặc hậu quả tranh chấp</td>
 </tr>
 </tbody>
 </table>
-<p>Giới hạn cứng: tối đa 30 chủ đề, <code>definition</code> 200 ký tự, tối đa 5 ví dụ, mỗi ví dụ 100 ký tự. Chỉ có chiều <code>DENY</code>, không có chiều "chỉ cho phép chủ đề này".</p>
+<p>Các giới hạn cứng của bước này gồm: tối đa 30 chủ đề, trường <code>definition</code> tối đa 200 ký tự, tối đa 5 ví dụ và mỗi ví dụ tối đa 100 ký tự. Bước này chỉ có chiều <code>DENY</code> và không có chiều "chỉ cho phép chủ đề này".</p>
 <h3 id="a5-bước-5--sensitive-information">A.5 Bước 5 — Sensitive information</h3>
 <p><img alt="Bộ lọc PII" src="anh/guardrail-05-pii.png" /></p>
 <table>
 <thead>
 <tr>
 <th>Nhóm</th>
-<th>Đặt gì</th>
+<th>Giá trị</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>PII types → Mask</strong></td>
-<td><code>NAME</code>, <code>EMAIL</code>, <code>PHONE</code>, <code>ADDRESS</code> — xuất hiện thường xuyên và vô hại trong ngữ cảnh công việc</td>
+<td><code>NAME</code>, <code>EMAIL</code>, <code>PHONE</code>, <code>ADDRESS</code>, là những loại xuất hiện thường xuyên và vô hại trong ngữ cảnh công việc</td>
 </tr>
 <tr>
 <td><strong>PII types → Block</strong></td>
@@ -242,22 +242,54 @@ ul,ol{padding-left:1.4em;}
 </tr>
 <tr>
 <td><strong>Regex patterns</strong></td>
-<td>Tự viết cho NIR Pháp, SIRET, căn cước công dân Việt Nam</td>
+<td>Các mẫu tự viết cho NIR Pháp, SIRET và căn cước công dân Việt Nam</td>
 </tr>
 </tbody>
 </table>
-<p>AWS có sẵn 31 loại PII nhưng <strong>không có loại nào cho Pháp và Việt Nam</strong>, nên ba mẫu regex trên là việc thật phải làm, không phải chi tiết vặt. Giới hạn: tối đa 10 mẫu, mỗi mẫu 500 ký tự.</p>
+<p>AWS có sẵn 31 loại PII nhưng <strong>không có loại nào dành cho Pháp và Việt Nam</strong>, do đó ba mẫu regex ở trên là phần việc thật sự cần làm chứ không phải chi tiết vặt. Giới hạn áp dụng cho phần này là tối đa 10 mẫu và mỗi mẫu tối đa 500 ký tự.</p>
 <h3 id="a6-bước-6--contextual-grounding">A.6 Bước 6 — Contextual grounding</h3>
 <p><img alt="Chống bịa" src="anh/guardrail-06-grounding.png" /></p>
-<p>Grounding và Relevance, ngưỡng khởi đầu <strong>0.7</strong> cho cả hai. Đây là <strong>điểm khởi đầu theo khuyến nghị, không phải số đo</strong> — hiệu chỉnh bằng eval.</p>
-<p>Điều kiện bắt buộc: lời gọi phải dán nhãn <code>qualifiers</code> (<code>grounding_source</code> cho nguồn, <code>query</code> cho câu hỏi). <strong>Không dán nhãn thì chính sách này im lặng không làm gì</strong> — phải có test bắt.</p>
+<p>Bước này gồm hai tham số là Grounding và Relevance, cả hai đều có ngưỡng khởi đầu là <strong>0.7</strong>. Đây là <strong>điểm khởi đầu theo khuyến nghị chứ không phải số đo</strong>, và cần được hiệu chỉnh bằng eval.</p>
+<p>Điều kiện bắt buộc là mỗi lời gọi phải dán nhãn <code>qualifiers</code>, trong đó <code>grounding_source</code> dùng cho nguồn và <code>query</code> dùng cho câu hỏi. <strong>Nếu không dán nhãn thì chính sách này sẽ im lặng và không làm gì</strong>, nên cần có test để bắt trường hợp này.</p>
 <h3 id="a7-hai-việc-console-không-làm-thay">A.7 Hai việc console không làm thay</h3>
-<p><strong>Tạo xong là bản <code>DRAFT</code>.</strong> Phải chốt thành bản đánh số bằng một thao tác thứ hai; <code>DRAFT</code> đổi được bất cứ lúc nào và hệ thống đang chạy sẽ đổi hành vi ngay mà không ai biết.</p>
-<p><strong>Guardrail chỉ chạy khi lời gọi khai nó.</strong> Bỏ trường khai ra khỏi mã là mọi bộ lọc biến mất, không có lỗi nào báo. Chặn bằng IAM policy <code>Deny</code> có điều kiện <code>bedrock:GuardrailIdentifier</code> — chi tiết ở <a href="05-devops.md">05</a> §2A.7.</p>
-<p><strong>Ghi chú về độ ổn định của console.</strong> Lần dựng đầu, các bước 2–8 trả "Unable to load content" do gói giao diện bị HTTP 403 ở <code>a.b.cdn.console.awsstatic.com</code>; thử lại sau ít phút thì hết. Nếu lặp lại, runbook CLI ở <a href="05-devops.md">05</a> §2A.4 chạy được ngay, không phụ thuộc giao diện.</p>
+<p><strong>Ngay sau khi tạo, guardrail ở trạng thái bản <code>DRAFT</code>.</strong> Bản này cần được chốt thành một bản đánh số qua một thao tác thứ hai, bởi vì <code>DRAFT</code> có thể bị đổi bất cứ lúc nào và khi đó hệ thống đang chạy sẽ đổi hành vi ngay lập tức mà không ai biết.</p>
+<p><strong>Guardrail chỉ chạy khi lời gọi có khai báo nó.</strong> Nếu trường khai báo bị bỏ ra khỏi mã thì mọi bộ lọc sẽ biến mất mà không có lỗi nào được báo. Trường hợp này được chặn bằng một IAM policy <code>Deny</code> có điều kiện <code>bedrock:GuardrailIdentifier</code>, với chi tiết ở <a href="05-devops.md">05</a> §2A.7.</p>
+<p><strong>Ghi chú về độ ổn định của console.</strong> Trong lần dựng đầu tiên, các bước 2–8 trả về thông báo "Unable to load content" do gói giao diện bị HTTP 403 ở <code>a.b.cdn.console.awsstatic.com</code>, và tình trạng này thường hết khi thử lại sau ít phút. Nếu lỗi lặp lại, runbook CLI ở <a href="05-devops.md">05</a> §2A.4 vẫn chạy được ngay vì không phụ thuộc vào giao diện.</p>
 <hr />
 <h2 id="b--knowledge-base--nạp-chunk-tự-cắt-bỏ-parsechunk-mặc-định">B · Knowledge Base — nạp chunk tự cắt, bỏ parse/chunk mặc định</h2>
-<p>Đây là phần cần đọc kỹ nhất, vì <strong>lựa chọn loại KB quyết định có được tự cắt chunk hay không</strong>, và chọn xong thì không đổi được.</p>
+<p>Đây là phần cần đọc kỹ nhất, bởi vì <strong>việc lựa chọn loại KB quyết định có được tự cắt chunk hay không</strong>, và một khi đã chọn thì không đổi lại được.</p>
+<p>Trên Bedrock có ba hướng dựng knowledge base cho truy xuất và RAG, và mỗi hướng có ưu nhược riêng nên cần cân nhắc kỹ trước khi chọn (theo tài liệu Knowledge Base của Amazon Bedrock):</p>
+<table>
+<thead>
+<tr>
+<th>Loại KB</th>
+<th>Ưu điểm</th>
+<th>Nhược điểm</th>
+<th>Khi nào phù hợp</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bedrock-managed KB</strong></td>
+<td>AWS quản lý trọn gói việc lưu trữ, parse, cắt chunk và truy xuất, nên không phải dựng hay vận hành hạ tầng; ngoài ra còn có sẵn embedding, reranker và agentic retrieval được quản lý</td>
+<td>Không chọn được chiến lược chunking (do đó không có No chunking), không kiểm soát được vector store và ít khả năng tuỳ biến</td>
+<td>Phù hợp với phần lớn nhu cầu RAG thông thường, khi ưu tiên sự đơn giản và không muốn tự vận hành hạ tầng</td>
+</tr>
+<tr>
+<td><strong>Customer-managed KB (unstructured vector store)</strong></td>
+<td>Cho phép chọn cả parser lẫn chunking, bao gồm cả No chunking, và tự chọn được vector store phù hợp</td>
+<td>Phải tự dựng, tự vận hành và trả tiền cho vector store, đồng thời mất các thành phần embedding, reranker và agentic retrieval quản lý sẵn</td>
+<td>Phù hợp khi cần kiểm soát chunking hoặc parser, hoặc bắt buộc dùng No chunking như dự án này</td>
+</tr>
+<tr>
+<td><strong>KB trên kho dữ liệu có cấu trúc (structured data store)</strong></td>
+<td>Truy vấn trực tiếp dữ liệu quan hệ có cấu trúc mà không cần bước nhúng vector</td>
+<td>Chỉ hợp với dữ liệu có cấu trúc và không dùng được cho một corpus tài liệu văn bản</td>
+<td>Phù hợp khi nguồn dữ liệu là bảng hoặc SQL chứ không phải tài liệu, và không áp dụng cho dự án này. Hướng này không nằm trong hai nhóm mà console của tài khoản hiển thị ngày 23/09/2026, được nêu ở đây chỉ để so sánh</td>
+</tr>
+</tbody>
+</table>
+<p>Dự án chọn hướng <strong>Customer-managed KB với unstructured vector store</strong>, bởi vì chỉ hướng này mới tắt được chunking của AWS, với chi tiết ở B.1.</p>
 <h3 id="b1-hai-loại-kb-chỉ-một-loại-cho-tự-cắt-chunk">B.1 Hai loại KB, chỉ một loại cho tự cắt chunk</h3>
 <p>Console có hai đường tạo khác nhau:</p>
 <table>
@@ -272,21 +304,21 @@ ul,ol{padding-left:1.4em;}
 <tr>
 <td><strong>Managed KB</strong></td>
 <td><code>#/knowledge-bases</code> → <strong>Create Managed KB</strong></td>
-<td><strong>Không.</strong> Parsing strategy hiển thị cố định <em>Managed parser</em>, Text chunking strategy cố định <em>Default chunking</em>. Hai dòng đó là chú thích, không phải hộp chọn</td>
+<td><strong>Không có.</strong> Parsing strategy hiển thị cố định là <em>Managed parser</em>, còn Text chunking strategy cố định là <em>Default chunking</em>; hai dòng này chỉ là chú thích chứ không phải hộp chọn</td>
 </tr>
 <tr>
 <td><strong>KB with vector store</strong> (customer-managed)</td>
 <td><code>#/knowledge-bases/create-knowledge-base</code></td>
-<td><strong>Có.</strong> Chọn được cả parser lẫn chunking, gồm <strong>No chunking</strong></td>
+<td><strong>Có.</strong> Đường này cho phép chọn cả parser lẫn chunking, bao gồm cả <strong>No chunking</strong></td>
 </tr>
 </tbody>
 </table>
 <p><img alt="Managed KB — parser và chunking cố định" src="anh/kb-02-managed-co-dinh.png" /></p>
-<p>Ảnh trên là trình tạo Managed KB. Bấm vào <em>Managed parser</em> hay <em>Default chunking</em> chỉ mở ra một ô chú thích, không có danh sách lựa chọn. Kể cả khi đổi data source type sang <strong>Custom</strong>, hai dòng đó vẫn y nguyên.</p>
-<p><strong>Console giấu, nhưng API thì chưa chắc.</strong> <code>CreateDataSource</code> nhận <code>vectorIngestionConfiguration.chunkingConfiguration.chunkingStrategy</code> như một trường ở cấp ngoài cùng, không gắn với loại KB nào, và tài liệu API <strong>không</strong> nói trường này bị loại với <code>MANAGED_KNOWLEDGE_BASE_CONNECTOR</code> — trong khi chỗ khác của chính trang đó lại nói rõ giới hạn theo loại KB (<em>"For managed knowledge bases, the only supported option is <code>DELETE</code>"</em> cho <code>dataDeletionPolicy</code>). Không suy ra được câu trả lời từ tài liệu: chỉ một lệnh <code>create-data-source</code> thật trên MKB mới cho biết AWS nhận hay từ chối <code>NONE</code>. Lệnh đó tạo tài nguyên thật nên <strong>chưa chạy</strong>.</p>
-<p>Ghi chú của Managed KB về <em>Default chunking</em>: <em>"Automatically splits text into smaller chunks by default. If a document is already small enough, it's not split any further."</em> Câu này mở ra một đường thứ ba — <strong>nạp file đã cắt sẵn, mỗi file đủ nhỏ</strong> thì MKB không cắt thêm — nhưng AWS không nói "đủ nhỏ" là bao nhiêu ở đường managed, nên đường này chỉ dùng được sau khi đo trên KB thật.</p>
+<p>Ảnh trên là trình tạo Managed KB. Việc bấm vào <em>Managed parser</em> hay <em>Default chunking</em> chỉ mở ra một ô chú thích chứ không có danh sách lựa chọn nào. Ngay cả khi đổi data source type sang <strong>Custom</strong>, hai dòng đó vẫn giữ nguyên.</p>
+<p><strong>Console giấu, nhưng API thì chưa chắc.</strong> <code>CreateDataSource</code> nhận <code>vectorIngestionConfiguration.chunkingConfiguration.chunkingStrategy</code> như một trường ở cấp ngoài cùng, không gắn với loại KB nào, và tài liệu API <strong>không</strong> nói trường này bị loại với <code>MANAGED_KNOWLEDGE_BASE_CONNECTOR</code> — trong khi chỗ khác của chính trang đó lại nói rõ giới hạn theo loại KB (<em>"For managed knowledge bases, the only supported option is <code>DELETE</code>"</em> cho <code>dataDeletionPolicy</code>). Không thể suy ra câu trả lời từ tài liệu, bởi vì chỉ một lệnh <code>create-data-source</code> thật trên MKB mới cho biết AWS chấp nhận hay từ chối <code>NONE</code>. Lệnh đó tạo tài nguyên thật nên <strong>chưa được chạy</strong>.</p>
+<p>Ghi chú của Managed KB về <em>Default chunking</em>: <em>"Automatically splits text into smaller chunks by default. If a document is already small enough, it's not split any further."</em> Câu này mở ra một đường thứ ba — <strong>nạp file đã cắt sẵn, mỗi file đủ nhỏ</strong> thì MKB không cắt thêm — nhưng AWS không nói "đủ nhỏ" là bao nhiêu ở đường managed, nên đường này chỉ có thể dùng được sau khi đo trên KB thật.</p>
 <p><strong>Đã chốt: tự parse, tự cắt chunk, không dùng parser lẫn chunker của AWS.</strong> Quyết định này loại Managed KB, vì bảng so sánh của AWS ghi rõ MKB dùng <em>"Built-in parser for multimodal file types"</em> và chunking chỉ có <em>"built-in (default) or fixed-size"</em> — không có <code>NONE</code>. AD-17 đã cập nhật theo: retrieval chạy trên <strong>customer-managed KB</strong> với <code>chunkingStrategy: NONE</code>, data source loại <strong>Custom</strong>.</p>
-<p><strong>Bốn hệ quả phải nuốt cùng quyết định này</strong>, vì customer-managed không có những thứ MKB cho không:</p>
+<p><strong>Quyết định này kéo theo bốn hệ quả cần chấp nhận</strong>, bởi vì customer-managed không có sẵn những thứ mà MKB cung cấp miễn phí:</p>
 <table>
 <thead>
 <tr>
@@ -297,38 +329,38 @@ ul,ol{padding-left:1.4em;}
 <tbody>
 <tr>
 <td>Embedding quản lý sẵn (AWS ghi "None")</td>
-<td>AD-06 chỉ còn một nhánh: chọn mô hình embedding riêng, đo trước khi tạo KB</td>
+<td>AD-06 chỉ còn một nhánh, đó là chọn một mô hình embedding riêng và đo trước khi tạo KB</td>
 </tr>
 <tr>
 <td>Reranker miễn phí (AWS ghi "None")</td>
-<td>Trả tiền rerank (Cohere Rerank 3.5 khoảng 0,002 $/truy vấn) hoặc bỏ rerank</td>
+<td>Phải trả tiền cho rerank (Cohere Rerank 3.5 khoảng 0,002 $/truy vấn) hoặc bỏ hẳn rerank</td>
 </tr>
 <tr>
 <td>Agentic retrieval</td>
-<td>Chỉ còn <code>Retrieve</code> một nhịp — đúng với thiết kế hiện tại, không mất gì thật</td>
+<td>Chỉ còn <code>Retrieve</code> một nhịp, vốn đúng với thiết kế hiện tại nên thực chất không mất gì</td>
 </tr>
 <tr>
 <td>Không phải nuôi vector store</td>
-<td>Thêm một kho phải tự vận hành và trả tiền theo giờ (xem B.4)</td>
+<td>Phải thêm một kho tự vận hành và trả tiền theo giờ (xem B.4)</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Ba ràng buộc kỹ thuật của <code>NONE</code>:</strong></p>
 <ul>
-<li><strong>Số trang phải do Worker tự ghi.</strong> <code>NONE</code> bỏ citation theo trang và bộ lọc <code>x-amz-bedrock-kb-document-page-number</code>. Thiết kế đang cần số trang cho <code>CitationValidator</code>, nên số trang phải nằm trong metadata do Worker sinh, không trông vào Bedrock.</li>
-<li><strong>Trần kích thước chunk = trần token đầu vào của mô hình embedding.</strong> Mỗi chunk được nhúng nguyên khối. Worker phải ép trần này lúc cắt, và trần đó chỉ biết sau khi AD-06 chốt mô hình.</li>
-<li><strong>"Không dùng parser của AWS" chỉ đúng nếu nạp vào là văn bản.</strong> Nạp PDF gốc là Bedrock lại parse. Worker phải nạp text — inline <code>TEXT</code> hoặc tệp <code>.txt</code>.</li>
+<li><strong>Số trang phải do Worker tự ghi.</strong> Chế độ <code>NONE</code> bỏ đi citation theo trang cùng bộ lọc <code>x-amz-bedrock-kb-document-page-number</code>. Thiết kế đang cần số trang cho <code>CitationValidator</code>, nên số trang phải nằm trong metadata do Worker sinh ra chứ không trông vào Bedrock.</li>
+<li><strong>Trần kích thước chunk chính là trần token đầu vào của mô hình embedding.</strong> Mỗi chunk được nhúng nguyên khối, nên Worker phải ép trần này ngay lúc cắt, và trần đó chỉ xác định được sau khi AD-06 chốt mô hình.</li>
+<li><strong>Điều "không dùng parser của AWS" chỉ đúng khi nội dung nạp vào là văn bản.</strong> Nếu nạp PDF gốc thì Bedrock sẽ lại parse, vì vậy Worker phải nạp dưới dạng text, tức là inline <code>TEXT</code> hoặc tệp <code>.txt</code>.</li>
 </ul>
 <h3 id="b2-tạo-kb-có-chọn-chunking">B.2 Tạo KB có chọn chunking</h3>
-<p>Ở trang <strong>Knowledge Bases (KB)</strong>, đừng bấm thẳng nút <em>Create Managed KB</em> — bấm mũi tên bên phải nút đó. Menu đổ xuống chia hai nhóm: <em>Bedrock-managed KB</em> và <em>Self-managed KB</em>.</p>
+<p>Ở trang <strong>Knowledge Bases (KB)</strong>, thao tác đúng không phải là bấm thẳng vào nút <em>Create Managed KB</em> mà là bấm vào mũi tên bên phải nút đó. Khi đó menu đổ xuống chia thành hai nhóm là <em>Bedrock-managed KB</em> và <em>Self-managed KB</em>.</p>
 <p><img alt="Menu chọn loại KB" src="anh/kbs3v-01-chon-loai.png" /></p>
-<p>Chọn <strong>Unstructured Vector Store KB</strong> — đây là tên console đặt cho đường customer-managed, và là chỗ duy nhất tắt được chunking của AWS. Đường tắt: <code>https://eu-central-1.console.aws.amazon.com/bedrock/home?region=eu-central-1#/knowledge-bases/create-knowledge-base</code></p>
+<p>Lựa chọn cần dùng là <strong>Unstructured Vector Store KB</strong>, đây là tên console đặt cho đường customer-managed và là chỗ duy nhất tắt được chunking của AWS. Đường tắt để mở thẳng trang này là: <code>https://eu-central-1.console.aws.amazon.com/bedrock/home?region=eu-central-1#/knowledge-bases/create-knowledge-base</code></p>
 <p><img alt="Bước 1 — chi tiết KB" src="anh/kbcm-01-chi-tiet.png" /></p>
 <table>
 <thead>
 <tr>
 <th>Ô</th>
-<th>Điền gì</th>
+<th>Giá trị</th>
 </tr>
 </thead>
 <tbody>
@@ -338,26 +370,26 @@ ul,ol{padding-left:1.4em;}
 </tr>
 <tr>
 <td><strong>Runtime role</strong></td>
-<td><em>Create and use a new service role</em> cho lần dựng đầu; production dùng role đã siết quyền theo bảng 4A của <a href="05-devops.md">05</a></td>
+<td><em>Create and use a new service role</em> cho lần dựng đầu, còn ở production thì dùng role đã được siết quyền theo bảng 4A của <a href="05-devops.md">05</a></td>
 </tr>
 <tr>
 <td><strong>Choose data source type</strong></td>
-<td><strong>Custom</strong> — nạp thẳng tài liệu vào KB bằng API, không qua thư mục S3</td>
+<td><strong>Custom</strong>, cho phép nạp thẳng tài liệu vào KB bằng API mà không qua thư mục S3</td>
 </tr>
 </tbody>
 </table>
 <p><img alt="Chọn data source type Custom" src="anh/kbcm-02-chon-custom.png" /></p>
-<p>Chọn <strong>Custom</strong> là mấu chốt: mô tả của AWS ngay trong ô đó — <em>"A custom data source allows the flexibility to automatically ingest documents into your vector database directly"</em>.</p>
+<p>Việc chọn <strong>Custom</strong> là mấu chốt, và mô tả của AWS ngay trong ô đó cũng nói rõ điều này: <em>"A custom data source allows the flexibility to automatically ingest documents into your vector database directly"</em>.</p>
 <h3 id="b3-bước-2--chọn-no-chunking">B.3 Bước 2 — chọn No chunking</h3>
-<p>Mở <strong>Advanced settings</strong> → <strong>Content parsing and chunking</strong>.</p>
+<p>Phần cấu hình này nằm ở <strong>Advanced settings</strong> → <strong>Content parsing and chunking</strong>.</p>
 <p><img alt="Chọn No chunking" src="anh/kbcm-03-no-chunking.png" /></p>
-<p>Năm lựa chọn: Default, Fixed-size, Hierarchical, Semantic, <strong>No chunking</strong>. Mô tả của AWS cho No chunking: <em>"Suitable for documents that are already pre-processed or text split into separate files without any further chunking necessary."</em></p>
+<p>Có năm lựa chọn là Default, Fixed-size, Hierarchical, Semantic và <strong>No chunking</strong>. Mô tả của AWS cho No chunking như sau: <em>"Suitable for documents that are already pre-processed or text split into separate files without any further chunking necessary."</em></p>
 <p><img alt="Sau khi chọn" src="anh/kbcm-04-chon-xong.png" /></p>
 <table>
 <thead>
 <tr>
 <th>Ô</th>
-<th>Đặt gì</th>
+<th>Giá trị</th>
 <th>Ghi chú</th>
 </tr>
 </thead>
@@ -370,27 +402,27 @@ ul,ol{padding-left:1.4em;}
 <tr>
 <td><strong>Chunking strategy</strong></td>
 <td><strong>No chunking</strong></td>
-<td>Mỗi tài liệu nạp vào là <strong>một chunk</strong>, đúng như đã cắt</td>
+<td>Mỗi tài liệu nạp vào trở thành <strong>một chunk</strong>, đúng như đã cắt sẵn</td>
 </tr>
 <tr>
 <td><strong>Select Lambda function</strong></td>
 <td>Để trống</td>
-<td>Chỉ cần khi muốn Bedrock gọi hàm của mình để cắt lại và sinh metadata trong lúc nạp. Chunk đã cắt sẵn thì không cần</td>
+<td>Ô này chỉ cần đến khi muốn Bedrock gọi hàm của mình để cắt lại và sinh metadata trong lúc nạp; với chunk đã cắt sẵn thì không cần</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Hai cái mất khi chọn No chunking</strong>, theo tài liệu AWS: không xem được số trang trong citation, và không lọc được theo <code>x-amz-bedrock-kb-document-page-number</code>. Cái thứ nhất <strong>có đụng tới thiết kế</strong>: chunk của dự án có số trang và <code>CitationValidator</code> dùng nó, nên số trang phải do Worker ghi vào metadata của chính nó. Bộ lọc <code>scope_key</code> và <code>clause_path</code> không bị ảnh hưởng.</p>
-<p><strong>Chunking strategy không sửa được sau khi tạo data source.</strong> Chọn sai thì phải tạo data source mới và nạp lại toàn bộ.</p>
+<p><strong>Việc chọn No chunking khiến mất đi hai thứ</strong>, theo tài liệu AWS: không xem được số trang trong citation, và không lọc được theo <code>x-amz-bedrock-kb-document-page-number</code>. Thứ nhất trong hai điều này <strong>có ảnh hưởng tới thiết kế</strong>, bởi vì chunk của dự án có số trang và <code>CitationValidator</code> dùng đến nó, nên số trang phải do Worker ghi vào metadata của chính nó. Riêng bộ lọc <code>scope_key</code> và <code>clause_path</code> thì không bị ảnh hưởng.</p>
+<p><strong>Chunking strategy không sửa được sau khi tạo data source.</strong> Nếu chọn sai thì phải tạo một data source mới và nạp lại toàn bộ.</p>
 <h3 id="b4-bước-3--vector-store">B.4 Bước 3 — vector store</h3>
 <p><img alt="Bước 3 — embeddings và vector store" src="anh/kbs3v-08-embedding-va-s3vectors.png" /></p>
-<p>Đường này bắt buộc có vector store riêng. Màn hình hỏi hai thứ theo đúng thứ tự đó: <strong>embeddings model</strong> trước, <strong>vector store</strong> sau — và thứ tự này quan trọng, vì danh sách kho phụ thuộc vào mô hình đã chọn.</p>
-<p><strong>Chọn embeddings model.</strong> Bấm <em>Select model</em>, hộp thoại mở ra hai nhà cung cấp serverless ở Frankfurt là Amazon và Cohere.</p>
+<p>Đường này bắt buộc phải có một vector store riêng. Màn hình hỏi hai thứ theo đúng thứ tự sau: <strong>embeddings model</strong> trước rồi <strong>vector store</strong> sau, và thứ tự này quan trọng vì danh sách kho phụ thuộc vào mô hình đã chọn.</p>
+<p><strong>Bước chọn embeddings model.</strong> Khi bấm <em>Select model</em>, hộp thoại mở ra hai nhà cung cấp serverless ở Frankfurt là Amazon và Cohere.</p>
 <p><img alt="Hộp thoại chọn embeddings model" src="anh/kbs3v-06-chon-embedding.png" /></p>
 <table>
 <thead>
 <tr>
 <th>Ô</th>
-<th>Đặt gì</th>
+<th>Giá trị</th>
 <th>Vì sao</th>
 </tr>
 </thead>
@@ -398,7 +430,7 @@ ul,ol{padding-left:1.4em;}
 <tr>
 <td><strong>Model</strong></td>
 <td><code>Titan Embeddings G2 - Text v2.0</code></td>
-<td>8k token đầu vào — trần này chính là trần độ dài chunk</td>
+<td>Mô hình này nhận tối đa 8k token đầu vào, và trần đó chính là trần độ dài chunk</td>
 </tr>
 <tr>
 <td><strong>Embeddings type</strong></td>
@@ -408,19 +440,19 @@ ul,ol{padding-left:1.4em;}
 <tr>
 <td><strong>Vector dimensions</strong></td>
 <td><code>1024</code></td>
-<td>Chọn được 256 / 512 / 1024; cao hơn thì chính xác hơn và tốn kho hơn</td>
+<td>Có thể chọn 256, 512 hoặc 1024; số chiều càng cao thì càng chính xác nhưng càng tốn kho</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Rồi mới mở danh sách vector store.</strong> <em>Quick create</em> dựng kho hộ trong chính tài khoản này; <em>Use an existing vector store</em> đấu vào kho có sẵn.</p>
+<p><strong>Sau đó mới đến danh sách vector store.</strong> Tuỳ chọn <em>Quick create</em> dựng kho hộ ngay trong tài khoản này, còn <em>Use an existing vector store</em> đấu vào một kho có sẵn.</p>
 <p><img alt="Danh sách kho ở nhánh Quick create" src="anh/kbs3v-07-vector-store-types.png" /></p>
-<p>Nhánh <strong>Quick create</strong> cho bốn kho: OpenSearch Serverless, <strong>S3 Vectors</strong>, Aurora PostgreSQL Serverless (đang bị khoá), Neptune Analytics.</p>
+<p>Nhánh <strong>Quick create</strong> cho bốn kho, gồm OpenSearch Serverless, <strong>S3 Vectors</strong>, Aurora PostgreSQL Serverless (đang bị khoá) và Neptune Analytics.</p>
 <p><img alt="Danh sách kho ở nhánh Use an existing vector store" src="anh/kbs3v-11-existing-store.png" /></p>
-<p>Nhánh <em>Use an existing vector store</em> cho sáu kho khác hẳn: Aurora PostgreSQL Serverless, Neptune Analytics, OpenSearch Serverless, OpenSearch Managed Cluster, Pinecone, Redis Enterprise Cloud — <strong>không có S3 Vectors</strong>, kể cả khi đã chọn xong mô hình embedding (kiểm trên console 24/09/2026).</p>
-<p>Nên nhớ hai điều: <strong>trên console, S3 Vectors chỉ dựng được qua Quick create</strong>, và nó chỉ hiện ra sau khi đã chọn mô hình embedding. Lần dò trước không thấy nó là vì chưa chọn mô hình.</p>
-<p>Cả embeddings model lẫn vector store <strong>không đổi được sau khi tạo KB</strong>.</p>
-<p><strong>OpenSearch Managed Cluster loại luôn:</strong> tài liệu AWS ghi <em>"For Network, you must choose Public access. OpenSearch domains that are behind a VPC are not supported for your Knowledge Base"</em> — trái với thiết kế chạy trong VPC.</p>
-<p>Ba ứng viên còn lại, cơ cấu giá khác nhau về bản chất (chi tiết ở <a href="13-chi-phi.md">13</a> §3a):</p>
+<p>Nhánh <em>Use an existing vector store</em> cho sáu kho khác hẳn, gồm Aurora PostgreSQL Serverless, Neptune Analytics, OpenSearch Serverless, OpenSearch Managed Cluster, Pinecone và Redis Enterprise Cloud; trong danh sách này <strong>không có S3 Vectors</strong>, kể cả khi đã chọn xong mô hình embedding (kiểm trên console 24/09/2026).</p>
+<p>Có hai điều cần nhớ. Thứ nhất, <strong>trên console, S3 Vectors chỉ dựng được qua Quick create</strong>. Thứ hai, nó chỉ hiện ra sau khi đã chọn mô hình embedding, nên lần dò trước không thấy nó là vì chưa chọn mô hình.</p>
+<p>Cả embeddings model lẫn vector store đều <strong>không đổi được sau khi tạo KB</strong>.</p>
+<p><strong>OpenSearch Managed Cluster bị loại hẳn</strong>, bởi vì tài liệu AWS ghi <em>"For Network, you must choose Public access. OpenSearch domains that are behind a VPC are not supported for your Knowledge Base"</em>, điều này trái với thiết kế chạy trong VPC.</p>
+<p>Ba ứng viên còn lại có cơ cấu giá khác nhau về bản chất, với chi tiết ở <a href="13-chi-phi.md">13</a> §3a:</p>
 <table>
 <thead>
 <tr>
@@ -433,24 +465,79 @@ ul,ol{padding-left:1.4em;}
 <tr>
 <td>OpenSearch Serverless</td>
 <td>0,339 $/OCU-giờ</td>
-<td>Vẫn tính tiền, trừ khi đặt sàn 0 OCU và chịu cold start</td>
+<td>Vẫn tính tiền, trừ khi đặt sàn 0 OCU và chấp nhận cold start</td>
 </tr>
 <tr>
 <td>Aurora PostgreSQL Serverless v2</td>
 <td>0,14 $/ACU-giờ</td>
-<td>Co xuống ACU tối thiểu</td>
+<td>Co xuống mức ACU tối thiểu</td>
 </tr>
 <tr>
 <td>S3 Vectors</td>
 <td>0,064 $/GB-tháng + 0,214 $/GB nạp + 0,0000027 $/truy vấn</td>
-<td>Gần bằng 0, không có sàn theo giờ</td>
+<td>Gần bằng 0 vì không có sàn theo giờ</td>
 </tr>
 </tbody>
 </table>
-<p>Chọn kho nào là V-K7, chưa chốt.</p>
-<p><strong>Embeddings model: chưa chốt.</strong> AD-06 nói chốt bằng đo trên bộ 50 câu trước khi tạo KB. Đừng chọn đại ở màn hình này.</p>
+<p>Bảy kho mà console của tài khoản này hiển thị còn khác nhau về chi phí, ưu điểm và các hạn chế mang tính "chỉ hỗ trợ kiểu này, không hỗ trợ kiểu kia", theo ma trận lựa chọn vector store trong tài liệu thiết lập Knowledge Base của AWS:</p>
+<table>
+<thead>
+<tr>
+<th>Kho</th>
+<th>Chi phí</th>
+<th>Ưu điểm</th>
+<th>Hạn chế và pitfall cần lưu ý</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S3 Vectors</strong></td>
+<td>0,064 $/GB-tháng + 0,214 $/GB nạp + 0,0000027 $/truy vấn, gần như bằng 0 khi rảnh vì không có sàn theo giờ</td>
+<td>Cách dựng đơn giản nhất trong các kho, do AWS quản lý và Bedrock có thể tự tạo</td>
+<td>Là dịch vụ còn mới; trên console chỉ dựng được qua Quick create; chỉ nhận vector <code>float32</code> và trên console chỉ hỗ trợ khoảng cách <code>euclidean</code>, muốn <code>cosine</code> thì phải đi đường API; trần metadata chặt hơn khi dùng chung với Bedrock</td>
+</tr>
+<tr>
+<td><strong>OpenSearch Serverless</strong></td>
+<td>0,339 $/OCU-giờ</td>
+<td>Hợp với phần lớn trường hợp và hỗ trợ lọc nâng cao mạnh</td>
+<td>Vẫn tính tiền theo OCU-giờ ngay cả khi rảnh, trừ khi đặt sàn 0 OCU và chấp nhận cold start</td>
+</tr>
+<tr>
+<td><strong>Aurora PostgreSQL Serverless v2</strong></td>
+<td>0,14 $/ACU-giờ, co về mức ACU tối thiểu khi rảnh</td>
+<td>Tận dụng được khi đội đã dùng Aurora và có chi phí hợp lý</td>
+<td>Phải bật extension <code>pgvector</code>, tự vận hành cơ sở dữ liệu và lưu credential trong Secrets Manager</td>
+</tr>
+<tr>
+<td><strong>OpenSearch Managed Cluster</strong></td>
+<td>Theo cụm tự vận hành (tài liệu này không nêu số cụ thể)</td>
+<td>Tận dụng được cụm OpenSearch tự quản đã có sẵn</td>
+<td>Chỉ hỗ trợ <strong>Public access</strong> và không hỗ trợ VPC, nên đã bị loại khỏi thiết kế vốn chạy trong VPC</td>
+</tr>
+<tr>
+<td><strong>Pinecone</strong></td>
+<td>Theo gói của Pinecone (dịch vụ bên thứ ba)</td>
+<td>Dựng nhanh khi đội đã dùng Pinecone</td>
+<td>Là dịch vụ bên thứ ba, phải lưu API key trong Secrets Manager, và số chiều index bắt buộc phải khớp với số chiều của mô hình embedding</td>
+</tr>
+<tr>
+<td><strong>Redis Enterprise Cloud</strong></td>
+<td>Theo gói Redis Enterprise Cloud (dịch vụ bên thứ ba)</td>
+<td>Cho độ trễ thấp nhất trong các kho</td>
+<td>Phải dựng cụm có bật module vector search và tự vận hành</td>
+</tr>
+<tr>
+<td><strong>Neptune Analytics</strong></td>
+<td>Theo Neptune Analytics (tài liệu này không nêu số cụ thể)</td>
+<td>Hợp với các bài toán RAG dựa trên đồ thị (graph)</td>
+<td>Phải tạo và cấu hình graph, đồng thời phạm vi sử dụng hẹp hơn các kho còn lại</td>
+</tr>
+</tbody>
+</table>
+<p>Việc chọn kho nào là V-K7 và hiện chưa chốt.</p>
+<p><strong>Embeddings model hiện chưa chốt.</strong> AD-06 quy định việc chốt phải dựa trên đo đạc trên bộ 50 câu trước khi tạo KB, nên không được chọn tuỳ tiện ở màn hình này.</p>
 <h3 id="b4a-quick-create-dựng-index-s3-vectors-bằng-tham-số-gì">B.4a Quick create dựng index S3 Vectors bằng tham số gì</h3>
-<p>Bấm <em>Create Knowledge Base</em> thì console gọi <code>CreateVectorBucket</code> rồi <code>CreateIndex</code> trước, sau đó mới tạo IAM role và KB. Thân lời gọi <code>CreateIndex</code> mà console gửi đi:</p>
+<p>Khi bấm <em>Create Knowledge Base</em>, console gọi <code>CreateVectorBucket</code> rồi <code>CreateIndex</code> trước, sau đó mới tạo IAM role và KB. Thân lời gọi <code>CreateIndex</code> mà console gửi đi có dạng sau:</p>
 <pre><code class="language-json">{
   &quot;vectorBucketName&quot;: &quot;bedrock-knowledge-base-&lt;hậu tố ngẫu nhiên&gt;&quot;,
   &quot;indexName&quot;: &quot;bedrock-knowledge-base-default-index&quot;,
@@ -462,32 +549,32 @@ ul,ol{padding-left:1.4em;}
   }
 }
 </code></pre>
-<p>Bốn điều đọc ra được từ đây:</p>
+<p>Có bốn điều đọc ra được từ thân lời gọi này:</p>
 <ul>
-<li><strong><code>distanceMetric</code> là <code>euclidean</code></strong>, không phải cosine, và console không cho đổi. Cosine vẫn lấy được nhưng phải đi đường API: <code>S3VectorsConfiguration</code> của <code>CreateKnowledgeBase</code> nhận <code>vectorBucketArn</code> và <code>indexArn</code>, nên CDK dựng index cosine trước rồi trỏ KB vào đó. Chỉ riêng console là không được.</li>
-<li><strong>Hai khoá metadata bị đánh dấu non-filterable</strong>: <code>AMAZON_BEDROCK_TEXT</code> giữ nguyên văn chunk, <code>AMAZON_BEDROCK_METADATA</code> giữ metadata hệ thống. Non-filterable nghĩa là không lọc được theo chúng, nhưng vẫn đọc ra được khi truy vấn. Một index được tối đa 10 khoá non-filterable, nên còn tám chỗ trống.</li>
-<li><strong>Nguyên văn chunk nằm trong metadata của vector.</strong> Bản thân S3 Vectors cho 40 KB metadata và 50 khoá mỗi vector, nhưng tài liệu Bedrock ghi trần chặt hơn khi dùng chung: <em>"you can attach up to </em><em>1 KB of custom metadata</em><em> (including both filterable and non-filterable metadata) and </em><em>35 metadata keys per vector</em><em>"</em>. Vượt trần thì <strong>ingestion job ném lỗi</strong>, không bỏ qua âm thầm. Mười hai khoá lọc ở <a href="01-kien-truc.md">01</a> §8.2 vẫn lọt, nhưng không dư nhiều.</li>
-<li><strong>Tên bucket và index do console đặt</strong>, không sửa được ở màn hình này.</li>
+<li><strong><code>distanceMetric</code> là <code>euclidean</code></strong> chứ không phải cosine, và console không cho đổi. Cosine vẫn có thể lấy được nhưng phải đi qua đường API, vì <code>S3VectorsConfiguration</code> của <code>CreateKnowledgeBase</code> nhận <code>vectorBucketArn</code> và <code>indexArn</code>, nên CDK dựng index cosine trước rồi trỏ KB vào đó; chỉ riêng console thì không làm được.</li>
+<li><strong>Hai khoá metadata bị đánh dấu non-filterable</strong>, trong đó <code>AMAZON_BEDROCK_TEXT</code> giữ nguyên văn chunk và <code>AMAZON_BEDROCK_METADATA</code> giữ metadata hệ thống. Non-filterable có nghĩa là không lọc được theo chúng, nhưng vẫn đọc ra được khi truy vấn. Một index được phép có tối đa 10 khoá non-filterable, nên vẫn còn tám chỗ trống.</li>
+<li><strong>Nguyên văn chunk nằm trong metadata của vector.</strong> Bản thân S3 Vectors cho phép 40 KB metadata và 50 khoá mỗi vector, nhưng tài liệu Bedrock ghi một trần chặt hơn khi dùng chung: <em>"you can attach up to </em><em>1 KB of custom metadata</em><em> (including both filterable and non-filterable metadata) and </em><em>35 metadata keys per vector</em><em>"</em>. Nếu vượt trần thì <strong>ingestion job sẽ ném lỗi</strong> chứ không bỏ qua âm thầm. Mười hai khoá lọc ở <a href="01-kien-truc.md">01</a> §8.2 vẫn lọt, nhưng không dư nhiều.</li>
+<li><strong>Tên bucket và index do console tự đặt</strong>, và không sửa được ở màn hình này.</li>
 </ul>
-<p>Không đổi được sau khi index đã tạo: <code>dimension</code>, <code>distanceMetric</code>, <code>dataType</code>, và danh sách khoá non-filterable.</p>
+<p>Sau khi index đã tạo, các giá trị sau không đổi được nữa: <code>dimension</code>, <code>distanceMetric</code>, <code>dataType</code> và danh sách khoá non-filterable.</p>
 <p><img alt="Review trước khi tạo" src="anh/kbs3v-10-review-vector-store.png" /></p>
 <h3 id="b4b-lỗi-quyền-đầu-tiên-gặp-phải">B.4b Lỗi quyền đầu tiên gặp phải</h3>
-<p>Thử dựng thật ngày 24/09/2026 bằng một IAM user thường: hai lời gọi S3 Vectors đi qua, rồi dừng ở IAM.</p>
+<p>Trong lần thử dựng thật ngày 24/09/2026 bằng một IAM user thường, hai lời gọi S3 Vectors đi qua được, rồi quá trình dừng lại ở IAM.</p>
 <pre><code>AccessDeniedException: User: arn:aws:iam::&lt;account&gt;:user/&lt;iam-user&gt; is not authorized to
 perform: iam:CreateRole on resource:
 arn:aws:iam::&lt;account&gt;:role/service-role/AmazonBedrockExecutionRoleForKnowledgeBase_&lt;hậu tố&gt;
 because no identity-based policy allows the iam:CreateRole action
 </code></pre>
-<p>Console báo gọn lỏn <em>"Knowledge Base: … was failed to create"</em>, không nói vì sao — muốn biết phải mở tab Network của DevTools đọc phản hồi của <code>iam.amazonaws.com</code>.</p>
-<p>Hai hệ quả phải xử lý:</p>
+<p>Console chỉ báo gọn <em>"Knowledge Base: … was failed to create"</em> mà không nói lý do, nên để biết nguyên nhân thì phải mở tab Network của DevTools và đọc phản hồi của <code>iam.amazonaws.com</code>.</p>
+<p>Có hai hệ quả cần xử lý:</p>
 <ul>
-<li><strong>Vector bucket và index vẫn còn lại</strong> sau khi KB tạo hỏng. Console không dọn hộ. Phải vào console S3 → <em>Vector buckets</em> xoá tay, nếu không sẽ tích dần mỗi lần thử.</li>
-<li><strong>Chọn <em>Create and use a new service role</em> đòi người bấm có <code>iam:CreateRole</code></strong> trên tiền tố <code>role/service-role/AmazonBedrockExecutionRoleForKnowledgeBase_*</code>. Đây là quyền duy nhất đã kiểm chứng; console gọi <code>CreateServiceRole</code> kèm một policy template, và lời gọi tạo KB phía sau gần như chắc chắn còn cần <code>iam:PassRole</code> — <strong>chưa kiểm được</strong>, vì dừng ở lỗi đầu tiên. Không cấp được thì dựng sẵn role bằng CDK rồi chọn <em>Use an existing service role</em>.</li>
+<li><strong>Vector bucket và index vẫn còn lại</strong> sau khi KB tạo hỏng, và console không dọn chúng hộ. Vì vậy phải vào console S3 → <em>Vector buckets</em> để xoá tay, nếu không chúng sẽ tích dần sau mỗi lần thử.</li>
+<li><strong>Việc chọn <em>Create and use a new service role</em> đòi hỏi người bấm phải có <code>iam:CreateRole</code></strong> trên tiền tố <code>role/service-role/AmazonBedrockExecutionRoleForKnowledgeBase_*</code>. Đây là quyền duy nhất đã được kiểm chứng, bởi vì console gọi <code>CreateServiceRole</code> kèm một policy template, và lời gọi tạo KB phía sau gần như chắc chắn còn cần thêm <code>iam:PassRole</code>, nhưng điều này <strong>chưa kiểm được</strong> vì quá trình dừng ở lỗi đầu tiên. Nếu không cấp được các quyền này thì có thể dựng sẵn role bằng CDK rồi chọn <em>Use an existing service role</em>.</li>
 </ul>
-<p>Lời gọi <code>lambda:ListFunctions</code> ở bước 2 cũng bị từ chối, nhưng vô hại: nó chỉ để đổ danh sách vào ô <em>Select Lambda function</em>, mà ô đó để trống.</p>
+<p>Lời gọi <code>lambda:ListFunctions</code> ở bước 2 cũng bị từ chối, nhưng điều này vô hại, bởi vì nó chỉ để đổ danh sách vào ô <em>Select Lambda function</em>, mà ô đó vốn để trống.</p>
 <h3 id="b5-nạp-chunk-lên-hai-cách">B.5 Nạp chunk lên: hai cách</h3>
-<p>Sau khi KB có data source loại Custom, chunk được đẩy thẳng bằng <code>IngestKnowledgeBaseDocuments</code> — không có bước sync, không cần file nằm trên S3.</p>
-<p><strong>Cách 1 — nội dung nằm ngay trong lời gọi</strong>, kèm metadata inline:</p>
+<p>Sau khi KB đã có data source loại Custom, chunk được đẩy thẳng bằng <code>IngestKnowledgeBaseDocuments</code>, không có bước sync và không cần file nằm trên S3.</p>
+<p><strong>Cách 1: nội dung nằm ngay trong lời gọi</strong>, kèm metadata inline:</p>
 <pre><code class="language-json">{
   &quot;documents&quot;: [
     {
@@ -513,43 +600,43 @@ because no identity-based policy allows the iam:CreateRole action
   ]
 }
 </code></pre>
-<p><strong>Cách 2 — chunk nằm trên S3</strong>, <code>sourceType: "S3"</code>, metadata lấy từ file <code>.metadata.json</code> đi kèm (<code>type: "S3_LOCATION"</code>).</p>
-<p>Bốn ràng buộc của AWS phải nhớ:</p>
+<p><strong>Cách 2: chunk nằm trên S3</strong>, với <code>sourceType: "S3"</code> và metadata lấy từ file <code>.metadata.json</code> đi kèm (<code>type: "S3_LOCATION"</code>).</p>
+<p>Có bốn ràng buộc của AWS cần nhớ:</p>
 <ul>
-<li><strong>Nội dung inline thì metadata cũng phải inline.</strong> Trộn hai kiểu sẽ bị từ chối.</li>
-<li><strong>Tối đa 25 tài liệu một lời gọi</strong> qua API; qua console chỉ 10.</li>
-<li><strong>Trùng <code>id</code> là ghi đè</strong>, không báo trước. Đây vừa là cách cập nhật một chunk, vừa là cách mất dữ liệu nếu sinh <code>id</code> ẩu.</li>
-<li><strong>Đừng chạy <code>IngestKnowledgeBaseDocuments</code> và <code>StartIngestionJob</code> cùng lúc.</strong></li>
+<li><strong>Nếu nội dung ở dạng inline thì metadata cũng phải ở dạng inline.</strong> Việc trộn hai kiểu sẽ bị từ chối.</li>
+<li><strong>Mỗi lời gọi qua API nhận tối đa 25 tài liệu</strong>, còn qua console thì chỉ 10.</li>
+<li><strong>Trùng <code>id</code> sẽ dẫn đến ghi đè</strong> mà không báo trước. Đây vừa là cách cập nhật một chunk, vừa là nguyên nhân gây mất dữ liệu nếu sinh <code>id</code> một cách cẩu thả.</li>
+<li><strong>Không được chạy <code>IngestKnowledgeBaseDocuments</code> và <code>StartIngestionJob</code> cùng một lúc.</strong></li>
 </ul>
-<p>Với data source loại Custom thì không có <code>StartIngestionJob</code>: nạp xong là tài liệu thuộc cả data source lẫn KB.</p>
-<p>Nạp thử vài chunk qua console để xem hình dạng trước khi viết mã: vào KB → chọn data source → <strong>Documents</strong> → <strong>Add documents</strong> → <em>Add documents directly</em>.</p>
-<p>Sáu chunk demo dựng sẵn cho việc này nằm ở <a href="../cong-cu/demo-chunks/README.md"><code>cong-cu/demo-chunks/</code></a>: chạy <code>build-ingest-payload.py</code> là ra thân lời gọi <code>IngestKnowledgeBaseDocuments</code> và bộ file <code>.txt</code> kèm sidecar để kéo thả. Sáu chunk đó cố tình có một bản đã thay thế, một chunk khác <code>scope_key</code> và một tài liệu hướng dẫn phần mềm, để thấy ngay bộ lọc có chặn đúng không.</p>
+<p>Với data source loại Custom thì không có <code>StartIngestionJob</code>, bởi vì nạp xong là tài liệu đã thuộc cả data source lẫn KB.</p>
+<p>Có thể nạp thử vài chunk qua console để xem hình dạng trước khi viết mã, theo đường dẫn: vào KB → chọn data source → <strong>Documents</strong> → <strong>Add documents</strong> → <em>Add documents directly</em>.</p>
+<p>Sáu chunk demo dựng sẵn cho việc này nằm ở <a href="../cong-cu/demo-chunks/README.md"><code>cong-cu/demo-chunks/</code></a>; khi chạy <code>build-ingest-payload.py</code> sẽ ra thân lời gọi <code>IngestKnowledgeBaseDocuments</code> cùng bộ file <code>.txt</code> kèm sidecar để kéo thả. Sáu chunk đó cố tình chứa một bản đã thay thế, một chunk khác <code>scope_key</code> và một tài liệu hướng dẫn phần mềm, nhằm thấy ngay bộ lọc có chặn đúng hay không.</p>
 <hr />
 <h2 id="c--cổng-truy-cập-và-hạn-mức">C · Cổng truy cập và hạn mức</h2>
 <h3 id="c1-model-access--trang-này-đã-bị-gỡ">C.1 Model access — trang này đã bị gỡ</h3>
 <p><img alt="Trang Model access đã bị gỡ" src="anh/model-access-01.png" /></p>
-<p>Thao tác "vào Model access, tick model, Save" trong mọi hướng dẫn cũ <strong>không còn</strong>. AWS ghi trên chính trang đó: model serverless nay <strong>tự bật khi gọi lần đầu</strong> trong tài khoản.</p>
-<p>Ba điều còn lại đúng, và là thứ phải chuẩn bị:</p>
+<p>Thao tác "vào Model access, tick model, Save" trong mọi hướng dẫn cũ <strong>không còn nữa</strong>. AWS ghi ngay trên trang đó rằng model serverless nay <strong>tự bật khi được gọi lần đầu</strong> trong tài khoản.</p>
+<p>Có ba điều vẫn còn đúng và là những thứ cần chuẩn bị:</p>
 <ul>
 <li>Người dùng lần đầu gọi model Anthropic <strong>vẫn có thể phải nộp use case details</strong>.</li>
 <li>Model bán qua Marketplace cần một người <strong>có quyền Marketplace</strong> gọi một lần để bật cho cả tài khoản.</li>
-<li>Quản trị vẫn siết được bằng IAM policy và Service Control Policy.</li>
+<li>Việc quản trị vẫn có thể siết được bằng IAM policy và Service Control Policy.</li>
 </ul>
-<p>Hệ quả cho <a href="05-devops.md">05</a>: ba loại cổng ở đầu tài liệu đó vẫn đúng, nhưng <strong>cổng Marketplace đổi hình dạng</strong> — không còn là thao tác bật model trong console mà là một người có quyền Marketplace gọi model một lần. Hai cổng còn lại, biểu mẫu use case và hạn mức, giữ nguyên.</p>
+<p>Hệ quả cho <a href="05-devops.md">05</a> là: ba loại cổng ở đầu tài liệu đó vẫn đúng, nhưng <strong>cổng Marketplace đã đổi hình dạng</strong>, bởi vì nó không còn là thao tác bật model trong console mà là việc một người có quyền Marketplace gọi model một lần. Hai cổng còn lại, gồm biểu mẫu use case và hạn mức, thì vẫn giữ nguyên.</p>
 <h3 id="c2-service-quotas">C.2 Service Quotas</h3>
 <p><img alt="Quota Bedrock" src="anh/quota-01-bedrock.png" /></p>
 <p><code>https://eu-central-1.console.aws.amazon.com/servicequotas/home/services/bedrock/quotas?region=eu-central-1</code></p>
-<p>Lọc theo tên model ở ô <strong>Find</strong>, mở đúng dòng quota rồi <strong>Request increase</strong>. Nộp sớm: AWS duyệt 1–3 ngày làm việc, và quota mặc định của tài khoản mới có thể bằng 0.</p>
-<p>Quota của Sonnet 5 ở vùng này nằm dưới dạng <strong>cross-region inference</strong>: lọc <code>Sonnet 5</code> trả về <code>Cross-region model inference tokens per minute for Anthropic Claude Sonnet 5</code> và bản <code>Global cross-region...</code>. Xin tăng đúng dòng <strong>cross-region không phải Global</strong>, vì bản Global route ra ngoài EU.</p>
+<p>Việc tìm quota được thực hiện bằng cách lọc theo tên model ở ô <strong>Find</strong>, mở đúng dòng quota rồi bấm <strong>Request increase</strong>. Đơn xin tăng quota nên được nộp sớm, bởi vì AWS duyệt trong 1–3 ngày làm việc và quota mặc định của một tài khoản mới có thể bằng 0.</p>
+<p>Quota của Sonnet 5 ở vùng này nằm dưới dạng <strong>cross-region inference</strong>, và khi lọc <code>Sonnet 5</code> sẽ trả về <code>Cross-region model inference tokens per minute for Anthropic Claude Sonnet 5</code> cùng bản <code>Global cross-region...</code>. Đơn xin tăng cần nhắm đúng dòng <strong>cross-region chứ không phải bản Global</strong>, bởi vì bản Global route ra ngoài EU.</p>
 <hr />
 <h2 id="d--khoá-kho-và-sổ-ghi">D · Khoá, kho và sổ ghi</h2>
 <h3 id="d1-kms--khoá-customer-managed">D.1 KMS — khoá customer-managed</h3>
 <p><img alt="Danh sách khoá" src="anh/kms-01-danh-sach.png" /></p>
 <p><code>https://eu-central-1.console.aws.amazon.com/kms/home?region=eu-central-1#/kms/keys</code></p>
 <p><img alt="Bước 1 — cấu hình khoá" src="anh/kms-02-tao-khoa.png" /></p>
-<p>Key type <strong>Symmetric</strong>, Key usage <strong>Encrypt and decrypt</strong>. Đây là mặc định và cũng là thứ cần cho guardrail, log group, S3 và KB.</p>
+<p>Key type là <strong>Symmetric</strong> và Key usage là <strong>Encrypt and decrypt</strong>. Đây là giá trị mặc định và cũng chính là cấu hình cần cho guardrail, log group, S3 và KB.</p>
 <p><img alt="Bước 2 — alias" src="anh/kms-03-alias.png" /></p>
-<p>Một khoá dùng lại cho nhiều dịch vụ được, nhưng <strong>khoá mã hoá KB và khoá mã hoá bucket nguồn là hai vai trò khác nhau</strong> (<a href="05-devops.md">05</a> §4A): quyền của khoá KB nằm ở key policy cấp cho danh tính <strong>tạo KB</strong>, còn quyền đọc bucket SSE-KMS phải cấp <code>kms:Decrypt</code> cho <strong>service role</strong>. Hai chỗ này hay bị gộp làm một.</p>
+<p>Một khoá có thể được dùng lại cho nhiều dịch vụ, nhưng <strong>khoá mã hoá KB và khoá mã hoá bucket nguồn là hai vai trò khác nhau</strong> (<a href="05-devops.md">05</a> §4A). Quyền của khoá KB nằm ở key policy cấp cho danh tính <strong>tạo KB</strong>, còn quyền đọc bucket SSE-KMS phải cấp <code>kms:Decrypt</code> cho <strong>service role</strong>. Hai chỗ này thường bị gộp nhầm làm một.</p>
 <h3 id="d2-s3--bucket-nguồn">D.2 S3 — bucket nguồn</h3>
 <p><img alt="Danh sách bucket" src="anh/s3-01-danh-sach.png" /></p>
 <p><img alt="Tên bucket" src="anh/s3-02-ten-bucket.png" /></p>
@@ -558,7 +645,7 @@ because no identity-based policy allows the iam:CreateRole action
 <thead>
 <tr>
 <th>Ô</th>
-<th>Đặt gì</th>
+<th>Giá trị</th>
 </tr>
 </thead>
 <tbody>
@@ -568,88 +655,88 @@ because no identity-based policy allows the iam:CreateRole action
 </tr>
 <tr>
 <td><strong>Default encryption</strong></td>
-<td><strong>SSE-KMS</strong>, trỏ vào khoá vừa tạo ở D.1</td>
+<td><strong>SSE-KMS</strong>, trỏ vào khoá đã tạo ở D.1</td>
 </tr>
 <tr>
 <td><strong>Bucket Key</strong></td>
-<td>Enable — giảm số lời gọi KMS, giảm tiền</td>
+<td>Enable, giúp giảm số lời gọi KMS và giảm chi phí</td>
 </tr>
 <tr>
 <td><strong>Block Public Access</strong></td>
-<td>Giữ bật toàn bộ</td>
+<td>Được giữ bật toàn bộ</td>
 </tr>
 <tr>
 <td><strong>Bucket Versioning</strong></td>
-<td>Enable — chunk là dữ liệu dẫn xuất, tệp gốc là nguồn sự thật</td>
+<td>Enable, vì chunk là dữ liệu dẫn xuất còn tệp gốc mới là nguồn sự thật</td>
 </tr>
 </tbody>
 </table>
-<p>Bucket policy phải kèm điều kiện <code>aws:SourceAccount</code>; phần này không có ô trên giao diện tạo bucket, làm ở tab <strong>Permissions</strong> sau khi tạo.</p>
+<p>Bucket policy phải kèm điều kiện <code>aws:SourceAccount</code>; phần này không có ô riêng trên giao diện tạo bucket mà được làm ở tab <strong>Permissions</strong> sau khi tạo.</p>
 <h3 id="d3-cloudwatch-logs">D.3 CloudWatch Logs</h3>
 <p><img alt="Danh sách log group" src="anh/logs-01-danh-sach.png" /></p>
 <p><img alt="Tạo log group" src="anh/logs-02-tao-log-group.png" /></p>
-<p>Ba ô quyết định, và cả ba đều <strong>mặc định sai với dự án này</strong>:</p>
+<p>Có ba ô mang tính quyết định, và cả ba đều có <strong>giá trị mặc định sai với dự án này</strong>:</p>
 <table>
 <thead>
 <tr>
 <th>Ô</th>
 <th>Mặc định</th>
-<th>Đặt gì</th>
+<th>Giá trị</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Retention setting</strong></td>
 <td><code>Never expire</code></td>
-<td>Đặt hạn theo chính sách lưu trữ đã chốt — GDPR đòi tối thiểu hoá, giữ vô thời hạn là vi phạm</td>
+<td>Thời hạn được đặt theo chính sách lưu trữ đã chốt, bởi vì GDPR đòi tối thiểu hoá và việc giữ vô thời hạn là vi phạm</td>
 </tr>
 <tr>
 <td><strong>KMS key ARN</strong></td>
 <td>trống</td>
-<td>Khoá customer-managed. Che PII của Guardrails <strong>chỉ áp cho response API</strong>; bản gốc chưa che vẫn vào log nguyên văn</td>
+<td>Là khoá customer-managed, bởi vì việc che PII của Guardrails <strong>chỉ áp cho response API</strong> nên bản gốc chưa che vẫn vào log nguyên văn</td>
 </tr>
 <tr>
 <td><strong>Deletion protection</strong></td>
 <td>tắt</td>
-<td>Bật cho log group phục vụ tuân thủ</td>
+<td>Được bật cho các log group phục vụ tuân thủ</td>
 </tr>
 </tbody>
 </table>
-<p>Log group tên bắt đầu bằng <code>/aws/vendedlogs/</code> được tạo tự động khi cấu hình log delivery; các tên khác <strong>phải tạo trước</strong> rồi mới trỏ tới được.</p>
+<p>Log group có tên bắt đầu bằng <code>/aws/vendedlogs/</code> được tạo tự động khi cấu hình log delivery, còn các tên khác <strong>phải được tạo trước</strong> thì mới trỏ tới được.</p>
 <h3 id="d4-parameter-store--kill-switch">D.4 Parameter Store — kill switch</h3>
 <p><img alt="Tạo tham số" src="anh/ssm-01-tao-tham-so.png" /></p>
 <p><code>https://eu-central-1.console.aws.amazon.com/systems-manager/parameters?region=eu-central-1</code></p>
-<p>Dùng dấu <code>/</code> để phân cấp, ví dụ <code>/vf-assistant/kill-switch</code>. Type <code>String</code> cho cờ bật/tắt. Siết ai gạt được bằng IAM trên đúng đường dẫn tham số đó, không cấp <code>ssm:PutParameter</code> rộng.</p>
+<p>Dấu <code>/</code> được dùng để phân cấp, ví dụ <code>/vf-assistant/kill-switch</code>. Type là <code>String</code> cho một cờ bật/tắt. Việc siết ai được gạt cờ được thực hiện bằng IAM trên đúng đường dẫn tham số đó, và không cấp <code>ssm:PutParameter</code> một cách rộng rãi.</p>
 <h3 id="d5-cloudtrail--data-event">D.5 CloudTrail — data event</h3>
 <p><img alt="Bước 1 — tên trail" src="anh/ct-01-tao-trail.png" /></p>
 <p><img alt="Lưu trữ và mã hoá" src="anh/ct-02-luu-tru.png" /></p>
-<p><code>Log file SSE-KMS encryption</code> bật sẵn và <strong>đòi một alias KMS</strong>; không điền thì không sang bước sau được.</p>
+<p><code>Log file SSE-KMS encryption</code> được bật sẵn và <strong>đòi một alias KMS</strong>, nên nếu không điền thì không sang được bước sau.</p>
 <p><img alt="Chọn loại sự kiện" src="anh/ct-03-data-event.png" /></p>
 <p><img alt="Chọn resource type" src="anh/ct-04-resource-type.png" /></p>
-<p>Tick <strong>Data events</strong>, rồi thêm một <em>Data event type</em> cho mỗi loại tài nguyên cần truy vết. Ba loại có thật trong danh sách và là ba loại dự án cần:</p>
+<p>Ô <strong>Data events</strong> được tick, rồi thêm một <em>Data event type</em> cho mỗi loại tài nguyên cần truy vết. Có ba loại vừa có thật trong danh sách vừa là ba loại dự án cần đến:</p>
 <ul>
-<li><code>AWS::Bedrock::KnowledgeBase</code> — <code>Retrieve</code> là data event, <strong>mặc định không ghi</strong></li>
-<li><code>AWS::Bedrock::Guardrail</code></li>
-<li><code>AWS::BedrockAgentCore::Runtime</code> — truy ai đã gọi Harness</li>
+<li><code>AWS::Bedrock::KnowledgeBase</code>, trong đó <code>Retrieve</code> là một data event và <strong>mặc định không được ghi</strong>.</li>
+<li><code>AWS::Bedrock::Guardrail</code>, loại tài nguyên cho các lời gọi guardrail.</li>
+<li><code>AWS::BedrockAgentCore::Runtime</code>, dùng để truy ai đã gọi Harness.</li>
 </ul>
-<p>Không bật thì không truy được ai đã truy vấn cái gì, và khi cần thì đã muộn.</p>
+<p>Nếu không bật thì không thể truy được ai đã truy vấn cái gì, và đến khi cần thì đã muộn.</p>
 <h3 id="d6-bedrock--model-invocation-logging">D.6 Bedrock — Model invocation logging</h3>
 <p><img alt="Bedrock model invocation logging" src="anh/bedrock-logging-01-settings.png" /></p>
 <p><code>https://eu-central-1.console.aws.amazon.com/bedrock/home?region=eu-central-1#/settings</code></p>
-<p>Bật <strong>Model invocation logging</strong> rồi chọn đích <strong>CloudWatch Logs</strong> (và/hoặc S3).</p>
+<p>Bước này bật <strong>Model invocation logging</strong> rồi chọn đích là <strong>CloudWatch Logs</strong> (và/hoặc S3).</p>
 <table>
 <thead>
 <tr>
 <th>Ô</th>
-<th>Đặt gì</th>
+<th>Giá trị</th>
 <th>Vì sao</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Model invocation logging</strong></td>
-<td>Bật, đích CloudWatch Logs</td>
-<td>Không bật thì không có log lời gọi mô hình để điều tra</td>
+<td>Được bật, với đích là CloudWatch Logs</td>
+<td>Nếu không bật thì không có log lời gọi mô hình để điều tra</td>
 </tr>
 <tr>
 <td>Phạm vi ghi</td>
@@ -658,74 +745,74 @@ because no identity-based policy allows the iam:CreateRole action
 </tr>
 <tr>
 <td>Log group</td>
-<td>Trỏ vào log group đã mã hoá KMS + retention (D.3)</td>
+<td>Là một log group đã mã hoá KMS và đã đặt retention (D.3)</td>
 <td>GDPR đòi tối thiểu hoá và mã hoá</td>
 </tr>
 </tbody>
 </table>
-<p>Thiết lập theo <strong>cả tài khoản và region</strong>; <strong>không</strong> áp cho Knowledge Bases (bật CloudWatch cho từng KB riêng). Che PII của Guardrails chỉ áp cho response API — log gốc vẫn nguyên văn.</p>
+<p>Thiết lập này áp theo <strong>cả tài khoản và region</strong>, và <strong>không</strong> áp cho Knowledge Bases, bởi vì CloudWatch được bật riêng cho từng KB. Việc che PII của Guardrails chỉ áp cho response API, nên log gốc vẫn ở dạng nguyên văn.</p>
 <hr />
 <h2 id="e--agentcore">E · AgentCore</h2>
-<p><code>https://eu-central-1.console.aws.amazon.com/bedrock-agentcore/home?region=eu-central-1</code> — thanh bên có Harness, Runtime, Gateways, Memory, Policy, Identity, Payments.</p>
-<p>Hai đường tạo Harness: <strong>Quick create</strong> và <strong>Advanced create</strong>. Dùng Advanced, vì sáu giá trị phải sửa nằm ở đó.</p>
+<p><code>https://eu-central-1.console.aws.amazon.com/bedrock-agentcore/home?region=eu-central-1</code>: thanh bên của trang này gồm Harness, Runtime, Gateways, Memory, Policy, Identity và Payments.</p>
+<p>Có hai đường tạo Harness là <strong>Quick create</strong> và <strong>Advanced create</strong>. Đường được dùng là Advanced, bởi vì sáu giá trị cần sửa đều nằm ở đó.</p>
 <p><img alt="Tạo Harness" src="anh/agentcore-03-tao-harness.png" /></p>
-<p>Hai thứ nhìn thấy ngay trên ảnh, đúng như <a href="05-devops.md">05</a> §4B cảnh báo:</p>
+<p>Có hai thứ nhìn thấy ngay trên ảnh, đúng như <a href="05-devops.md">05</a> §4B đã cảnh báo:</p>
 <ul>
-<li><strong>Memory hiện <code>(1)</code></strong> — service gắn sẵn một memory. Thiết kế yêu cầu <code>disabled</code>, nếu không sẽ có hai kho hội thoại song song, tốn phí và phát sinh rủi ro dữ liệu (Q3).</li>
-<li><strong>Tools <code>(0)</code></strong> trên giao diện, nhưng mặc định của API bật sẵn <code>shell</code> và <code>file_operations</code>. Khai <code>allowedTools</code> loại cả hai.</li>
+<li><strong>Memory hiện <code>(1)</code></strong>, tức là service đã gắn sẵn một memory. Thiết kế yêu cầu đặt <code>disabled</code>, bởi vì nếu không sẽ có hai kho hội thoại song song, vừa tốn phí vừa phát sinh rủi ro dữ liệu (Q3).</li>
+<li><strong>Tools hiện <code>(0)</code></strong> trên giao diện, nhưng mặc định của API lại bật sẵn <code>shell</code> và <code>file_operations</code>. Khai báo <code>allowedTools</code> sẽ loại cả hai công cụ này.</li>
 </ul>
 <p><img alt="Model mặc định" src="anh/agentcore-04-model.png" /></p>
-<p>Model mặc định là <strong><code>global.anthropic.claude-sonnet-4-6</code></strong> — đúng nguyên văn giá trị mà <a href="05-devops.md">05</a> cảnh báo. Tiền tố <code>global.*</code> route ra ngoài EU, vi phạm yêu cầu cư trú dữ liệu (Q1). Đổi sang bản <code>eu.*</code>.</p>
+<p>Model mặc định là <strong><code>global.anthropic.claude-sonnet-4-6</code></strong>, đúng nguyên văn giá trị mà <a href="05-devops.md">05</a> đã cảnh báo. Tiền tố <code>global.*</code> route ra ngoài EU và vi phạm yêu cầu cư trú dữ liệu (Q1), nên giá trị này cần được đổi sang bản <code>eu.*</code>.</p>
 <h3 id="e1-advanced-configurations--số-vòng-và-thời-gian-chờ">E.1 Advanced configurations — số vòng và thời gian chờ</h3>
-<p>Mở <strong>Advanced configurations</strong> → <strong>Invocation limits</strong> và <strong>Allowed tools</strong>.</p>
+<p>Các giá trị này nằm ở <strong>Advanced configurations</strong> → <strong>Invocation limits</strong> và <strong>Allowed tools</strong>.</p>
 <p><img alt="Giới hạn thực thi" src="anh/agentcore-05-advanced.png" /></p>
-<p>Hai con số mặc định trên màn hình đúng bằng hai con số <a href="05-devops.md">05</a> §4B cảnh báo:</p>
+<p>Hai con số mặc định trên màn hình đúng bằng hai con số mà <a href="05-devops.md">05</a> §4B đã cảnh báo:</p>
 <table>
 <thead>
 <tr>
 <th>Ô</th>
 <th>Mặc định</th>
-<th>Đặt gì</th>
+<th>Giá trị</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Max Iterations</strong></td>
 <td><strong>75</strong></td>
-<td>5 cho lượt thường, 7 cho <code>optimize</code></td>
+<td>5 cho lượt thường và 7 cho <code>optimize</code></td>
 </tr>
 <tr>
 <td><strong>Timeout duration</strong></td>
 <td><strong>60 phút</strong> (trần 480)</td>
-<td>60 giây thường, 90 giây cho <code>optimize</code></td>
+<td>60 giây cho lượt thường và 90 giây cho <code>optimize</code></td>
 </tr>
 <tr>
 <td><strong>Allowed tools</strong></td>
 <td>—</td>
-<td>Loại <code>shell</code> và <code>file_operations</code></td>
+<td><code>shell</code> và <code>file_operations</code> bị loại bỏ</td>
 </tr>
 </tbody>
 </table>
 <h3 id="e2-inbound-auth--danh-tính-gọi-vào">E.2 Inbound Auth — danh tính gọi vào</h3>
 <p><img alt="Inbound Auth của Harness" src="anh/agentcore-06-inbound-auth.png" /></p>
-<p>Chọn <strong>Use JSON Web Tokens (JWT)</strong> → <strong>Use existing Identity provider configurations</strong> (không dùng Quick create Cognito), rồi điền Discovery URL của Keycloak.</p>
-<p>Phần <strong>JWT Authorization Configuration</strong> có bốn ô, mặc định chỉ <strong>Allowed clients</strong> được tick:</p>
+<p>Cấu hình cần chọn <strong>Use JSON Web Tokens (JWT)</strong> → <strong>Use existing Identity provider configurations</strong> (không dùng Quick create Cognito), rồi điền Discovery URL của Keycloak.</p>
+<p>Phần <strong>JWT Authorization Configuration</strong> có bốn ô, và theo mặc định chỉ <strong>Allowed clients</strong> được tick:</p>
 <ul>
-<li>Tick và điền <strong>cả Allowed audiences lẫn Allowed clients</strong>. AWS chỉ đòi ít nhất một ràng buộc, nhưng đặt một cái thì token hợp lệ của client khác trên cùng Keycloak vẫn gọi được.</li>
-<li><code>Allowed scopes</code> và <code>Custom claims</code> là hai ràng buộc bổ sung, chưa chốt trong thiết kế.</li>
+<li>Cả <strong>Allowed audiences lẫn Allowed clients</strong> đều cần được tick và điền. AWS chỉ đòi ít nhất một ràng buộc, nhưng nếu chỉ đặt một thì token hợp lệ của một client khác trên cùng Keycloak vẫn gọi được.</li>
+<li><code>Allowed scopes</code> và <code>Custom claims</code> là hai ràng buộc bổ sung và hiện chưa chốt trong thiết kế.</li>
 </ul>
 <h3 id="e3-gateway">E.3 Gateway</h3>
 <p><img alt="Tạo Gateway" src="anh/agentcore-07-gateway.png" /></p>
-<p>Inbound Auth type có bốn lựa chọn. <strong>Không bao giờ chọn <code>No authorization</code></strong> — gateway thành công khai, không kiểm soát truy cập. <code>Use IAM permissions</code> là SigV4: xác thực được nhưng <strong>không mang danh tính người dùng xuống Gateway</strong>, nên Cedar không có gì để xét.</p>
-<p>Trang tạo Gateway còn có <strong>Policy - optional</strong> (nơi gắn Cedar) và <strong>KMS key - optional</strong>. DevOps <strong>không tạo được Gateway target</strong> nếu Backend chưa phát hành schema OpenAPI của facade — đây là điểm đồng bộ cứng giữa hai đội.</p>
-<p>Keycloak token exchange (V-A6) không có trang console AWS: làm bên Keycloak.</p>
-<p><strong>Cấu hình Harness phải là mã trong repo</strong>, kèm test tự động đọc lại sau mỗi lần triển khai — console chỉ dùng để nhìn cho hiểu, không phải nơi giữ cấu hình production.</p>
+<p>Inbound Auth type có bốn lựa chọn. Tuỳ chọn <strong><code>No authorization</code> tuyệt đối không được sử dụng</strong>, bởi vì khi đó gateway sẽ thành công khai và không kiểm soát truy cập. Tuỳ chọn <code>Use IAM permissions</code> là SigV4, xác thực được nhưng <strong>không mang danh tính người dùng xuống Gateway</strong>, nên Cedar không có gì để xét.</p>
+<p>Trang tạo Gateway còn có <strong>Policy - optional</strong> (nơi gắn Cedar) và <strong>KMS key - optional</strong>. DevOps <strong>không tạo được Gateway target</strong> nếu Backend chưa phát hành schema OpenAPI của facade, và đây là điểm đồng bộ cứng giữa hai đội.</p>
+<p>Keycloak token exchange (V-A6) không có trang trên console AWS mà được làm bên Keycloak.</p>
+<p><strong>Cấu hình Harness phải là mã trong repo</strong>, kèm test tự động đọc lại sau mỗi lần triển khai; console chỉ dùng để xem cho hiểu chứ không phải nơi giữ cấu hình production.</p>
 <hr />
 <h2 id="f--mạng-container-mạng-biên">F · Mạng, container, mạng biên</h2>
 <h3 id="f1-vpc-endpoint">F.1 VPC endpoint</h3>
 <p><img alt="Danh sách endpoint" src="anh/vpce-01-danh-sach.png" /></p>
 <p><img alt="Tạo endpoint" src="anh/vpce-02-tao.png" /></p>
-<p>Lặp lại năm lần, <strong>thiếu một cái là phiên Harness không khởi động</strong> vì image-pull timeout:</p>
+<p>Thao tác này được lặp lại năm lần, và <strong>nếu thiếu một cái thì phiên Harness không khởi động</strong> vì image-pull timeout:</p>
 <table>
 <thead>
 <tr>
@@ -756,42 +843,42 @@ because no identity-based policy allows the iam:CreateRole action
 </tr>
 </tbody>
 </table>
-<p><code>bedrock-agent-runtime</code> là cái dễ sót nhất: mọi tài liệu đều chỉ nhắc <code>bedrock-runtime</code>, nhưng <code>Retrieve</code> chạy trên endpoint kia.</p>
+<p><code>bedrock-agent-runtime</code> là cái dễ sót nhất, bởi vì mọi tài liệu đều chỉ nhắc <code>bedrock-runtime</code>, trong khi <code>Retrieve</code> lại chạy trên endpoint kia.</p>
 <h3 id="f2-ecr">F.2 ECR</h3>
 <p><img alt="ECR" src="anh/ecr-01.png" /></p>
-<p>Console ECR đã tách <strong>Private registry</strong> và <strong>Public registry</strong> thành hai mục riêng. Repo của dự án nằm ở Private. Harness ở chế độ VPC kéo image từ repo ECR <strong>riêng</strong> của AWS (<code>harness-&lt;region&gt;</code>) qua endpoint, không qua ECR Public và không cần NAT gateway.</p>
+<p>Console ECR đã tách <strong>Private registry</strong> và <strong>Public registry</strong> thành hai mục riêng, và repo của dự án nằm ở Private. Ở chế độ VPC, Harness kéo image từ repo ECR <strong>riêng</strong> của AWS (<code>harness-&lt;region&gt;</code>) qua endpoint chứ không qua ECR Public, và cũng không cần NAT gateway.</p>
 <h3 id="f3-ecs">F.3 ECS</h3>
 <p><img alt="ECS" src="anh/ecs-01.png" /></p>
-<p>Nơi chạy <code>Assistant.Api</code> và Worker trên Fargate — mặc định đề xuất ở <a href="09-trien-khai.md">09</a> §8, còn chờ Q4 chốt.</p>
+<p>Đây là nơi chạy <code>Assistant.Api</code> và Worker trên Fargate; đây là mặc định đề xuất ở <a href="09-trien-khai.md">09</a> §8 và còn chờ Q4 chốt.</p>
 <h3 id="f4-alb--cho-sse-đi-qua">F.4 ALB — cho SSE đi qua</h3>
 <p><img alt="Load balancer" src="anh/alb-01.png" /></p>
-<p>Với ALB đã có: chọn nó → tab <strong>Attributes</strong> → <strong>Edit</strong> → <strong>Idle timeout</strong> đặt <strong>≥ 120 giây</strong>. Lượt <code>optimize</code> có trần 90 giây; timeout 60 giây sẽ cắt ngang và frontend nhận luồng đứt không có sự kiện <code>done</code>.</p>
+<p>Với một ALB đã có sẵn, đường cấu hình là: chọn nó → tab <strong>Attributes</strong> → <strong>Edit</strong> → <strong>Idle timeout</strong> được đặt ở mức <strong>≥ 120 giây</strong>. Lượt <code>optimize</code> có trần 90 giây, nên nếu timeout để ở 60 giây thì nó sẽ cắt ngang và frontend nhận một luồng bị đứt, không có sự kiện <code>done</code>.</p>
 <h3 id="f5-cloudfront">F.5 CloudFront</h3>
 <p><img alt="CloudFront" src="anh/cf-01.png" /></p>
-<p>CloudFront là dịch vụ toàn cục, link tự chuyển về <code>us-east-1</code> — đúng, không phải nhầm vùng.</p>
-<p>Với phân phối đã có: mở nó → tab <strong>Behaviors</strong> → thêm behavior cho <code>/v1/chat</code> với cache policy <strong>CachingDisabled</strong>. Bật cache trên đường này là SSE bị gom, chữ không hiện dần và người dùng nhìn màn hình trắng.</p>
+<p>CloudFront là dịch vụ toàn cục, nên link tự chuyển về <code>us-east-1</code>; đây là hành vi đúng chứ không phải nhầm vùng.</p>
+<p>Với một phân phối đã có sẵn, đường cấu hình là: mở nó → tab <strong>Behaviors</strong> → thêm một behavior cho <code>/v1/chat</code> với cache policy <strong>CachingDisabled</strong>. Nếu bật cache trên đường này thì SSE sẽ bị gom lại, chữ không hiện dần và người dùng chỉ nhìn thấy màn hình trắng.</p>
 <hr />
 <h2 id="g--chi-phí">G · Chi phí</h2>
 <p><img alt="Budgets" src="anh/budget-01.png" /></p>
-<p>Budgets và Cost Anomaly Detection là dịch vụ toàn cục; URL vùng sẽ tự chuyển về <code>us-east-1</code>.</p>
-<p><strong>Dựng trước khi tăng lưu lượng, không phải sau.</strong> Không có hai thứ này thì không có phanh chi phí.</p>
+<p>Budgets và Cost Anomaly Detection là dịch vụ toàn cục, nên URL vùng sẽ tự chuyển về <code>us-east-1</code>.</p>
+<p><strong>Hai thứ này cần được dựng trước khi tăng lưu lượng chứ không phải sau.</strong> Nếu không có chúng thì hệ thống không có phanh chi phí.</p>
 <h3 id="g1-cost-explorer--đã-bật-đang-chờ-dữ-liệu">G.1 Cost Explorer — đã bật, đang chờ dữ liệu</h3>
 <p><img alt="Cost Explorer vừa bật" src="anh/ce-01-bat.png" /></p>
-<p>Mở Cost Explorer lần đầu <strong>chính là thao tác bật</strong> nó cho cả tài khoản; không có nút "Enable" riêng. Ngay sau khi bật, console chuyển sang mã <code>_CE_Not_Ready_</code> và gọi <code>ce.us-east-1.amazonaws.com</code> trả về 400: AWS đang dựng dữ liệu lịch sử, mất tới <strong>24 giờ</strong>. Trong thời gian đó cả Cost Explorer lẫn Cost Anomaly Detection đều chưa xem được, vì Anomaly Detection đọc dữ liệu của Cost Explorer.</p>
+<p>Việc mở Cost Explorer lần đầu <strong>chính là thao tác bật</strong> nó cho cả tài khoản, và không có nút "Enable" riêng. Ngay sau khi bật, console chuyển sang mã <code>_CE_Not_Ready_</code> và lời gọi <code>ce.us-east-1.amazonaws.com</code> trả về 400, bởi vì AWS đang dựng dữ liệu lịch sử, quá trình này mất tới <strong>24 giờ</strong>. Trong thời gian đó, cả Cost Explorer lẫn Cost Anomaly Detection đều chưa xem được, vì Anomaly Detection đọc dữ liệu của Cost Explorer.</p>
 <h3 id="g2-cost-anomaly-detection--còn-một-việc-phải-làm">G.2 Cost Anomaly Detection — còn một việc phải làm</h3>
-<p>Sau khi Cost Explorer sẵn sàng, vào <strong>Cost Anomaly Detection</strong>, kiểm xem AWS đã tự tạo monitor mặc định chưa rồi mới tạo thêm. Một monitor chỉ hữu ích khi có <strong>alert subscription</strong>, và subscription cần địa chỉ người nhận — chưa chốt, phải hỏi chủ tài khoản trước khi tạo.</p>
+<p>Sau khi Cost Explorer sẵn sàng, ở phần <strong>Cost Anomaly Detection</strong> cần kiểm xem AWS đã tự tạo monitor mặc định chưa rồi mới tạo thêm. Một monitor chỉ hữu ích khi có <strong>alert subscription</strong>, và subscription lại cần địa chỉ người nhận; địa chỉ này hiện chưa chốt nên phải hỏi chủ tài khoản trước khi tạo.</p>
 <h3 id="g3-kích-hoạt-cost-allocation-tags">G.3 Kích hoạt cost allocation tags</h3>
 <p><img alt="Kích hoạt cost allocation tags" src="anh/costtag-01-activate.png" /></p>
 <p><code>https://us-east-1.console.aws.amazon.com/costmanagement/home#/tags</code> (Billing là dịch vụ toàn cục, URL tự về <code>us-east-1</code>)</p>
-<p>Sau khi tạo application inference profile và gắn tag <code>CostCenter</code>/<code>Project</code> bằng CLI, hai tag đó xuất hiện trong danh sách <strong>User-defined cost allocation tags</strong>. Tick chúng rồi bấm <strong>Activate</strong>.</p>
+<p>Sau khi tạo application inference profile và gắn tag <code>CostCenter</code>/<code>Project</code> bằng CLI, hai tag đó xuất hiện trong danh sách <strong>User-defined cost allocation tags</strong>. Hai tag này cần được tick rồi bấm <strong>Activate</strong>.</p>
 <ul>
-<li>Tag <strong>không hồi tố</strong>: chỉ chi phí phát sinh <strong>sau</strong> khi kích hoạt mới được gắn.</li>
-<li>Chờ <strong>~24 giờ</strong> tag mới hiện trong Cost Explorer.</li>
-<li>Tạo inference profile là <strong>[CLI/API]</strong>, không làm được trên Console — xem <a href="05-devops.md">05</a> §4.</li>
+<li>Tag <strong>không có hiệu lực hồi tố</strong>, bởi vì chỉ những chi phí phát sinh <strong>sau</strong> khi kích hoạt mới được gắn tag.</li>
+<li>Cần chờ khoảng <strong>~24 giờ</strong> thì tag mới hiện trong Cost Explorer.</li>
+<li>Việc tạo inference profile là thao tác <strong>[CLI/API]</strong> và không làm được trên Console, chi tiết ở <a href="05-devops.md">05</a> §4.</li>
 </ul>
 <hr />
 <h2 id="h--iam--role-và-policy-least-privilege">H · IAM — role và policy least-privilege</h2>
-<p>Bốn role tách biệt: <code>assistant-runtime</code> (Assistant.Api), <code>assistant-ingest</code> (Worker), service role của KB, và execution role của Harness. Giá trị policy đầy đủ ở <a href="05-devops.md">05</a> §2A.7 và <a href="15-chi-tiet-devops.md">15</a>.</p>
+<p>Có bốn role tách biệt, gồm <code>assistant-runtime</code> (Assistant.Api), <code>assistant-ingest</code> (Worker), service role của KB và execution role của Harness. Giá trị policy đầy đủ nằm ở <a href="05-devops.md">05</a> §2A.7 và <a href="15-chi-tiet-devops.md">15</a>.</p>
 <p><img alt="Danh sách role IAM" src="anh/iam-01-danh-sach.png" /></p>
 <h3 id="h1-chọn-loại-thực-thể-tin-cậy">H.1 Chọn loại thực thể tin cậy</h3>
 <p><img alt="Chọn trusted entity" src="anh/iam-02-trusted-entity.png" /></p>
@@ -808,17 +895,17 @@ because no identity-based policy allows the iam:CreateRole action
 <tr>
 <td><code>assistant-runtime</code>, <code>assistant-ingest</code></td>
 <td><strong>AWS service</strong> → Use case nơi chạy (ECS Task)</td>
-<td>Role gắn vào task chạy ứng dụng</td>
+<td>Đây là role được gắn vào task chạy ứng dụng</td>
 </tr>
 <tr>
 <td>Service role KB</td>
 <td><strong>Custom trust policy</strong>, trust <code>bedrock.amazonaws.com</code></td>
-<td>Tự dán trust để thêm điều kiện chống confused-deputy</td>
+<td>Trust được tự dán để thêm điều kiện chống confused-deputy</td>
 </tr>
 <tr>
 <td>Execution role Harness</td>
 <td><strong>Custom trust policy</strong>, trust <code>bedrock-agentcore.amazonaws.com</code></td>
-<td>Cần thêm <code>iam:PassRole</code> khi <code>CreateHarness</code></td>
+<td>Cần thêm <code>iam:PassRole</code> khi gọi <code>CreateHarness</code></td>
 </tr>
 </tbody>
 </table>
@@ -834,26 +921,26 @@ because no identity-based policy allows the iam:CreateRole action
 </thead>
 <tbody>
 <tr>
-<td>Liệt kê <strong>ARN từng model</strong> (Sonnet 5, Haiku 4.5, Sonnet 4.6)</td>
-<td>Không dùng <code>bedrock:*</code> / <code>AmazonBedrockFullAccess</code></td>
+<td>Chỉ cho phép <strong>ARN của từng model</strong> (Sonnet 5, Haiku 4.5, Sonnet 4.6)</td>
+<td>Để không phải dùng <code>bedrock:*</code> hay <code>AmazonBedrockFullAccess</code></td>
 </tr>
 <tr>
-<td><strong>Deny khi thiếu <code>bedrock:GuardrailIdentifier</code></strong>, chỉ áp ARN model chat</td>
-<td>Lập trình viên không bỏ được guardrail; không áp cho embedding</td>
+<td><strong>Deny khi thiếu <code>bedrock:GuardrailIdentifier</code></strong>, chỉ áp cho ARN model chat</td>
+<td>Nhờ đó lập trình viên không bỏ được guardrail, và điều kiện này không áp cho embedding</td>
 </tr>
 <tr>
-<td><code>bedrock:Rerank</code> để statement <code>Resource: "*"</code> riêng</td>
+<td><code>bedrock:Rerank</code> được đặt ở một statement <code>Resource: "*"</code> riêng</td>
 <td>Rerank không nhận ARN cụ thể</td>
 </tr>
 <tr>
-<td><code>assistant-ingest</code>: chỉ đọc/ghi S3 nguồn, <strong>không</strong> Rerank/Guardrails</td>
+<td><code>assistant-ingest</code> chỉ đọc/ghi S3 nguồn và <strong>không</strong> có Rerank hay Guardrails</td>
 <td>Worker không gọi model chat</td>
 </tr>
 </tbody>
 </table>
 <h3 id="h3-trust-policy-chống-confused-deputy">H.3 Trust policy chống confused-deputy</h3>
 <p><img alt="Custom trust policy" src="anh/iam-04-trust-policy.png" /></p>
-<p>Với role của KB và Harness, dán trust policy tự viết kèm điều kiện:</p>
+<p>Với role của KB và Harness, trust policy tự viết được dán vào kèm các điều kiện sau:</p>
 <table>
 <thead>
 <tr>
@@ -866,25 +953,25 @@ because no identity-based policy allows the iam:CreateRole action
 <tr>
 <td><code>aws:SourceAccount</code> + <code>aws:SourceArn</code></td>
 <td>KB (<code>knowledge-base/*</code>, siết về KB ID sau khi tạo), Harness (<code>harness/*</code>)</td>
-<td>Dịch vụ bị bên khác mượn để đóng vai role</td>
+<td>Ngăn dịch vụ bị bên khác mượn để đóng vai role</td>
 </tr>
 <tr>
 <td><code>aws:ResourceAccount</code></td>
 <td>S3 của service role KB</td>
-<td>Đọc nhầm bucket trùng tên ở tài khoản khác</td>
+<td>Ngăn đọc nhầm bucket trùng tên ở một tài khoản khác</td>
 </tr>
 <tr>
 <td><code>kms:ViaService</code></td>
 <td>Giải mã bucket nguồn SSE-KMS</td>
-<td>Chỉ dùng khoá qua đúng dịch vụ S3</td>
+<td>Đảm bảo chỉ dùng khoá qua đúng dịch vụ S3</td>
 </tr>
 </tbody>
 </table>
-<p><code>iam:PassRole</code> cần cho <code>CreateHarness</code> — thiếu là lỗi <code>AccessDenied</code> phổ biến khi tạo Harness. IAM có độ trễ lan truyền: lỗi "unable to assume role" ngay sau khi tạo role thì đợi ~10 giây rồi thử lại.</p>
+<p><code>iam:PassRole</code> là quyền cần cho <code>CreateHarness</code>, và nếu thiếu thì sẽ gặp lỗi <code>AccessDenied</code> phổ biến khi tạo Harness. IAM có độ trễ lan truyền, nên nếu gặp lỗi "unable to assume role" ngay sau khi tạo role thì cần đợi khoảng ~10 giây rồi thử lại.</p>
 <hr />
 <h2 id="i--cơ-sở-dữ-liệu--rdsaurora-postgresql">I · Cơ sở dữ liệu — RDS/Aurora PostgreSQL</h2>
 <blockquote>
-<p><strong>Ghi chú AD-17:</strong> không còn cần <code>pgvector</code> (vector store nằm ở KB), nên bỏ ràng buộc phiên bản vốn sinh ra vì pgvector. Extension thật sự cần là <strong><code>fuzzystrmatch</code></strong> (cho <code>levenshtein()</code> gợi ý mã điều khoản, AD-29). <strong>Không</strong> dùng Aurora DSQL vì không hỗ trợ extension.</p>
+<p><strong>Ghi chú AD-17:</strong> dự án không còn cần <code>pgvector</code> vì vector store đã nằm ở KB, nên ràng buộc phiên bản vốn sinh ra vì pgvector được bỏ đi. Extension thật sự cần đến là <strong><code>fuzzystrmatch</code></strong> (dùng cho <code>levenshtein()</code> để gợi ý mã điều khoản, AD-29). Aurora DSQL <strong>không</strong> được dùng vì nó không hỗ trợ extension.</p>
 </blockquote>
 <h3 id="i1-engine-và-template">I.1 Engine và template</h3>
 <p><img alt="Chọn engine PostgreSQL" src="anh/rds-01-engine.png" /></p>
@@ -893,7 +980,7 @@ because no identity-based policy allows the iam:CreateRole action
 <thead>
 <tr>
 <th>Ô</th>
-<th>Đặt gì</th>
+<th>Giá trị</th>
 </tr>
 </thead>
 <tbody>
@@ -917,7 +1004,7 @@ because no identity-based policy allows the iam:CreateRole action
 <thead>
 <tr>
 <th>Ô</th>
-<th>Đặt gì</th>
+<th>Giá trị</th>
 <th>Vì sao</th>
 </tr>
 </thead>
@@ -925,25 +1012,25 @@ because no identity-based policy allows the iam:CreateRole action
 <tr>
 <td><strong>Public access</strong></td>
 <td><strong>No</strong></td>
-<td>Database không phơi ra internet</td>
+<td>Để database không phơi ra internet</td>
 </tr>
 <tr>
 <td><strong>VPC / Security group</strong></td>
-<td>Trong VPC; security group chỉ mở cổng 5432 từ SG của Assistant.Api/Worker/facade</td>
-<td>Không mở <code>0.0.0.0/0</code></td>
+<td>Nằm trong VPC, với security group chỉ mở cổng 5432 từ SG của Assistant.Api/Worker/facade</td>
+<td>Để không mở <code>0.0.0.0/0</code></td>
 </tr>
 <tr>
 <td>(Tuỳ) <strong>RDS Proxy</strong></td>
-<td>Cân nhắc khi chạy nhiều instance</td>
-<td>Pool kết nối</td>
+<td>Được cân nhắc khi chạy nhiều instance</td>
+<td>Giúp pool kết nối</td>
 </tr>
 </tbody>
 </table>
 <h3 id="i3-encryption-at-rest">I.3 Encryption at-rest</h3>
 <p><img alt="Encryption KMS" src="anh/rds-03-encryption.png" /></p>
-<p>Bật <strong>Enable encryption</strong> → chọn <strong>AWS KMS key</strong> = khoá customer-managed của công ty (§D.1). <strong>Không đổi được khoá sau khi tạo database.</strong></p>
+<p>Cấu hình mã hoá gồm: bật <strong>Enable encryption</strong> → chọn <strong>AWS KMS key</strong> là khoá customer-managed của công ty (§D.1). <strong>Khoá này không đổi được sau khi đã tạo database.</strong></p>
 <h3 id="i4-row-level-security-và-extension--sql-không-có-trên-console">I.4 Row-Level Security và extension — [SQL], không có trên Console</h3>
-<p>RLS và extension <strong>không cấu hình được trên Console</strong>, chỉ bằng SQL sau khi kết nối:</p>
+<p>RLS và extension <strong>không cấu hình được trên Console</strong> mà chỉ làm được bằng SQL sau khi đã kết nối:</p>
 <pre><code class="language-sql">CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
 
 -- App kết nối bằng role KHÔNG phải owner và KHÔNG có BYPASSRLS
@@ -952,7 +1039,7 @@ ALTER TABLE &quot;case&quot; FORCE ROW LEVEL SECURITY;
 CREATE POLICY case_org_isolation ON &quot;case&quot;
   USING (org_id = current_setting('app.current_org', true));
 </code></pre>
-<p><code>org_id</code> đặt vào session phải lấy từ thuộc tính đã xác thực (Payment API), không từ giá trị client gửi lên. Ràng buộc: role ứng dụng không được là owner của bảng và không có <code>BYPASSRLS</code>, nếu không RLS bị bỏ qua.</p>
+<p>Giá trị <code>org_id</code> đặt vào session phải được lấy từ thuộc tính đã xác thực (Payment API) chứ không lấy từ giá trị mà client gửi lên. Một ràng buộc quan trọng là role ứng dụng không được là owner của bảng và không được có <code>BYPASSRLS</code>, bởi vì nếu không thì RLS sẽ bị bỏ qua.</p>
 <hr />
 <h2 id="nguồn">Nguồn</h2>
 <ul>
@@ -961,7 +1048,7 @@ CREATE POLICY case_org_isolation ON &quot;case&quot;
 <li><a href="https://docs.aws.amazon.com/bedrock/latest/userguide/kb-direct-ingestion-add.html">Ingest documents directly into a knowledge base</a> — hình dạng request, metadata inline, hạn mức 25 tài liệu</li>
 <li><a href="https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_CreateDataSource.html">CreateDataSource</a> — <code>vectorIngestionConfiguration</code> là trường cấp ngoài cùng; <code>chunkingConfiguration</code> không sửa được sau khi tạo</li>
 </ul>
-<p>Những gì không có dòng nguồn ở trên là <strong>đọc trực tiếp từ console tài khoản công ty ngày 23/09/2026</strong>: trang Model access đã bị gỡ, model mặc định của Harness là <code>global.anthropic.claude-sonnet-4-6</code>, Harness gắn sẵn một memory, Managed KB không cho chọn chunking, và danh sách resource type của CloudTrail có <code>AWS::Bedrock::KnowledgeBase</code>, <code>AWS::Bedrock::Guardrail</code>, <code>AWS::BedrockAgentCore::Runtime</code>. Ảnh mục <strong>H · IAM</strong>, <strong>I · Cơ sở dữ liệu</strong>, <strong>D.6 (Model invocation logging)</strong> và <strong>G.3 (cost allocation tags)</strong> chụp trực tiếp trên console ngày <strong>24/09/2026</strong>, đã che tên và số tài khoản. Giao diện AWS đổi liên tục; kiểm lại trước khi dựa vào.</p>
+<p>Những gì không có dòng nguồn ở trên là <strong>đọc trực tiếp từ console tài khoản công ty ngày 23/09/2026</strong>: trang Model access đã bị gỡ, model mặc định của Harness là <code>global.anthropic.claude-sonnet-4-6</code>, Harness gắn sẵn một memory, Managed KB không cho chọn chunking, và danh sách resource type của CloudTrail có <code>AWS::Bedrock::KnowledgeBase</code>, <code>AWS::Bedrock::Guardrail</code>, <code>AWS::BedrockAgentCore::Runtime</code>. Ảnh mục <strong>H · IAM</strong>, <strong>I · Cơ sở dữ liệu</strong>, <strong>D.6 (Model invocation logging)</strong> và <strong>G.3 (cost allocation tags)</strong> chụp trực tiếp trên console ngày <strong>24/09/2026</strong>, đã che tên và số tài khoản. Giao diện AWS thay đổi liên tục, nên cần kiểm lại trước khi dựa vào.</p>
 </div></main>
 <script>
 (function(){
