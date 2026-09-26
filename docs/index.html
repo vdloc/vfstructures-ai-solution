@@ -68,6 +68,7 @@ ul,ol{padding-left:1.4em;}
 <li><a href="#a5-bước-5--sensitive-information">A.5 Bước 5 — Sensitive information</a></li>
 <li><a href="#a6-bước-6--contextual-grounding">A.6 Bước 6 — Contextual grounding</a></li>
 <li><a href="#a7-hai-việc-console-không-làm-thay">A.7 Hai việc console không làm thay</a></li>
+<li><a href="#a8-chi-phí">A.8 Chi phí</a></li>
 </ul></details>
 <details open><summary><a href="#b--knowledge-base--nạp-chunk-tự-cắt-bỏ-parsechunk-mặc-định">B · Knowledge Base — nạp chunk tự cắt, bỏ parse/chunk mặc định</a></summary><ul>
 <li><a href="#b1-hai-loại-kb-chỉ-một-loại-cho-tự-cắt-chunk">B.1 Hai loại KB, chỉ một loại cho tự cắt chunk</a></li>
@@ -77,10 +78,12 @@ ul,ol{padding-left:1.4em;}
 <li><a href="#b4a-quick-create-dựng-index-s3-vectors-bằng-tham-số-gì">B.4a Quick create dựng index S3 Vectors bằng tham số gì</a></li>
 <li><a href="#b4b-lỗi-quyền-đầu-tiên-gặp-phải">B.4b Lỗi quyền đầu tiên gặp phải</a></li>
 <li><a href="#b5-nạp-chunk-lên-hai-cách">B.5 Nạp chunk lên: hai cách</a></li>
+<li><a href="#b6-chi-phí-embedding-truy-vấn-và-rerank">B.6 Chi phí embedding, truy vấn và rerank</a></li>
 </ul></details>
 <details open><summary><a href="#c--cổng-truy-cập-và-hạn-mức">C · Cổng truy cập và hạn mức</a></summary><ul>
 <li><a href="#c1-model-access--trang-này-đã-bị-gỡ">C.1 Model access — trang này đã bị gỡ</a></li>
 <li><a href="#c2-service-quotas">C.2 Service Quotas</a></li>
+<li><a href="#c3-chi-phí-gọi-mô-hình">C.3 Chi phí gọi mô hình</a></li>
 </ul></details>
 <details open><summary><a href="#d--khoá-kho-và-sổ-ghi">D · Khoá, kho và sổ ghi</a></summary><ul>
 <li><a href="#d1-kms--khoá-customer-managed">D.1 KMS — khoá customer-managed</a></li>
@@ -89,11 +92,13 @@ ul,ol{padding-left:1.4em;}
 <li><a href="#d4-parameter-store--kill-switch">D.4 Parameter Store — kill switch</a></li>
 <li><a href="#d5-cloudtrail--data-event">D.5 CloudTrail — data event</a></li>
 <li><a href="#d6-bedrock--model-invocation-logging">D.6 Bedrock — Model invocation logging</a></li>
+<li><a href="#d7-chi-phí">D.7 Chi phí</a></li>
 </ul></details>
 <details open><summary><a href="#e--agentcore">E · AgentCore</a></summary><ul>
 <li><a href="#e1-advanced-configurations--số-vòng-và-thời-gian-chờ">E.1 Advanced configurations — số vòng và thời gian chờ</a></li>
 <li><a href="#e2-inbound-auth--danh-tính-gọi-vào">E.2 Inbound Auth — danh tính gọi vào</a></li>
 <li><a href="#e3-gateway">E.3 Gateway</a></li>
+<li><a href="#e4-chi-phí">E.4 Chi phí</a></li>
 </ul></details>
 <details open><summary><a href="#f--mạng-container-mạng-biên">F · Mạng, container, mạng biên</a></summary><ul>
 <li><a href="#f1-vpc-endpoint">F.1 VPC endpoint</a></li>
@@ -101,11 +106,13 @@ ul,ol{padding-left:1.4em;}
 <li><a href="#f3-ecs">F.3 ECS</a></li>
 <li><a href="#f4-alb--cho-sse-đi-qua">F.4 ALB — cho SSE đi qua</a></li>
 <li><a href="#f5-cloudfront">F.5 CloudFront</a></li>
+<li><a href="#f6-chi-phí">F.6 Chi phí</a></li>
 </ul></details>
 <details open><summary><a href="#g--chi-phí">G · Chi phí</a></summary><ul>
 <li><a href="#g1-cost-explorer--đã-bật-đang-chờ-dữ-liệu">G.1 Cost Explorer — đã bật, đang chờ dữ liệu</a></li>
 <li><a href="#g2-cost-anomaly-detection--còn-một-việc-phải-làm">G.2 Cost Anomaly Detection — còn một việc phải làm</a></li>
 <li><a href="#g3-kích-hoạt-cost-allocation-tags">G.3 Kích hoạt cost allocation tags</a></li>
+<li><a href="#g4-chi-phí-của-chính-các-công-cụ-này">G.4 Chi phí của chính các công cụ này</a></li>
 </ul></details>
 <details open><summary><a href="#h--iam--role-và-policy-least-privilege">H · IAM — role và policy least-privilege</a></summary><ul>
 <li><a href="#h1-chọn-loại-thực-thể-tin-cậy">H.1 Chọn loại thực thể tin cậy</a></li>
@@ -117,13 +124,26 @@ ul,ol{padding-left:1.4em;}
 <li><a href="#i2-connectivity--trong-vpc-không-public">I.2 Connectivity — trong VPC, không public</a></li>
 <li><a href="#i3-encryption-at-rest">I.3 Encryption at-rest</a></li>
 <li><a href="#i4-row-level-security-và-extension--sql-không-có-trên-console">I.4 Row-Level Security và extension — [SQL], không có trên Console</a></li>
+<li><a href="#i5-chi-phí">I.5 Chi phí</a></li>
+</ul></details>
+<details open><summary><a href="#j--bản-tự-dựng-on-prem-cho-từng-dịch-vụ">J · Bản tự dựng on-prem cho từng dịch vụ</a></summary><ul>
+<li><a href="#j1-mô-hình-nền--chỗ-không-có-bản-thay-thế-tương-đương">J.1 Mô hình nền — chỗ không có bản thay thế tương đương</a></li>
+<li><a href="#j2-guardrails">J.2 Guardrails</a></li>
+<li><a href="#j3-knowledge-base-embedding-và-rerank">J.3 Knowledge Base, embedding và rerank</a></li>
+<li><a href="#j4-khoá-kho-và-sổ-ghi">J.4 Khoá, kho và sổ ghi</a></li>
+<li><a href="#j5-vòng-lặp-agent">J.5 Vòng lặp agent</a></li>
+<li><a href="#j6-mạng-container-và-mạng-biên">J.6 Mạng, container và mạng biên</a></li>
+<li><a href="#j7-chi-phí-và-giám-sát-chi-phí">J.7 Chi phí và giám sát chi phí</a></li>
+<li><a href="#j8-danh-tính-và-quyền">J.8 Danh tính và quyền</a></li>
+<li><a href="#j9-postgresql">J.9 PostgreSQL</a></li>
+<li><a href="#j10-cái-mất-cái-được-và-cái-phải-đo-trước-khi-chốt">J.10 Cái mất, cái được, và cái phải đo trước khi chốt</a></li>
 </ul></details>
 <div class="navtop"><a href="#nguồn">Nguồn</a></div></nav>
 <div class="scrim"></div>
 <main class="main"><div class="inner">
 <h1 id="16--hướng-dẫn-cấu-hình-trên-console-aws">16 · Hướng dẫn cấu hình trên console AWS</h1>
 <p><strong>Đối tượng đọc:</strong> tài liệu này dành cho người thực thi trực tiếp trên giao diện console, không sử dụng CLI.</p>
-<p>Tài liệu này được trình bày theo đúng thứ tự của <a href="05-devops.md">05-devops.md</a>. Mỗi mục bao gồm một link console, ảnh chụp từng bước và giá trị cần điền. Mọi giá trị trong tài liệu đều được lấy từ <a href="05-devops.md">05</a> §2A, <a href="09-trien-khai.md">09</a> và <a href="15-chi-tiet-devops.md">15</a>; những chỗ mà thiết kế chưa chốt đều được ghi rõ là chưa chốt và không được tự đặt.</p>
+<p>Tài liệu này được trình bày theo đúng thứ tự của <a href="05-devops.md">05-devops.md</a>. Mỗi mục bao gồm một link console, ảnh chụp từng bước và giá trị cần điền. Mọi giá trị trong tài liệu đều được lấy từ <a href="05-devops.md">05</a> §2A, <a href="09-trien-khai.md">09</a> và <a href="15-chi-tiet-devops.md">15</a>; những chỗ mà thiết kế chưa chốt đều được ghi rõ là chưa chốt và không được tự đặt. Mục <strong>J</strong> ở cuối đặt cạnh mỗi dịch vụ một bản tự dựng chạy trong máy chủ công ty, dành cho lúc câu hỏi về on-prem được đặt ra.</p>
 <p><strong>Vùng làm việc là <code>eu-central-1</code> (Europe — Frankfurt).</strong> Vùng này cần được kiểm ở góc trên bên phải trước mỗi thao tác. Một link không kèm tham số vùng sẽ mở ở đúng vùng đang chọn của phiên, và tài nguyên của dự án không nằm ở vùng nào khác.</p>
 <p>Ảnh chụp trong tài liệu đã được che tên và số tài khoản. Con số trong khung đỏ là thứ tự thao tác, còn dòng chữ bên cạnh giải thích trường đó dùng để làm gì.</p>
 <hr />
@@ -255,6 +275,42 @@ ul,ol{padding-left:1.4em;}
 <p><strong>Ngay sau khi tạo, guardrail ở trạng thái bản <code>DRAFT</code>.</strong> Bản này cần được chốt thành một bản đánh số qua một thao tác thứ hai, bởi vì <code>DRAFT</code> có thể bị đổi bất cứ lúc nào và khi đó hệ thống đang chạy sẽ đổi hành vi ngay lập tức mà không ai biết.</p>
 <p><strong>Guardrail chỉ chạy khi lời gọi có khai báo nó.</strong> Nếu trường khai báo bị bỏ ra khỏi mã thì mọi bộ lọc sẽ biến mất mà không có lỗi nào được báo. Trường hợp này được chặn bằng một IAM policy <code>Deny</code> có điều kiện <code>bedrock:GuardrailIdentifier</code>, với chi tiết ở <a href="05-devops.md">05</a> §2A.7.</p>
 <p><strong>Ghi chú về độ ổn định của console.</strong> Trong lần dựng đầu tiên, các bước 2–8 trả về thông báo "Unable to load content" do gói giao diện bị HTTP 403 ở <code>a.b.cdn.console.awsstatic.com</code>, và tình trạng này thường hết khi thử lại sau ít phút. Nếu lỗi lặp lại, runbook CLI ở <a href="05-devops.md">05</a> §2A.4 vẫn chạy được ngay vì không phụ thuộc vào giao diện.</p>
+<h3 id="a8-chi-phí">A.8 Chi phí</h3>
+<p>Các mục Chi phí trong tài liệu này dùng đơn giá on-demand ở <code>eu-central-1</code>, tính bằng USD và chưa gồm thuế, đọc từ AWS Price List Bulk API ngày 25/09/2026. Ví dụ theo tháng dựa trên kịch bản <strong>Một công ty</strong>, tức 19 800 lượt hỏi mỗi tháng ở <a href="13-chi-phi.md">13</a> §5, và ngày công bố của từng bảng giá nằm ở G.4.</p>
+<p>Guardrails tính tiền theo <strong>text unit</strong>, mỗi text unit chứa tối đa 1 000 ký tự, và mỗi loại bộ lọc được tính riêng trên cùng một đoạn chữ.</p>
+<table>
+<thead>
+<tr>
+<th>Bộ lọc</th>
+<th>Đơn giá ở <code>eu-central-1</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Content filters, gồm cả prompt attack</td>
+<td>0,15 $/1 000 text unit</td>
+</tr>
+<tr>
+<td>Denied topics</td>
+<td>0,15 $/1 000 text unit</td>
+</tr>
+<tr>
+<td>Sensitive information (loại PII có sẵn)</td>
+<td>0,10 $/1 000 text unit</td>
+</tr>
+<tr>
+<td>Contextual grounding</td>
+<td>0,10 $/1 000 text unit</td>
+</tr>
+<tr>
+<td>Word filters, và regex tự viết trong Sensitive information</td>
+<td>Không tính phí</td>
+</tr>
+</tbody>
+</table>
+<p>Cấu hình ở A.3–A.6 bật cả bốn loại trả phí, nên mỗi 1 000 text unit đi qua guardrail tốn <strong>0,50 $</strong>, hoặc 0,40 $ khi tắt contextual grounding.</p>
+<p>Số tiền của Guardrails đi theo <strong>lượng chữ</strong> chứ không đi theo số lượt, và phần chữ lớn nhất nằm ở các chunk bọc <code>guardContent</code> chứ không nằm ở câu hỏi. Theo <a href="13-chi-phi.md">13</a> §6, riêng việc soát 12 chunk mỗi lượt đã tốn khoảng 87 $/tháng ở kịch bản Một công ty, dù nội dung chunk không đổi giữa các lượt. Cách giảm hiệu quả nhất là soát chunk một lần lúc nạp, nhưng cách này bỏ lớp soát prompt injection gián tiếp lúc truy vấn, nên chỉ được áp dụng khi <a href="06-bao-mat.md">06</a> đồng ý.</p>
+<p>Contextual grounding là khoản nên cân nhắc riêng. Kịch bản gốc ở <a href="13-chi-phi.md">13</a> tính nó ở trạng thái tắt, và bật cho mọi câu trả lời làm tổng tháng tăng thêm khoảng 26,81 $. Việc tắt hẳn chiều ra của prompt attack ở A.3 đã loại được một phần phí mà không mất gì, còn tắt guardrail ở đầu ra thì không bao giờ được coi là một cách giảm chi phí.</p>
 <hr />
 <h2 id="b--knowledge-base--nạp-chunk-tự-cắt-bỏ-parsechunk-mặc-định">B · Knowledge Base — nạp chunk tự cắt, bỏ parse/chunk mặc định</h2>
 <p>Đây là phần cần đọc kỹ nhất, bởi vì <strong>việc lựa chọn loại KB quyết định có được tự cắt chunk hay không</strong>, và một khi đã chọn thì không đổi lại được.</p>
@@ -611,6 +667,37 @@ because no identity-based policy allows the iam:CreateRole action
 <p>Với data source loại Custom thì không có <code>StartIngestionJob</code>, bởi vì nạp xong là tài liệu đã thuộc cả data source lẫn KB.</p>
 <p>Có thể nạp thử vài chunk qua console để xem hình dạng trước khi viết mã, theo đường dẫn: vào KB → chọn data source → <strong>Documents</strong> → <strong>Add documents</strong> → <em>Add documents directly</em>.</p>
 <p>Sáu chunk demo dựng sẵn cho việc này nằm ở <a href="../cong-cu/demo-chunks/README.md"><code>cong-cu/demo-chunks/</code></a>; khi chạy <code>build-ingest-payload.py</code> sẽ ra thân lời gọi <code>IngestKnowledgeBaseDocuments</code> cùng bộ file <code>.txt</code> kèm sidecar để kéo thả. Sáu chunk đó cố tình chứa một bản đã thay thế, một chunk khác <code>scope_key</code> và một tài liệu hướng dẫn phần mềm, nhằm thấy ngay bộ lọc có chặn đúng hay không.</p>
+<h3 id="b6-chi-phí-embedding-truy-vấn-và-rerank">B.6 Chi phí embedding, truy vấn và rerank</h3>
+<p>Chi phí vector store đã nằm ở bảng của B.4. Phần còn lại của một customer-managed KB gồm ba khoản:</p>
+<table>
+<thead>
+<tr>
+<th>Khoản</th>
+<th>Đơn giá ở <code>eu-central-1</code></th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Titan Text Embeddings V2, lúc nạp</td>
+<td>0,20 $/1 triệu token</td>
+<td>Nạp 50 000 chunk, mỗi chunk 800 token, tốn khoảng 8 $ cho một lần nạp toàn bộ</td>
+</tr>
+<tr>
+<td>Titan Text Embeddings V2, nhúng câu hỏi</td>
+<td>0,20 $/1 triệu token</td>
+<td>19 800 lượt/tháng, mỗi câu hỏi khoảng 30 token, tốn khoảng 0,12 $/tháng</td>
+</tr>
+<tr>
+<td>Rerank</td>
+<td>Cohere Rerank 3.5 là 0,002 $/truy vấn; Amazon Rerank 1.0 là 0,001 $/truy vấn</td>
+<td>Cohere tốn thêm khoảng 22 $/tháng ở kịch bản Một công ty, vì chỉ lượt hỏi tài liệu mới cần rerank (<a href="13-chi-phi.md">13</a> §6)</td>
+</tr>
+</tbody>
+</table>
+<p>Bảng giá công khai không có dòng phí riêng cho lời gọi <code>Retrieve</code> của customer-managed KB. Tiền của một lần truy xuất nằm ở việc nhúng câu hỏi và ở truy vấn vector store. Dòng 0,001 $/truy vấn và 5 $/GB-tháng ở <a href="13-chi-phi.md">13</a> §3 là giá của Managed KB.</p>
+<p>Số chiều vector gần như không ảnh hưởng tới hoá đơn. 50 000 vector 1024 chiều kiểu <code>float32</code> chiếm khoảng 0,2 GB trên S3 Vectors, tức khoảng 0,013 $/tháng, còn bản 256 chiều khoảng 0,003 $/tháng. Vì vậy số chiều ở B.4 được chọn theo chất lượng truy xuất đo trên bộ 50 câu, không theo chi phí lưu trữ.</p>
+<p>Khoản đáng canh là <strong>nạp lại</strong>. Mỗi lần nạp lại toàn bộ corpus là một lần trả lại toàn bộ tiền embedding, vì chunk trùng <code>id</code> được ghi đè chứ không được bỏ qua (B.5). Worker cần nạp theo phần thay đổi, tức chỉ gửi những chunk có nội dung khác bản đã nạp. Amazon Rerank 1.0 rẻ bằng một nửa Cohere Rerank 3.5, nhưng chỉ nên đổi sau khi đo trên bộ 50 câu tiếng Pháp, bởi vì rerank kém sẽ đẩy chunk sai lên đầu.</p>
 <hr />
 <h2 id="c--cổng-truy-cập-và-hạn-mức">C · Cổng truy cập và hạn mức</h2>
 <h3 id="c1-model-access--trang-này-đã-bị-gỡ">C.1 Model access — trang này đã bị gỡ</h3>
@@ -628,6 +715,44 @@ because no identity-based policy allows the iam:CreateRole action
 <p><code>https://eu-central-1.console.aws.amazon.com/servicequotas/home/services/bedrock/quotas?region=eu-central-1</code></p>
 <p>Việc tìm quota được thực hiện bằng cách lọc theo tên model ở ô <strong>Find</strong>, mở đúng dòng quota rồi bấm <strong>Request increase</strong>. Đơn xin tăng quota nên được nộp sớm, bởi vì AWS duyệt trong 1–3 ngày làm việc và quota mặc định của một tài khoản mới có thể bằng 0.</p>
 <p>Quota của Sonnet 5 ở vùng này nằm dưới dạng <strong>cross-region inference</strong>, và khi lọc <code>Sonnet 5</code> sẽ trả về <code>Cross-region model inference tokens per minute for Anthropic Claude Sonnet 5</code> cùng bản <code>Global cross-region...</code>. Đơn xin tăng cần nhắm đúng dòng <strong>cross-region chứ không phải bản Global</strong>, bởi vì bản Global route ra ngoài EU.</p>
+<h3 id="c3-chi-phí-gọi-mô-hình">C.3 Chi phí gọi mô hình</h3>
+<p>Việc bật model và xin tăng quota không tốn phí. Tiền chỉ phát sinh khi gọi model, và được tính theo token với profile <code>eu.*</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Mô hình</th>
+<th>Vai trò</th>
+<th>Input</th>
+<th>Output</th>
+<th>Cache read</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Sonnet 5</td>
+<td>Trả lời và tool loop</td>
+<td>2,20 $</td>
+<td>11,00 $</td>
+<td>0,22 $</td>
+</tr>
+<tr>
+<td>Claude Haiku 4.5</td>
+<td>Routing</td>
+<td>1,10 $</td>
+<td>5,50 $</td>
+<td>0,11 $</td>
+</tr>
+<tr>
+<td>Claude Sonnet 4.6</td>
+<td>Fallback</td>
+<td>3,30 $</td>
+<td>16,50 $</td>
+<td>0,33 $</td>
+</tr>
+</tbody>
+</table>
+<p>Đơn vị là USD cho 1 triệu token. Một lượt Sonnet 5 với 6 000 token vào và 600 token ra tốn khoảng 0,0198 $, tức khoảng 19,80 $ cho 1 000 lượt. Cùng lượt đó chạy trên Sonnet 4.6 tốn 29,70 $, đắt gấp 1,5 lần, nên fallback cần có cảnh báo khi kéo dài chứ không được để chạy âm thầm.</p>
+<p>Token đọc từ cache chỉ tốn 10% giá input, và phần tĩnh của mỗi lượt (system prompt, mô tả tool) lặp lại ở mọi vòng của tool loop. Theo <a href="13-chi-phi.md">13</a> §6, prompt caching cho phần tĩnh giảm khoảng 185 $/tháng ở kịch bản Một công ty và là đòn bẩy lớn nhất của cả hệ thống. Ngược lại, profile <code>global.*</code> rẻ hơn khoảng 10% nhưng route ra ngoài EU, nên không bao giờ được dùng để giảm chi phí. Provisioned Throughput tính tiền theo giờ kể cả khi không có lượt nào, và dự án không dùng nó.</p>
 <hr />
 <h2 id="d--khoá-kho-và-sổ-ghi">D · Khoá, kho và sổ ghi</h2>
 <h3 id="d1-kms--khoá-customer-managed">D.1 KMS — khoá customer-managed</h3>
@@ -751,6 +876,51 @@ because no identity-based policy allows the iam:CreateRole action
 </tbody>
 </table>
 <p>Thiết lập này áp theo <strong>cả tài khoản và region</strong>, và <strong>không</strong> áp cho Knowledge Bases, bởi vì CloudWatch được bật riêng cho từng KB. Việc che PII của Guardrails chỉ áp cho response API, nên log gốc vẫn ở dạng nguyên văn.</p>
+<h3 id="d7-chi-phí">D.7 Chi phí</h3>
+<table>
+<thead>
+<tr>
+<th>Dịch vụ</th>
+<th>Đơn giá ở <code>eu-central-1</code></th>
+<th>Ở quy mô dự án</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>KMS</strong></td>
+<td>1 $/khoá customer-managed/tháng; 0,03 $/10 000 request</td>
+<td>5 khoá theo <a href="13-chi-phi.md">13</a> §5 là 5 $/tháng. Bucket Key ở D.2 giảm số request tới KMS</td>
+</tr>
+<tr>
+<td><strong>S3 Standard</strong></td>
+<td>0,0245 $/GB-tháng cho 50 TB đầu; 0,0054 $/1 000 request PUT, COPY, POST, LIST; 0,0043 $/10 000 request GET</td>
+<td>10 GB tệp gốc tốn khoảng 0,24 $/tháng</td>
+</tr>
+<tr>
+<td><strong>CloudWatch Logs</strong></td>
+<td>0,63 $/GB ghi vào; 0,0324 $/GB-tháng lưu</td>
+<td>10 GB ghi vào và lưu tốn 6,62 $/tháng (<a href="13-chi-phi.md">13</a> §5), trong đó tiền ghi vào chiếm gần hết</td>
+</tr>
+<tr>
+<td><strong>Parameter Store</strong></td>
+<td>Tham số Standard không tính phí; tham số Advanced 0,05 $/tháng; bật higher throughput thì 0,05 $/10 000 lời gọi API</td>
+<td>Cờ kill switch là tham số Standard kiểu <code>String</code>, nên bằng 0</td>
+</tr>
+<tr>
+<td><strong>CloudTrail</strong></td>
+<td>Bản sao đầu tiên của management event không tính phí; data event 0,10 $/100 000 sự kiện</td>
+<td>Giả định 4 data event mỗi lượt, 19 800 lượt/tháng sinh 79 200 sự kiện, tức khoảng 0,08 $/tháng, cộng tiền lưu tệp log trên S3</td>
+</tr>
+<tr>
+<td><strong>Model invocation logging</strong></td>
+<td>Tính năng không tính phí; tiền nằm ở log ghi vào CloudWatch Logs hoặc S3</td>
+<td>Chỉ ghi metadata, khoảng 1 KB mỗi lượt, tốn khoảng 0,01 $/tháng; ghi cả nội dung, khoảng 20 KB mỗi lượt, tốn khoảng 0,24 $/tháng</td>
+</tr>
+</tbody>
+</table>
+<p>Cả nhóm này cộng lại khoảng 12 $/tháng ở kịch bản Một công ty, nhưng CloudWatch Logs là khoản dễ phình nhất. Retention ở D.3 chỉ giảm tiền <strong>lưu</strong>, trong khi 0,63 $/GB là tiền <strong>ghi vào</strong> và phải trả ngay khi log đến. Log mức debug bật quên ở production có thể đẩy khoản này lên gấp nhiều lần mà không có cảnh báo nào, nên cần đặt alarm trên metric <code>IncomingBytes</code> của từng log group.</p>
+<p>Dòng cuối của bảng cho thấy lý do ghi chỉ metadata ở D.6 là GDPR chứ không phải chi phí. Ghi cả nội dung vẫn rẻ, nhưng đưa bản gốc chưa che PII vào log. Tương tự, CloudTrail data event rẻ tới mức không có lý do chi phí nào để tắt nó.</p>
+<p>Việc chia nhỏ khoá KMS theo vai trò tốn 1 $/khoá/tháng cho mỗi khoá thêm vào. Khoản này nhỏ so với rủi ro dùng chung một khoá cho mọi vai trò, nên không nên gộp khoá để tiết kiệm.</p>
 <hr />
 <h2 id="e--agentcore">E · AgentCore</h2>
 <p><code>https://eu-central-1.console.aws.amazon.com/bedrock-agentcore/home?region=eu-central-1</code>: thanh bên của trang này gồm Harness, Runtime, Gateways, Memory, Policy, Identity và Payments.</p>
@@ -807,6 +977,36 @@ because no identity-based policy allows the iam:CreateRole action
 <p>Trang tạo Gateway còn có <strong>Policy - optional</strong> (nơi gắn Cedar) và <strong>KMS key - optional</strong>. DevOps <strong>không tạo được Gateway target</strong> nếu Backend chưa phát hành schema OpenAPI của facade, và đây là điểm đồng bộ cứng giữa hai đội.</p>
 <p>Keycloak token exchange (V-A6) không có trang trên console AWS mà được làm bên Keycloak.</p>
 <p><strong>Cấu hình Harness phải là mã trong repo</strong>, kèm test tự động đọc lại sau mỗi lần triển khai; console chỉ dùng để xem cho hiểu chứ không phải nơi giữ cấu hình production.</p>
+<h3 id="e4-chi-phí">E.4 Chi phí</h3>
+<table>
+<thead>
+<tr>
+<th>Thành phần</th>
+<th>Đơn giá ở <code>eu-central-1</code></th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Runtime</strong> (Harness)</td>
+<td>0,0895 $/vCPU-giờ; 0,00945 $/GB-giờ</td>
+<td>Giả định mỗi lượt giữ phiên 20 giây ở 1 vCPU và 2 GB, 19 800 lượt/tháng tốn khoảng 11,92 $/tháng</td>
+</tr>
+<tr>
+<td><strong>Memory</strong></td>
+<td>Short-term 0,00025 $/sự kiện; long-term tính riêng phần lưu và 0,0005 $/lần truy xuất</td>
+<td>Để nguyên memory gắn sẵn với 2 sự kiện mỗi lượt tốn khoảng 9,90 $/tháng</td>
+</tr>
+<tr>
+<td><strong>Gateway</strong></td>
+<td>0,000005 $/lần gọi tool; 0,000025 $/lần gọi Search API; 0,0002 $/tool-tháng cho tool index; 0,006 $/GB dữ liệu xử lý khi target nằm trong VPC</td>
+<td>3 lần gọi tool mỗi lượt tốn khoảng 0,30 $/tháng</td>
+</tr>
+</tbody>
+</table>
+<p>Identity và Policy không có dòng giá riêng trong bảng giá <code>eu-central-1</code> bản công bố ngày 15/09/2026.</p>
+<p>Tiền trả trực tiếp cho AgentCore nhỏ, nhưng cấu hình AgentCore quyết định <strong>tiền mô hình</strong>. Mỗi vòng thêm của tool loop gửi lại toàn bộ ngữ cảnh cho Sonnet 5, nên <code>optimize</code> 7 vòng tốn gấp 2,86 lần <code>calc</code> 3 vòng (<a href="13-chi-phi.md">13</a> §6). Hai giá trị mặc định ở E.1 là 75 vòng và 60 phút, và một lượt lỗi chạy hết trần đó có thể tiêu tiền mô hình của hàng chục lượt thường. Vì vậy trần 5–7 vòng và 60–90 giây vừa là giới hạn hành vi vừa là phanh chi phí.</p>
+<p>Memory gắn sẵn là khoản tiền trả cho một kho hội thoại thứ hai mà hệ thống không đọc tới, cộng thêm rủi ro dữ liệu đã nêu ở trên, nên cần đặt <code>disabled</code> ngay từ lần tạo đầu tiên.</p>
 <hr />
 <h2 id="f--mạng-container-mạng-biên">F · Mạng, container, mạng biên</h2>
 <h3 id="f1-vpc-endpoint">F.1 VPC endpoint</h3>
@@ -857,6 +1057,46 @@ because no identity-based policy allows the iam:CreateRole action
 <p><img alt="CloudFront" src="anh/cf-01.png" /></p>
 <p>CloudFront là dịch vụ toàn cục, nên link tự chuyển về <code>us-east-1</code>; đây là hành vi đúng chứ không phải nhầm vùng.</p>
 <p>Với một phân phối đã có sẵn, đường cấu hình là: mở nó → tab <strong>Behaviors</strong> → thêm một behavior cho <code>/v1/chat</code> với cache policy <strong>CachingDisabled</strong>. Nếu bật cache trên đường này thì SSE sẽ bị gom lại, chữ không hiện dần và người dùng chỉ nhìn thấy màn hình trắng.</p>
+<h3 id="f6-chi-phí">F.6 Chi phí</h3>
+<table>
+<thead>
+<tr>
+<th>Dịch vụ</th>
+<th>Đơn giá ở <code>eu-central-1</code></th>
+<th>Ở quy mô dự án</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>VPC interface endpoint</strong></td>
+<td>0,012 $/giờ cho mỗi AZ; 0,01 $/GB dữ liệu xử lý</td>
+<td>Bốn endpoint Interface ở F.1 trên 2 AZ tốn 70,08 $/tháng; tám endpoint như <a href="13-chi-phi.md">13</a> §5 tốn 140,16 $/tháng. Gateway endpoint cho S3 không tính phí</td>
+</tr>
+<tr>
+<td><strong>ECR</strong></td>
+<td>0,10 $/GB-tháng lưu image</td>
+<td>5 GB image tốn khoảng 0,50 $/tháng</td>
+</tr>
+<tr>
+<td><strong>Fargate ARM</strong></td>
+<td>0,03725 $/vCPU-giờ; 0,00409 $/GB-giờ</td>
+<td>Một task 1 vCPU, 2 GB chạy cả tháng tốn 33,16 $; năm task theo <a href="13-chi-phi.md">13</a> §5 tốn 132,65 $/tháng</td>
+</tr>
+<tr>
+<td><strong>ALB</strong></td>
+<td>0,027 $/giờ; 0,008 $/LCU-giờ</td>
+<td>Phần sàn là 19,71 $/tháng, chưa tính LCU</td>
+</tr>
+<tr>
+<td><strong>CloudFront</strong></td>
+<td>0,085 $/GB ra Internet cho 10 TB đầu (Europe); 0,012 $/10 000 request HTTPS</td>
+<td>Dưới 1 $/tháng, vì SSE chỉ mang chữ</td>
+</tr>
+</tbody>
+</table>
+<p><strong>VPC endpoint là khoản cố định lớn nhất của cả hệ thống</strong>, chiếm gần 40% phần cố định theo <a href="13-chi-phi.md">13</a> §1, và được tính theo giờ dù không có lượt nào chạy qua. Mỗi endpoint trên 2 AZ tốn khoảng 17,5 $/tháng, nên danh sách endpoint cần được chốt theo đúng những dịch vụ thật sự gọi qua mạng riêng (<a href="15-chi-tiet-devops.md">15</a>), và môi trường dev, staging nên dùng chung endpoint khi cùng VPC. Bỏ bớt một endpoint để tiết kiệm thì không được, bởi vì thiếu một cái là phiên Harness không khởi động (F.1).</p>
+<p>Fargate ARM rẻ hơn x86 khoảng 20% cho cả vCPU lẫn bộ nhớ (x86 là 0,04656 $/vCPU-giờ và 0,00511 $/GB-giờ), nên image cần được build cho <code>arm64</code>. Sau khoảng hai tuần chạy thật, Compute Optimizer đưa ra khuyến nghị cỡ task cho ECS trên Fargate, và đó là lúc chỉnh lại vCPU, bộ nhớ thay vì đoán từ đầu. Compute Savings Plans áp được cho Fargate, nhưng chỉ nên mua khi số task đã ổn định.</p>
+<p>Với ALB, SSE giữ kết nối mở lâu, và số kết nối đang hoạt động là một trong các chiều dùng để tính LCU. Idle timeout 120 giây ở F.4 vì vậy có ảnh hưởng nhỏ tới LCU, nhưng không đáng kể ở lưu lượng của dự án. Với CloudFront, behavior <code>CachingDisabled</code> cho <code>/v1/chat</code> ở F.5 không làm tăng phí, bởi vì request được tính giá như nhau dù có cache hay không.</p>
 <hr />
 <h2 id="g--chi-phí">G · Chi phí</h2>
 <p><img alt="Budgets" src="anh/budget-01.png" /></p>
@@ -876,6 +1116,39 @@ because no identity-based policy allows the iam:CreateRole action
 <li>Cần chờ khoảng <strong>~24 giờ</strong> thì tag mới hiện trong Cost Explorer.</li>
 <li>Việc tạo inference profile là thao tác <strong>[CLI/API]</strong> và không làm được trên Console, chi tiết ở <a href="05-devops.md">05</a> §4.</li>
 </ul>
+<h3 id="g4-chi-phí-của-chính-các-công-cụ-này">G.4 Chi phí của chính các công cụ này</h3>
+<table>
+<thead>
+<tr>
+<th>Công cụ</th>
+<th>Đơn giá</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Budgets</strong></td>
+<td>Budget thường không tính phí. Budget có action được miễn phí 62 budget-ngày đầu mỗi tháng, tức khoảng hai budget chạy cả tháng, sau đó 0,10 $/budget-ngày. Mỗi báo cáo Budgets gửi đi tốn 0,01 $</td>
+</tr>
+<tr>
+<td><strong>Cost Explorer</strong></td>
+<td>Giao diện console không tính phí. Mỗi lời gọi API tốn 0,01 $, nên một job gọi 10 lần mỗi ngày tốn khoảng 3 $/tháng</td>
+</tr>
+<tr>
+<td><strong>Cost Anomaly Detection</strong></td>
+<td>Không tính phí</td>
+</tr>
+<tr>
+<td><strong>Cost allocation tags</strong></td>
+<td>Không tính phí</td>
+</tr>
+<tr>
+<td><strong>IAM, Service Quotas</strong></td>
+<td>Không tính phí, kể cả việc xin tăng quota ở C.2</td>
+</tr>
+</tbody>
+</table>
+<p>Phanh chi phí gần như miễn phí, nên không có lý do gì để hoãn nó tới khi lưu lượng tăng. Khoản dễ phình nhất là API Cost Explorer: dashboard nội bộ gọi thẳng API mỗi lần có người mở trang sẽ bị tính từng lời gọi, nên dữ liệu cần được kéo theo lịch mỗi ngày một lần rồi đọc từ bản đã lưu.</p>
+<p>Toàn bộ đơn giá trong các mục Chi phí được đọc ngày 25/09/2026 từ AWS Price List Bulk API cho <code>eu-central-1</code>. Ngày công bố của từng bảng giá như sau: mô hình nền và Guardrails ngày 25/09/2026; RDS ngày 24/09/2026; CloudWatch ngày 22/09/2026; S3 ngày 18/09/2026; VPC ngày 17/09/2026; CloudFront ngày 16/09/2026; AgentCore ngày 15/09/2026; KMS, Fargate, ECR, ELB, CloudTrail, Systems Manager, Secrets Manager, Cost Explorer và Budgets ngày 11/09/2026. Giá mô hình, Guardrails, KMS, Fargate và VPC endpoint trùng với bảng giá mà <a href="13-chi-phi.md">13</a> §3 dùng.</p>
 <hr />
 <h2 id="h--iam--role-và-policy-least-privilege">H · IAM — role và policy least-privilege</h2>
 <p>Có bốn role tách biệt, gồm <code>assistant-runtime</code> (Assistant.Api), <code>assistant-ingest</code> (Worker), service role của KB và execution role của Harness. Giá trị policy đầy đủ nằm ở <a href="05-devops.md">05</a> §2A.7 và <a href="15-chi-tiet-devops.md">15</a>.</p>
@@ -1040,6 +1313,403 @@ CREATE POLICY case_org_isolation ON &quot;case&quot;
   USING (org_id = current_setting('app.current_org', true));
 </code></pre>
 <p>Giá trị <code>org_id</code> đặt vào session phải được lấy từ thuộc tính đã xác thực (Payment API) chứ không lấy từ giá trị mà client gửi lên. Một ràng buộc quan trọng là role ứng dụng không được là owner của bảng và không được có <code>BYPASSRLS</code>, bởi vì nếu không thì RLS sẽ bị bỏ qua.</p>
+<h3 id="i5-chi-phí">I.5 Chi phí</h3>
+<table>
+<thead>
+<tr>
+<th>Lựa chọn</th>
+<th>Đơn giá ở <code>eu-central-1</code></th>
+<th>Theo tháng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RDS PostgreSQL <code>db.t4g.medium</code>, Single-AZ</td>
+<td>0,074 $/giờ</td>
+<td>54,02 $</td>
+</tr>
+<tr>
+<td>RDS PostgreSQL <code>db.t4g.medium</code>, Multi-AZ</td>
+<td>0,149 $/giờ</td>
+<td>108,77 $</td>
+</tr>
+<tr>
+<td>Lưu trữ gp3 của RDS</td>
+<td>0,137 $/GB-tháng, Multi-AZ là 0,274 $</td>
+<td>20 GB tốn 2,74 $, Multi-AZ là 5,48 $</td>
+</tr>
+<tr>
+<td>Aurora PostgreSQL <code>db.t4g.medium</code></td>
+<td>0,085 $/giờ</td>
+<td>62,05 $</td>
+</tr>
+<tr>
+<td>Aurora PostgreSQL Serverless v2</td>
+<td>0,14 $/ACU-giờ; lưu trữ 0,119 $/GB-tháng; 0,22 $/1 triệu I/O</td>
+<td>Sàn 0,5 ACU tốn 51,10 $; 20 GB lưu trữ tốn 2,38 $</td>
+</tr>
+<tr>
+<td>Backup của RDS vượt mức miễn phí</td>
+<td>0,103 $/GB-tháng</td>
+<td>Chỉ phát sinh khi giữ bản chụp lâu hơn dung lượng miễn phí</td>
+</tr>
+<tr>
+<td>Secrets Manager (master credentials ở I.1)</td>
+<td>0,40 $/secret/tháng; 0,05 $/10 000 lời gọi API</td>
+<td>0,40 $ cho secret của database</td>
+</tr>
+</tbody>
+</table>
+<p>Template <strong>Production</strong> ở I.1 bật Multi-AZ theo mặc định, và Multi-AZ làm tiền instance lẫn tiền lưu trữ tăng gấp đôi. Mức đó đúng cho production nhưng thừa cho dev và staging. Ở hai môi trường này, template Dev/Test với Single-AZ, hoặc Aurora Serverless v2 đặt sàn 0 ACU để tự ngủ, đưa chi phí về gần mức chỉ còn tiền lưu trữ (<a href="13-chi-phi.md">13</a> §6). Đổi lại, lần truy vấn đầu tiên sau khi ngủ phải chờ database khởi động.</p>
+<p><a href="13-chi-phi.md">13</a> §5 tính Aurora Serverless v2 với sàn 0,5 ACU luôn bật, ở mức 51,10 $/tháng, rẻ hơn một instance <code>db.t4g.medium</code> cố định mà vẫn co giãn được khi tải tăng. Database của dự án chỉ giữ hội thoại, case và log truy vết, không giữ vector, nên sàn thấp là đủ. RDS Proxy ở I.2 tính phí riêng, vì vậy chỉ bật khi số kết nối thật sự cần gom. Nếu production chọn instance cố định thay cho Serverless v2, thì sau một hai tháng chạy ổn định, Reserved Instance một năm là cách giảm tiếp chi phí database, và khuyến nghị mua nằm sẵn trong Cost Explorer.</p>
+<hr />
+<h2 id="j--bản-tự-dựng-on-prem-cho-từng-dịch-vụ">J · Bản tự dựng on-prem cho từng dịch vụ</h2>
+<p>Tài liệu tới đây mô tả hệ thống chạy trên dịch vụ quản lý sẵn của AWS. Mục này đặt cạnh mỗi dịch vụ ấy một bản tự dựng chạy trong máy chủ của công ty, cho trường hợp khách hàng đòi dữ liệu và hạ tầng không rời khỏi hạ tầng công ty. Mô hình nền được đặt lên đầu vì nó quyết định cả phương án; từ J.2 trở đi, các mục con đi theo A, B rồi D–I, nên mỗi mục ở trên có đúng một mục đối chiếu ở dưới.</p>
+<p>Đây là các phương án để cân nhắc chứ chưa phải quyết định đã chốt. Phần lớn chúng mở lại một quyết định đã ghi ở <a href="01-kien-truc.md">01</a> §4, và AD nào bị đụng tới thì được gọi tên ngay tại mục có liên quan; chỗ nào phải đo lại trước khi tin cũng vậy.</p>
+<p>Một điểm cần thấy trước: <strong>tự dựng không phải một công tắc bật tắt cho cả hệ thống</strong>. Phần lớn các mục dưới đây có bản thay thế chạy được ngay mà không đụng tới hợp đồng ở <a href="02-hop-dong.md">02</a>, còn J.1 thì không có bản thay thế tương đương, và nó là mục quyết định cả phương án.</p>
+<h3 id="j1-mô-hình-nền--chỗ-không-có-bản-thay-thế-tương-đương">J.1 Mô hình nền — chỗ không có bản thay thế tương đương</h3>
+<p>Trọng số của Claude không phát hành, nên không có cách nào chạy đúng mô hình ở C.3 trong máy chủ công ty. Chỉ còn hai đường, và cả hai đều không giữ nguyên được hệ thống hiện tại.</p>
+<table>
+<thead>
+<tr>
+<th>Đường đi</th>
+<th>Cái được</th>
+<th>Cái mất</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mô hình trọng số mở chạy trên GPU của công ty</td>
+<td>Dữ liệu không rời nhà; không còn hạn mức token theo vùng ở C.2</td>
+<td>Chất lượng trả lời tiếng Pháp và độ tin cậy của tool loop đều phải đo lại từ đầu</td>
+</tr>
+<tr>
+<td>Vẫn gọi Claude qua mạng, chỉ tự dựng phần còn lại</td>
+<td>Giữ nguyên chất lượng và toàn bộ thiết kế prompt</td>
+<td>Nội dung câu hỏi vẫn ra khỏi hạ tầng công ty, nên đây không phải on-prem theo nghĩa khách hàng đang hỏi</td>
+</tr>
+</tbody>
+</table>
+<p>Phép đo quyết định đường thứ nhất nằm ở <a href="08-eval-quan-sat.md">08</a> §1: bộ 50 câu của golden set, với <code>tool_expectation</code> chấm việc chọn đúng tool và truyền đúng tham số, <code>expected_verdict</code> chấm kết luận, và tầng tất định đòi mỗi trích dẫn phải ứng với chunk đã truy xuất. Chừng nào chưa có số của một mô hình cụ thể trên bộ đó thì chưa chốt được mô hình nào, và tài liệu này không đặt tên sẵn.</p>
+<p>Hạn mức cũng đổi bản chất. Ở C.2, quota là đơn xin gửi cho AWS; khi tự dựng, quota chính là số GPU đang có, và việc vượt trần không trả về lỗi throttling mà biểu hiện thành hàng đợi dài ra. Trần đồng thời vì vậy phải đặt ở tầng ứng dụng chứ không còn ai đặt hộ.</p>
+<h3 id="j2-guardrails">J.2 Guardrails</h3>
+<p>Bốn loại bộ lọc ở A.3–A.6 tách thành bốn thứ khác nhau khi tự dựng, và chỉ hai trong số đó cần tới mô hình.</p>
+<table>
+<thead>
+<tr>
+<th>Bộ lọc của Bedrock</th>
+<th>Bản tự dựng</th>
+<th>Ràng buộc phải giữ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Content filters</td>
+<td>Một mô hình phân loại an toàn chạy cùng chỗ với mô hình nền, hoặc bộ phân loại tự huấn luyện trên chính tập câu hỏi của ngành</td>
+<td><code>VIOLENCE</code> vẫn phải nới, vì "rupture par cisaillement" và "effondrement" là thuật ngữ nghề (A.3)</td>
+</tr>
+<tr>
+<td>Prompt attacks</td>
+<td>Cùng mô hình phân loại, nhưng chỉ chạy ở chiều vào</td>
+<td>Chiều ra vẫn tắt, đúng như A.3</td>
+</tr>
+<tr>
+<td>Denied topics</td>
+<td>Mô tả chủ đề cấm chuyển thành nhãn của bộ phân loại, hoặc thành một lượt gọi mô hình riêng</td>
+<td>Mô tả và ví dụ vẫn viết bằng tiếng Pháp (A.4)</td>
+</tr>
+<tr>
+<td>Word filters và regex ở Sensitive information</td>
+<td>Chạy thẳng trong <code>Assistant.Api</code>, vốn đã là mã của dự án</td>
+<td>Không đổi</td>
+</tr>
+<tr>
+<td>Nhận dạng PII có sẵn</td>
+<td>Thư viện nhận dạng PII chạy tại chỗ</td>
+<td>Vẫn phải tách hai mức xử lý như A.5, che với <code>NAME</code>, <code>EMAIL</code>, <code>PHONE</code>, <code>ADDRESS</code> và chặn với mật khẩu, khoá và số thẻ; ba mẫu regex cho NIR Pháp, SIRET và căn cước công dân Việt Nam thì tự viết như cũ</td>
+</tr>
+<tr>
+<td>Contextual grounding</td>
+<td>Một lượt gọi mô hình thứ hai so câu trả lời với chunk đã trích, tức cơ chế LLM-as-judge mà <a href="08-eval-quan-sat.md">08</a> đã mô tả</td>
+<td>Ngưỡng phải hiệu chỉnh lại, vì thang điểm của mô hình khác không trùng thang của Bedrock</td>
+</tr>
+</tbody>
+</table>
+<p>Cách tính tiền biến mất cùng dịch vụ. Khoản 0,50 $/1 000 text unit ở A.8 không còn, nhưng phần chữ phải soát thì vẫn nguyên: 12 chunk mỗi lượt vẫn phải đi qua bộ lọc, và giờ chúng chiếm thời gian GPU thay vì chiếm tiền theo text unit. Vì vậy cách giảm tải vẫn giống hệt, tức soát chunk một lần lúc nạp thay vì mỗi lượt truy vấn, và điều kiện vẫn là <a href="06-bao-mat.md">06</a> đồng ý.</p>
+<h3 id="j3-knowledge-base-embedding-và-rerank">J.3 Knowledge Base, embedding và rerank</h3>
+<p>Đây là mục mà việc tự dựng ít tốn công nhất, bởi vì Worker vốn đã tự parse, tự cắt chunk và tự nạp từng chunk một (B.5). <code>chunkingStrategy: NONE</code> ở B.3 tồn tại chỉ để bảo Bedrock đừng làm gì thêm; bỏ Bedrock đi thì ràng buộc ấy cũng không còn.</p>
+<table>
+<thead>
+<tr>
+<th>Thành phần của B</th>
+<th>Bản tự dựng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vector store (S3 Vectors, OpenSearch Serverless, Aurora)</td>
+<td><code>pgvector</code> trên chính PostgreSQL của dự án, hoặc một vector store dựng riêng khi corpus lớn hơn nhiều</td>
+</tr>
+<tr>
+<td>Titan Text Embeddings V2</td>
+<td>Mô hình embedding đa ngữ chạy tại chỗ, chọn theo điểm trên bộ 50 câu tiếng Pháp chứ không theo bảng xếp hạng chung</td>
+</tr>
+<tr>
+<td>Cohere Rerank 3.5 và Amazon Rerank 1.0</td>
+<td>Cross-encoder chạy tại chỗ, đo cùng bộ câu ấy</td>
+</tr>
+<tr>
+<td><code>filter</code> theo <code>scope_key</code> và <code>status</code></td>
+<td>Mệnh đề <code>WHERE</code> trong câu truy vấn</td>
+</tr>
+<tr>
+<td><code>Retrieve</code></td>
+<td>Câu SQL của dự án, hoặc API của vector store</td>
+</tr>
+</tbody>
+</table>
+<p>Chọn <code>pgvector</code> thì phiên bản phải từ <strong>0.8.0</strong> trở lên, vì <code>hnsw.iterative_scan</code> sinh ra đúng cho tình huống của dự án: lọc chọn lọc mạnh trên <code>scope_key</code> và <code>status</code> rồi mới lấy láng giềng gần nhất. Phiên bản cũ hơn trả thiếu kết quả trong trường hợp đó, và <a href="01-kien-truc.md">01</a> §11.1 đã ghi ràng buộc này ở V-K7, từ lúc còn cân nhắc Aurora.</p>
+<p>Lọc quyền thậm chí chặt hơn bản quản lý sẵn, bởi vì <code>WHERE</code> chạy trong cùng database đang bật RLS (I.4) chứ không phải một trường metadata phải tự khai cho đúng. Đổi lại, agentic retrieval và reranker sẵn có đều không còn — nhưng AD-17 đã chấp nhận mất hai thứ đó ngay từ khi chọn customer-managed KB, nên tự dựng không mất thêm gì ở điểm này.</p>
+<p>Điều phải nói rõ là đưa <code>pgvector</code> trở lại thì mở lại AD-12. Instance vật lý riêng cho assistant hiện là tuỳ chọn, và lý do nó thành tuỳ chọn là kho vector đã sang KB nên không còn tải bộ nhớ lúc build chỉ mục HNSW (<a href="05-devops.md">05</a> §2A). Đặt chỉ mục vector trở lại database của dự án là đưa đúng tải ấy quay về, nên hoặc instance riêng thành bắt buộc trở lại, hoặc kho vector phải nằm ở một tiến trình khác.</p>
+<h3 id="j4-khoá-kho-và-sổ-ghi">J.4 Khoá, kho và sổ ghi</h3>
+<table>
+<thead>
+<tr>
+<th>Dịch vụ ở D</th>
+<th>Bản tự dựng</th>
+<th>Khác biệt đáng kể</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KMS</td>
+<td>Một kho khoá tự vận hành với API mã hoá, hoặc HSM qua PKCS#11</td>
+<td>Việc xoay khoá và sổ ghi truy cập khoá trở thành việc của đội vận hành</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>MinIO hoặc Ceph, đúng như <a href="01-kien-truc.md">01</a> đã ghi sẵn "S3 / MinIO"</td>
+<td>Bucket Key ở D.2 không còn nghĩa, vì không còn tính tiền theo request tới KMS</td>
+</tr>
+<tr>
+<td>CloudWatch Logs</td>
+<td>Một kho log tự dựng, thu bằng agent trên từng node</td>
+<td>Retention ở D.3 thành chính sách xoá của kho log; tiền 0,63 $/GB ghi vào ở D.7 biến mất, đổi lấy đĩa và người trực</td>
+</tr>
+<tr>
+<td>Parameter Store</td>
+<td>Kho KV của hệ thống quản lý bí mật, hoặc một bảng cấu hình trong PostgreSQL</td>
+<td>Cờ kill switch đọc từ chỗ khác, còn ngữ nghĩa giữ nguyên</td>
+</tr>
+<tr>
+<td>CloudTrail</td>
+<td>Không có bản tương đương trực tiếp</td>
+<td>Xem đoạn dưới</td>
+</tr>
+<tr>
+<td>Model invocation logging</td>
+<td>Một span OpenTelemetry phát ra ngay tại chỗ gọi mô hình</td>
+<td>Chọn được đúng những trường cần ghi, nên vẫn chỉ ghi metadata vì lý do GDPR ở D.6</td>
+</tr>
+</tbody>
+</table>
+<p>CloudTrail là khoản mất thật sự của phương án này. Nó ghi mọi lời gọi API ở tầng nền tảng, kể cả những lời gọi mà bản thân ứng dụng không biết là đã thực hiện, và không có phần mềm nào tự dựng cho lại đúng thứ đó. Bản thay thế là ghép nhiều nguồn: sổ kiểm toán của kho khoá, audit log của orchestrator, và bảng <code>audit_event</code> vốn đã có trong thiết kế. Ghép lại thì phủ được phần lớn, nhưng phạm vi phủ tới đâu là câu hỏi phải trả lời với <a href="06-bao-mat.md">06</a> trước khi hứa với kiểm toán.</p>
+<h3 id="j5-vòng-lặp-agent">J.5 Vòng lặp agent</h3>
+<p><a href="10-rui-ro.md">10</a> R32 đã ghi sẵn phương án này làm dự phòng: bỏ AgentCore, chạy vòng lặp bằng C#. Tự dựng chỉ là biến dự phòng đó thành đường chính.</p>
+<table>
+<thead>
+<tr>
+<th>Thành phần của E</th>
+<th>Bản tự dựng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Harness và Runtime</td>
+<td>Vòng lặp trong <code>Assistant.Api</code>, chạy trong cùng container với phần còn lại</td>
+</tr>
+<tr>
+<td>Số vòng và thời gian chờ ở E.1</td>
+<td>Hai tham số cấu hình, đọc từ kho cấu hình như mọi tham số khác</td>
+</tr>
+<tr>
+<td>Inbound Auth</td>
+<td>Validate JWT của Keycloak qua JWKS, đúng cách mà mọi service trong hệ thống đang làm</td>
+</tr>
+<tr>
+<td>Memory gắn sẵn của Harness</td>
+<td>Bảng hội thoại đã có trong PostgreSQL</td>
+</tr>
+<tr>
+<td>Gateway cho MCP</td>
+<td>Xem đoạn dưới</td>
+</tr>
+</tbody>
+</table>
+<p>Phần vòng lặp gần như không mất gì, bởi vì tool facade, registry và validator đều đã là mã của dự án; AgentCore chỉ đang giữ hộ vòng lặp và trạng thái. Danh tính còn sạch hơn một chút, vì token đi thẳng từ Keycloak vào ứng dụng thay vì qua một authorizer cấu hình bằng bốn trường mà sai một trường là mất hàng rào (AD-31).</p>
+<p>Cổng MCP thì khác. AD-31 đặt cổng ấy trên AgentCore Gateway và đã loại thẳng phương án "MCP server tự viết" vì trái AD-08. Tự dựng buộc phải mở lại quyết định đó, và cái phải viết không chỉ là giao thức: <code>aud</code> đúng endpoint, token hẹp quyền theo RFC 8693, quota, và <code>audit_event</code> cho từng lời gọi. Nếu cổng MCP chưa phải yêu cầu của khách hàng thì cách rẻ nhất là chưa dựng nó.</p>
+<h3 id="j6-mạng-container-và-mạng-biên">J.6 Mạng, container và mạng biên</h3>
+<table>
+<thead>
+<tr>
+<th>Dịch vụ ở F</th>
+<th>Bản tự dựng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VPC endpoint</td>
+<td>Không còn tồn tại, vì không còn dịch vụ AWS nào để đi tới</td>
+</tr>
+<tr>
+<td>ECR</td>
+<td>Một registry container tự dựng. GHCR đang dùng ở <a href="09-trien-khai.md">09</a> §2 vẫn chạy được, nhưng nó do GitHub vận hành nên image vẫn nằm ngoài nhà, đúng kiểu đánh đổi như đường thứ hai ở J.1</td>
+</tr>
+<tr>
+<td>ECS trên Fargate</td>
+<td>Kubernetes, Nomad, hoặc <code>docker compose</code> trên runner self-hosted đúng như dev đang chạy (<a href="09-trien-khai.md">09</a> §2). Mục này chưa đụng AD nào, vì F.3 vẫn còn chờ Q4 chốt</td>
+</tr>
+<tr>
+<td>ALB</td>
+<td>nginx, HAProxy hoặc Traefik</td>
+</tr>
+<tr>
+<td>CloudFront</td>
+<td>Chính reverse proxy ấy làm luôn cache cho tài nguyên tĩnh</td>
+</tr>
+</tbody>
+</table>
+<p>Hai cái bẫy của SSE ở F.4 và F.5 không biến mất mà chỉ đổi tên tham số, và với nginx thì cả hai đều nằm ở mặc định sai. <code>proxy_buffering</code> mặc định là <code>on</code>, tức phản hồi được nhận vào buffer của nginx thay vì đẩy thẳng từng sự kiện xuống client, đúng triệu chứng màn hình trắng mà F.5 mô tả; đường <code>/v1/chat</code> vì vậy phải đặt <code>proxy_buffering off</code>, và tài liệu nginx mô tả chế độ tắt là phản hồi được chuyển cho client ngay khi nhận được. <code>proxy_read_timeout</code> mặc định 60 giây, trong khi lượt <code>optimize</code> có trần 90 giây, nên nó phải được nâng lên mức ≥ 120 giây giống idle timeout của ALB ở F.4.</p>
+<p>Khoản tiền thay đổi nhiều nhất của cả tài liệu nằm ở đây. VPC endpoint là phần cố định lớn nhất, 70,08 $/tháng cho bốn endpoint và 140,16 $/tháng cho tám (F.6), và nó biến mất hoàn toàn cùng với Fargate, ALB và CloudFront. Đổi lại là tiền máy, tiền điện và người trực, tức những khoản không nằm trong bảng giá nào.</p>
+<h3 id="j7-chi-phí-và-giám-sát-chi-phí">J.7 Chi phí và giám sát chi phí</h3>
+<p>Hoá đơn đổi hình chứ không chỉ đổi số. Phần lớn chi phí ở A.8 đến F.6 là tiền trả theo lượt và theo giờ; khi tự dựng, gần như toàn bộ chuyển thành khấu hao phần cứng, điện và công vận hành, tức các khoản trả trước và không co theo lưu lượng.</p>
+<table>
+<thead>
+<tr>
+<th>Công cụ ở G</th>
+<th>Bản tự dựng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cost Explorer</td>
+<td>Bảng đo tự dựng trên metric của hệ thống: GPU-giờ, token mỗi lượt, số lượt theo khách hàng</td>
+</tr>
+<tr>
+<td>Budgets</td>
+<td>Cảnh báo đặt trên chính các metric ấy</td>
+</tr>
+<tr>
+<td>Cost Anomaly Detection</td>
+<td>Không có bản tương đương; thay bằng cảnh báo ngưỡng trên lưu lượng và thời gian GPU</td>
+</tr>
+<tr>
+<td>Cost allocation tags</td>
+<td>Nhãn gắn trên metric, phục vụ đúng việc bổ chi phí theo <code>CostCenter</code> và <code>Project</code></td>
+</tr>
+<tr>
+<td>Compute Optimizer và Savings Plans</td>
+<td>Không còn nghĩa; việc tương ứng là đo tải thật rồi chỉnh số replica</td>
+</tr>
+</tbody>
+</table>
+<p>Điều đáng nói là phanh chi phí trên AWS gần như miễn phí (G.4), còn bản tự dựng thì phải viết và phải nuôi. Ngược lại, thứ nó canh cũng ít nguy hiểm hơn: một job gọi nhầm API không sinh ra hoá đơn bất ngờ mà chỉ làm hàng đợi dài ra. Cảnh báo vì vậy nên đặt vào chỗ đau thật, tức thời gian chờ của người dùng và mức chiếm GPU.</p>
+<h3 id="j8-danh-tính-và-quyền">J.8 Danh tính và quyền</h3>
+<p>Bốn role ở H được chia lại theo ba tầng, và không tầng nào là thứ phải dựng mới: Keycloak đã là nguồn danh tính của cả hệ thống, orchestrator có RBAC riêng, kho bí mật có chính sách riêng.</p>
+<table>
+<thead>
+<tr>
+<th>Vai trò ở H</th>
+<th>Bản tự dựng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>assistant-runtime</code>, <code>assistant-ingest</code></td>
+<td>Service account của orchestrator, kèm chính sách đọc bí mật hẹp theo từng service</td>
+</tr>
+<tr>
+<td>Service role của KB</td>
+<td>Không còn, vì kho vector nằm trong database của dự án</td>
+</tr>
+<tr>
+<td>Execution role của Harness</td>
+<td>Không còn, vì vòng lặp chạy trong <code>Assistant.Api</code> (J.5)</td>
+</tr>
+<tr>
+<td>Trust policy chống confused-deputy ở H.3</td>
+<td>Ràng buộc <code>aud</code> và <code>azp</code> trong token Keycloak, đúng cơ chế mà AD-31 đã dùng cho cổng MCP</td>
+</tr>
+</tbody>
+</table>
+<p>Nguyên tắc least-privilege ở H không đổi một chữ, chỉ đổi chỗ khai. Điểm phải cẩn thận là chính sách mặc định: IAM từ chối khi không có allow, còn RBAC và chính sách kho bí mật thì tuỳ cấu hình, nên mặc định từ chối phải được đặt tường minh thay vì tin là đã có.</p>
+<h3 id="j9-postgresql">J.9 PostgreSQL</h3>
+<p>Đây là mục mà bản tự dựng gần bản quản lý sẵn nhất, bởi vì engine giống hệt. Extension <code>fuzzystrmatch</code> giống hệt, và toàn bộ SQL của RLS ở I.4 chạy nguyên văn, kể cả ràng buộc role ứng dụng không được là owner và không được có <code>BYPASSRLS</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Tính năng của RDS/Aurora</th>
+<th>Bản tự dựng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Multi-AZ</td>
+<td>Một cụm có bầu chọn leader tự động</td>
+</tr>
+<tr>
+<td>Backup và point-in-time recovery</td>
+<td>Công cụ backup của PostgreSQL, đặt lịch và đo thời gian khôi phục thật</td>
+</tr>
+<tr>
+<td>RDS Proxy (I.2)</td>
+<td>PgBouncer</td>
+</tr>
+<tr>
+<td>Master credentials trong Secrets Manager (I.1)</td>
+<td>Kho bí mật đã dựng ở J.4</td>
+</tr>
+<tr>
+<td>Encryption at-rest (I.3)</td>
+<td>Xem đoạn dưới</td>
+</tr>
+</tbody>
+</table>
+<p>Mã hoá at-rest là chỗ khác biệt duy nhất có ý nghĩa với <a href="06-bao-mat.md">06</a>. PostgreSQL bản cộng đồng <strong>không có</strong> transparent data encryption; tài liệu của chính dự án PostgreSQL liệt kê sáu phương án mã hoá, và phương án tương ứng với I.3 là mã hoá ở tầng file system hoặc block, ví dụ <code>dm-crypt</code> kèm LUKS. Hệ quả có hai chiều. Chiều xấu là khoá không còn nằm ở tầng database, nên việc phân khoá theo vai trò ở D.1 không áp xuống tới từng database được nữa. Chiều tốt là ràng buộc khó chịu nhất của I.3 biến mất: khoá đĩa đổi được mà không phải dựng lại database, trong khi khoá KMS của RDS thì không.</p>
+<p>Số tiền ở I.5 cũng biến mất theo, gồm cả khoảng chênh gấp đôi giữa Single-AZ và Multi-AZ. Đổi lại, high availability trở thành thứ phải tự chứng minh: một cụm có bầu chọn leader chỉ đáng tin sau khi đã diễn tập mất node và đo được thời gian chuyển đổi thật.</p>
+<h3 id="j10-cái-mất-cái-được-và-cái-phải-đo-trước-khi-chốt">J.10 Cái mất, cái được, và cái phải đo trước khi chốt</h3>
+<table>
+<thead>
+<tr>
+<th>Mất</th>
+<th>Được</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mô hình ngang Claude Sonnet 5 (J.1)</td>
+<td>Câu hỏi và tài liệu không rời khỏi hạ tầng công ty</td>
+</tr>
+<tr>
+<td>CloudTrail ở tầng nền tảng (J.4)</td>
+<td>Chi phí chuyển từ biến đổi sang cố định, bỏ được khoản VPC endpoint lớn nhất</td>
+</tr>
+<tr>
+<td>Quota co giãn theo đơn xin (C.2)</td>
+<td>Không còn phụ thuộc hạn mức của một vùng AWS</td>
+</tr>
+<tr>
+<td>Guardrail đã hiệu chỉnh sẵn cho nhiều ngôn ngữ</td>
+<td>Bộ lọc hiệu chỉnh được đúng theo tiếng Pháp và từ vựng ngành</td>
+</tr>
+<tr>
+<td>Cost Anomaly Detection và các công cụ chi phí miễn phí</td>
+<td>Không còn hoá đơn bất ngờ cần canh</td>
+</tr>
+</tbody>
+</table>
+<p>Ba việc phải làm xong trước khi chốt phương án. Thứ nhất là chạy bộ 50 câu tiếng Pháp của <a href="08-eval-quan-sat.md">08</a> trên mô hình nền, embedding và reranker định dùng, rồi so với số hiện có; chưa có ba con số đó thì J.1 và J.3 vẫn là giả thiết. Thứ hai là chốt với <a href="06-bao-mat.md">06</a> xem bản ghép sổ kiểm toán ở J.4 có đủ cho kiểm toán không. Thứ ba là dựng bảng chi phí theo hình mới, vì <a href="13-chi-phi.md">13</a> hiện tính toàn bộ theo đơn giá AWS và không có dòng nào cho máy, điện hay người trực.</p>
+<p>Phương án trung gian đáng cân nhắc trước khi làm tất cả: giữ mô hình nền ở nơi nó đang chạy và tự dựng phần còn lại. Cách này lấy ngay các khoản J.3 đến J.9 mà không phải trả lời câu hỏi khó nhất ở J.1, và nó cũng là bước đi đúng thứ tự nếu sau này chuyển hẳn.</p>
 <hr />
 <h2 id="nguồn">Nguồn</h2>
 <ul>
@@ -1047,8 +1717,11 @@ CREATE POLICY case_org_isolation ON &quot;case&quot;
 <li><a href="https://docs.aws.amazon.com/bedrock/latest/userguide/kb-direct-ingestion.html">Ingest changes directly into a knowledge base</a> — khác biệt giữa nạp trực tiếp và sync</li>
 <li><a href="https://docs.aws.amazon.com/bedrock/latest/userguide/kb-direct-ingestion-add.html">Ingest documents directly into a knowledge base</a> — hình dạng request, metadata inline, hạn mức 25 tài liệu</li>
 <li><a href="https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_CreateDataSource.html">CreateDataSource</a> — <code>vectorIngestionConfiguration</code> là trường cấp ngoài cùng; <code>chunkingConfiguration</code> không sửa được sau khi tạo</li>
+<li><a href="https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/using-price-list-query-api.html">Using the AWS Price List bulk API</a> — nguồn của mọi đơn giá ở các mục Chi phí, đọc từ offer file <code>eu-central-1</code></li>
+<li><a href="https://nginx.org/en/docs/http/ngx_http_proxy_module.html">Module ngx_http_proxy_module</a> — <code>proxy_buffering</code> mặc định <code>on</code>, phản hồi vào buffer thay vì chuyển thẳng cho client; <code>proxy_read_timeout</code> mặc định 60 giây (J.6)</li>
+<li><a href="https://www.postgresql.org/docs/17/encryption-options.html">Encryption Options</a> — sáu phương án mã hoá của PostgreSQL; mã hoá at-rest nằm ở tầng file system hoặc block, ví dụ <code>dm-crypt</code> kèm LUKS (J.9)</li>
 </ul>
-<p>Những gì không có dòng nguồn ở trên là <strong>đọc trực tiếp từ console tài khoản công ty ngày 23/09/2026</strong>: trang Model access đã bị gỡ, model mặc định của Harness là <code>global.anthropic.claude-sonnet-4-6</code>, Harness gắn sẵn một memory, Managed KB không cho chọn chunking, và danh sách resource type của CloudTrail có <code>AWS::Bedrock::KnowledgeBase</code>, <code>AWS::Bedrock::Guardrail</code>, <code>AWS::BedrockAgentCore::Runtime</code>. Ảnh mục <strong>H · IAM</strong>, <strong>I · Cơ sở dữ liệu</strong>, <strong>D.6 (Model invocation logging)</strong> và <strong>G.3 (cost allocation tags)</strong> chụp trực tiếp trên console ngày <strong>24/09/2026</strong>, đã che tên và số tài khoản. Giao diện AWS thay đổi liên tục, nên cần kiểm lại trước khi dựa vào.</p>
+<p>Những gì không có dòng nguồn ở trên là <strong>đọc trực tiếp từ console tài khoản công ty ngày 23/09/2026</strong>: trang Model access đã bị gỡ, model mặc định của Harness là <code>global.anthropic.claude-sonnet-4-6</code>, Harness gắn sẵn một memory, Managed KB không cho chọn chunking, và danh sách resource type của CloudTrail có <code>AWS::Bedrock::KnowledgeBase</code>, <code>AWS::Bedrock::Guardrail</code>, <code>AWS::BedrockAgentCore::Runtime</code>. Ảnh mục <strong>H · IAM</strong>, <strong>I · Cơ sở dữ liệu</strong>, <strong>D.6 (Model invocation logging)</strong> và <strong>G.3 (cost allocation tags)</strong> chụp trực tiếp trên console ngày <strong>24/09/2026</strong>, đã che tên và số tài khoản. Giao diện AWS thay đổi liên tục, nên cần kiểm lại trước khi dựa vào. Mục <strong>J</strong> nằm ngoài phần đọc từ console: các phương án ở đó dựa trên thiết kế đã ghi trong <a href="01-kien-truc.md">01</a>, <a href="09-trien-khai.md">09</a> và <a href="10-rui-ro.md">10</a>, cộng hai dòng nguồn nginx và PostgreSQL ở trên, và mọi chỗ còn phải đo đều được ghi ngay tại mục.</p>
 </div></main>
 <script>
 (function(){
