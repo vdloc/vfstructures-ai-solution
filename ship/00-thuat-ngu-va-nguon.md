@@ -563,7 +563,7 @@ aws cloudtrail put-event-selectors --trail-name <trail> \
 | Claude Haiku 4.5 | **4 096 token** | 4 | 5 phút hoặc 1 giờ |
 | Claude Opus 5 | **512 token** | 4 | 5 phút hoặc 1 giờ |
 
-> **Hệ quả trực tiếp cho kiến trúc này: đường IntentRouter gần như không cache được.** Router chạy Claude Haiku 4.5 với prompt ngắn — system prompt cộng danh sách `similarity_keys` sinh từ manifest. Ngưỡng của Haiku 4.5 là **4 096 token**, cao gấp bốn lần Sonnet 5. Prompt router nhiều khả năng không chạm ngưỡng đó, nên **mọi lượt hỏi trả đủ giá cho phần tĩnh của router**.
+> **Hệ quả trực tiếp cho kiến trúc này.** Bản trước của AD-15 có một IntentRouter riêng chạy Haiku 4.5, và ngưỡng 4 096 token của mô hình đó gần như chắc chắn không đạt, nên phần tĩnh của router trả đủ giá ở mọi lượt. Từ khi phân loại chuyển vào vòng đầu của Harness, ngưỡng áp dụng là **1 024 token của Sonnet 5** và phần tĩnh của Harness lớn hơn nhiều, nên khả năng cache được cao hơn hẳn. Đổi lại, câu hỏi chuyển thành **Harness có đặt `cachePoint` hay không** — điều dịch vụ quản lý sẵn không cho điều khiển, và là đòn bẩy chi phí lớn nhất còn lại ([13](13-chi-phi.md) §6).
 >
 > Tài liệu AWS ghi rõ hành vi khi không đạt ngưỡng: *"If you add a cache checkpoint before the total prompt prefix meets the minimum number of tokens, your inference still succeeds, but your prefix isn't cached."* Inference vẫn chạy, cache không có, **không có lỗi nào**. Phải đo `cacheReadInputTokens` mới biết.
 >
@@ -709,7 +709,7 @@ Những mục dưới đây **chưa có nguồn xác minh**, và tài liệu ghi
 - `eu.anthropic.claude-sonnet-5` có hỗ trợ **batch inference** (`CreateModelInvocationJob`) không — bảng model hỗ trợ (fetch 21/09/2026) không liệt kê Sonnet 5, chỉ có Opus 5. Ảnh hưởng AD-21: nếu không hỗ trợ, phần sinh câu trả lời golden set phải chạy `Converse` vòng lặp thay vì batch. Đã xác nhận thêm (batch-inference.html, fetch 21/09/2026): batch **không hỗ trợ tool calling và structured output**, nên các nhóm golden set cần gọi tool không chạy qua batch được. Mức giảm 50% xác nhận ở trang giá AWS (fetch 21/09/2026), ghi là chỉ áp cho một số model.
 - `eu.anthropic.claude-sonnet-5` có hỗ trợ `CountTokens` trên `bedrock-runtime` không. Tài liệu AWS chỉ nói một số model Claude **CRIS-only** không hỗ trợ, không nêu đích danh Sonnet 5 — gọi thử một lần mới biết; nếu không, chuyển sang `bedrock-mantle`.
 - Harness ở chế độ VPC có cần đường ra internet vì lý do nào khác ngoài kéo image không (ví dụ discovery URL của Keycloak). Tài liệu AWS chỉ xác nhận kéo image không cần NAT.
-- Prompt của IntentRouter có chạm ngưỡng 4 096 token của Haiku 4.5 để cache được không.
+- Harness có đặt `cachePoint` cho phần tĩnh không. Câu hỏi cũ về ngưỡng 4 096 token của Haiku 4.5 đã đóng cùng AD-15, vì đường chính không gọi mô hình đó nữa.
 - Đơn giá thật của từng mô hình, và độ trễ thật của mỗi lời gọi.
 
 **Đã có câu trả lời bằng tài liệu AWS đọc trực tiếp**, nên không nằm trong danh sách trên: Managed Knowledge Base **có** ở `eu-central-1`; mô hình rerank **có** ở `eu-central-1`; ba mô hình embedding ứng viên **đều có** ở `eu-central-1`; managed KB **luôn dùng hybrid** và không có `overrideSearchType` (V-K5); Harness ở chế độ VPC **không cần NAT gateway** để kéo image (V-A10); ACL của S3 **không có kiểu nhóm**.

@@ -102,7 +102,7 @@ Chỉ có `ON CONFLICT` thì mỗi lần chạy lại đều làm `use_count` t�
 ## 4. Tra case
 
 ```
-Bước 5 · IntentRouter (Haiku)
+Bước 5 · Vòng đầu của Harness (Sonnet 5)
 │  intent = case_lookup, case_hints = [{span 12 m}, {fck 30 MPa}]
 ▼
 6c.1 GOM THAM SỐ                                Assistant.Api · ChatOrchestrator

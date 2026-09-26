@@ -623,9 +623,11 @@ Hai con số mặc định trên màn hình đúng bằng hai con số mà [05](
 
 | Ô | Mặc định | Giá trị |
 | --- | --- | --- |
-| **Max Iterations** | **75** | 5 cho lượt thường và 7 cho `optimize` |
-| **Timeout duration** | **60 phút** (trần 480) | 60 giây cho lượt thường và 90 giây cho `optimize` |
+| **Max Iterations** | **75** | 7 cho mọi lượt |
+| **Timeout duration** | **60 phút** (trần 480) | 90 giây cho mọi lượt |
 | **Allowed tools** | — | `shell` và `file_operations` bị loại bỏ |
+
+Hai trần này là một con số chung cho mọi lượt chứ không chia theo loại câu hỏi. Lý do nằm ở AD-15: phân loại nay diễn ra trong chính vòng đầu của Harness, nên lúc đặt trần thì chưa biết lượt này thuộc loại nào. Cả hai lấy giá trị cao nhất trong dải cũ, vì hạ trần giữa chừng không có đường làm trên console.
 
 ### E.2 Inbound Auth — danh tính gọi vào
 

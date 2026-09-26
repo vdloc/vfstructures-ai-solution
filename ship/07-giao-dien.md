@@ -204,7 +204,7 @@ Gộp hai mức thì cảnh báo mất trọng lượng: câu trả lời nào c
 
 ## 4a. Chip xác nhận tham số tra case (AD-16)
 
-Khi ý định là `case_lookup` và một giá trị số **chỉ** đến từ `case_hints` do router bóc ra (không có `tool_run` hay `pageContext` xác nhận), giao diện hiện chip tham số **trước khi** chạy truy vấn.
+Khi ý định là `case_lookup` và một giá trị số **chỉ** đến từ `case_hints` do vòng đầu của Harness bóc ra (không có `tool_run` hay `pageContext` xác nhận), giao diện hiện chip tham số **trước khi** chạy truy vấn.
 
 - Mỗi chip: `tên tham số · giá trị · đơn vị`, sửa tại chỗ, xóa được.
 - Giá trị có nguồn từ `tool_run` hoặc `pageContext` hiện ở dạng tĩnh, không sửa được ở đây.

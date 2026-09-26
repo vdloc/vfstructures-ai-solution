@@ -11,7 +11,7 @@
 - Việc làm trước, xếp theo thứ tự chặn
 - Bước 1 — Nhận request, mở SSE
 - Bước 2 — Gate và chuẩn bị song song
-- Bước 3 — Routing
+- Bước 3 — Routing trong vòng đầu của Harness
 - Bước 4 — Lấy căn cứ
 - Bước 5 — Post-validation
 - Bước 6 — Giữ hợp đồng
@@ -49,7 +49,7 @@ Giải thích đầy đủ ở [00-thuat-ngu-va-nguon.md](00-thuat-ngu-va-nguon.
 | Thuật ngữ | Một câu |
 | --- | --- |
 | **SSE** | Một kết nối mở sẵn, server đẩy dần từng mẩu xuống trình duyệt |
-| **IntentRouter** | Mô hình nhỏ chạy đầu mỗi lượt để phân loại câu hỏi, giải đại từ, bóc tham số |
+| **Vòng đầu của Harness** | Lượt đi qua Sonnet 5 một lần để phân loại câu hỏi, giải đại từ và bóc tham số, trước khi vào tool loop (AD-15) |
 | **Structured output** | Ép mô hình trả JSON đúng khuôn. Bảo đảm **hình dạng**, không bảo đảm **nghĩa** |
 | **`Retrieve`** | Lời gọi API đi tìm chunk tài liệu liên quan |
 | **`filter`** | Tham số lọc của `Retrieve`. **Đây là hàng rào phân quyền** |
@@ -131,29 +131,32 @@ Hai việc đầu là **tài liệu, không phải mã chạy được** — ph�
 
 ---
 
-## Bước 3 — Routing
+## Bước 3 — Routing trong vòng đầu của Harness
+
+Từ AD-15, routing không còn là một bước riêng. Sonnet 5 phân loại, viết lại câu hỏi và bóc `case_hints` ngay trong vòng đầu của Harness, rồi đi thẳng vào tool loop cùng một phiên. Mục này mô tả phần việc ấy; hạ tầng Harness nằm ở bước gọi `InvokeHarness`.
 
 ### Phải làm
 
-- Prompt router và schema structured output để trong repo dưới dạng hằng số **có version**, không nội suy chuỗi.
-- `Temperature = 0`, `MaxTokens = 400`.
-- Bộ eval độ chính xác nhãn trên câu hỏi kỹ thuật, **tách theo ngôn ngữ** tiếng Pháp và tiếng Anh.
-- Fallback khi Haiku lỗi: mặc định `doc_qa`, `search_query = raw turn`, gắn cờ `degraded_routing` vào `retrieval_log`.
-- **Regex bóc mã điều khoản** — giữ lại kể cả khi bỏ luật nhanh. Nó phục vụ ClauseResolver ở bước 4, không phải phục vụ routing.
+- Phần prompt lo việc phân loại để trong repo dưới dạng hằng số **có version**, không nội suy chuỗi. Nó là một phần của prompt hệ thống Harness.
+- Ba thẻ `<history>`, `<page_context>`, `<question>` bọc đầu vào phải giữ nguyên tên. Prompt dặn mô hình coi nội dung trong ba thẻ là dữ liệu, nên đổi tên thẻ là mất lớp chống chèn lệnh.
+- Bộ eval độ chính xác nhãn trên câu hỏi kỹ thuật, **tách theo ngôn ngữ** tiếng Pháp và tiếng Anh. Đo trên cấu hình thật, tức có tool trong ngữ cảnh.
+- Harness lỗi hoặc timeout: phát sự kiện `error` kèm `requestId` và kết thúc lượt. **Không có fallback.** Xem AD-15 bên dưới.
+- **Regex bóc mã điều khoản** — giữ lại. Nó phục vụ ClauseResolver ở bước 4, không phải phục vụ routing.
 
 ### AD-16
 
-- Router trả thêm khối `case_hints` = `{ tool_id, params: [{key, value, unit}] }`. `key` và `unit` là enum sinh từ `tools.manifest.yaml`.
-- `MaxTokens` của router đặt **300–400**, không giữ 150. Sau mỗi lần gọi assert `stopReason != "max_tokens"`; chạm trần thì JSON đứt, lượt đó rơi về fallback kèm `degraded_routing`.
+- Vòng đầu trả thêm khối `case_hints` = `{ tool_id, params: [{key, value, unit}] }`. `key` và `unit` là enum sinh từ `tools.manifest.yaml`.
 - `case_hints` **chỉ vào mệnh đề lọc và hàm chấm điểm**. Không bao giờ vào tham số gọi engine. P2 không đổi.
+- Thứ tự ưu tiên `tool_run` > `pageContext` > `case_hints` và việc ghi đè theo từng key là mã của `ChatOrchestrator`. Gộp routing vào Harness không đụng tới nó.
+- Giá trị chỉ đến từ `case_hints` vẫn mang `confirmed: false` và vẫn phải hiện thành chip cho kỹ sư xác nhận (R45).
 
 ### AD-15
 
-Luật nhanh **ra khỏi đường chính**. Ba việc kèm theo:
+Không còn lời gọi mô hình riêng ở đầu lượt. Ba việc kèm theo:
 
-1. Xóa luật khỏi hot path, giữ lại **chỉ làm fallback** khi router lỗi hoặc timeout.
-2. Yêu cầu FE thêm `hasResult`, `resultKind`, `calcAt` vào `pageContext`. Thiếu nó Haiku **không thể** thay được luật `explain_result`, vì luật đó dựa vào trạng thái chứ không dựa vào chữ, mà Haiku chỉ thấy khối `pageContext` rút gọn.
-3. Đo lại ngân sách độ trễ: mọi lượt nay đều trả 300–500 ms cho router.
+1. Bỏ luật nhanh khỏi mọi đường, kể cả đường dự phòng. Từ đây hệ thống **không có chế độ giảm**: Harness hỏng thì lượt kết thúc bằng `error`, không có đường nào chạy tiếp bằng luật.
+2. Yêu cầu FE thêm `hasResult`, `resultKind`, `calcAt` vào `pageContext`, và `pageContext` phải đi tới Harness. Thiếu nó thì intent `explain_result` **không bao giờ** xuất hiện, vì nó dựa vào trạng thái chứ không dựa vào chữ.
+3. Đo lại ngân sách độ trễ. Mọi lượt bỏ được 300–500 ms của lần gọi router cũ, nhưng 67% số lượt trước đây không chạm Harness nay đều phải dựng phiên.
 
 **Không xóa nhầm:** regex bóc mã điều khoản ở lại. Nó không phải luật routing — nó phục vụ ClauseResolver ở bước 4.
 
@@ -169,15 +172,15 @@ Luật nhanh **ra khỏi đường chính**. Ba việc kèm theo:
 
 **BE-5 · Thêm trường vào schema mà quên nâng `MaxTokens`** làm output bị cắt cụt, parse hỏng, và lượt rơi xuống fallback mà không ai biết.
 
-**R42 · Câu hỏi tiếng Anh chạy trên knowledge base tiếng Pháp.** Prompt phải giữ nguyên ngôn ngữ gốc của `search_query`. Từ AD-17, tìm kiếm hybrid trên nội dung tài liệu nằm trong `Retrieve` của MKB, không còn cấu hình FTS nào ở PostgreSQL để hỏng — nhưng Haiku dịch `search_query` sang ngôn ngữ khác ngôn ngữ gốc của câu hỏi vẫn có thể làm MKB khớp kém hơn, mức độ chưa đo được. Đo bằng golden set tách theo ngôn ngữ ở bước 4.
+**R42 · Câu hỏi tiếng Anh chạy trên knowledge base tiếng Pháp.** Prompt phải giữ nguyên ngôn ngữ gốc của `search_query`. Từ AD-17, tìm kiếm hybrid trên nội dung tài liệu nằm trong `Retrieve` của MKB, không còn cấu hình FTS nào ở PostgreSQL để hỏng — nhưng mô hình dịch `search_query` sang ngôn ngữ khác ngôn ngữ gốc của câu hỏi vẫn có thể làm MKB khớp kém hơn, mức độ chưa đo được. Đo bằng golden set tách theo ngôn ngữ ở bước 4. Lần đo ngày 26/09/2026 trên 123 câu golden cho thấy lỗi này có thật nhưng hiếm: 1 trong 33 câu tiếng Anh sinh `search_query` bằng tiếng Pháp.
 
-**R23 · Haiku 4.5 đã công bố mốc EOL.** Đổi mô hình là đổi một dòng cấu hình, nhưng phải có số đo độ chính xác của Nova Lite sẵn trước khi cần.
+**R23 · Không còn áp dụng cho đường chính.** Từ AD-15, đường chính không gọi Haiku 4.5 nữa, nên mốc EOL của mô hình này thôi là rủi ro của bước 3.
 
 **R46 · Từ AD-17, biên phân quyền là một tham số API, không còn là mệnh đề SQL.** Gọi `Retrieve` thiếu filter trả về tài liệu của mọi organization. Chặn bằng cấu trúc: một lớp duy nhất, scope là tham số khởi tạo bắt buộc, architecture test trong CI. Quy ước không đủ.
 
 **R47 · Metadata filter của Bedrock có ba đường có thể hỏng im lặng.** Thuộc tính không có trong sidecar → có thể trả rỗng. `startsWith` và `stringContains` → tài liệu managed KB ghi là không được hỗ trợ; báo lỗi hay bị bỏ qua (và trả về tất cả) thì **chưa kiểm chứng**, V-K4 phải thử. `numberOfResults` bỏ trống → phụ thuộc mặc định. Vì chưa biết đường nào báo lỗi, coi cả ba là im lặng cho tới khi V-K4 chứng minh ngược lại.
 
-**R44 · Từ AD-15, router là điểm chết đơn.** Fallback tồn tại nhưng **mất khả năng giải đại từ**, nên câu hỏi dựa vào lịch sử sẽ retrieval sai trong suốt thời gian router hỏng. So sánh Nova Lite là **bắt buộc**, không phải tùy chọn.
+**R44 · Từ AD-15, Harness là điểm chết đơn và không còn fallback.** Phân loại và trả lời cùng nằm trên một dịch vụ, nên Harness hỏng là hỏng cả lượt: phát `error` kèm `requestId`, không có chế độ giảm. Đây là quyết định có ý thức, không phải thiếu sót. Việc phải làm đổi từ *so sánh mô hình định tuyến thay thế* sang *đo tỉ lệ lỗi của `InvokeHarness` và đặt cảnh báo CloudWatch trên tỉ lệ đó*.
 
 ---
 
@@ -211,7 +214,7 @@ Ba nhánh, ba khối công việc tách biệt. Có thể chia cho ba người.
 - `CaseSimilarityScorer`: lọc cứng SQL (`org_id` qua RLS, `status = 'active'`, `verdict = 'pass'`, `tool_id` / `element_type`) → ≤200 ứng viên → khoảng cách chuẩn hóa trên `similarity_keys` → top 5 → tie-break `use_count` giảm dần rồi `last_seen_at` giảm dần. Không dùng vector.
 - **Hàm khoảng cách khi thiếu key** ([01](01-kien-truc.md)): chuẩn hóa từng key về `[0,1]` theo dải trong manifest, tính trung bình **trên tập key giải được ở cả hai phía**, chia cho `coverage` để phạt case thiếu key. Dưới 2 key giải được thì **không truy vấn** — phát sự kiện hỏi lại.
 - Thứ tự ưu tiên nguồn tham số, viết ra trong mã (AD-16): `tool_run` lượt trước → `pageContext` → `case_hints`. Ghi đè theo từng key, không theo cả khối. Gắn cờ `unconfirmed` cho key chỉ có nguồn `case_hints`.
-- **Sinh phần manifest nhúng vào prompt router** từ `tools.manifest.yaml`: danh sách `similarity_keys`, đơn vị hợp lệ, dải giá trị. Sinh lúc khởi động, không viết tay trong prompt — manifest đổi mà prompt không đổi là nguồn sai âm thầm.
+- **Sinh phần manifest nhúng vào prompt Harness** từ `tools.manifest.yaml`: danh sách `similarity_keys`, đơn vị hợp lệ, dải giá trị. Sinh lúc khởi động, không viết tay trong prompt — manifest đổi mà prompt không đổi là nguồn sai âm thầm.
 - Ghi `case_hints` gốc (trước khi ghi đè) vào `audit_event` của lượt (R45).
 
 ### 4C · Nhánh tool loop

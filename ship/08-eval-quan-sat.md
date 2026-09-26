@@ -216,7 +216,7 @@ Nếu nền tảng chạy (ECS/EKS/EC2) được chốt là hỗ trợ, có th�
 flowchart TD
  ROOT["chat.turn (correlation id, user hash, intent)"] --> S1["auth.scope_resolve"]
  ROOT --> S2["guardrail.input"]
- ROOT --> S3["router.classify (Haiku)"]
+ ROOT --> S3["harness.classify (Sonnet 5, vòng đầu)"]
  ROOT --> S4["retrieval"]
  S4 --> S4a["clause.resolve (ClauseResolver)"]
  S4 --> S4b["mkb.retrieve"]

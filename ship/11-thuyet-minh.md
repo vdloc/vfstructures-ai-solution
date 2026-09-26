@@ -205,19 +205,19 @@ Câu hỏi được đưa cho một mô hình **nhỏ, nhanh, rẻ** — Claude 
 }
 ```
 
-Thành phần gọi là **IntentRouter**. Nó làm ba việc trong một lần gọi.
+Việc này nằm ở **vòng đầu tiên của bộ máy trả lời**. Cùng một lần đọc câu hỏi, nó làm ba việc rồi chạy tiếp luôn.
 
 **Một — phân loại.** Câu hỏi rơi vào một trong tám nhóm: hỏi tài liệu, hỏi cách dùng phần mềm, yêu cầu tính, giải thích kết quả đang hiện trên màn hình, câu hỏi hỗn hợp, xin gợi ý phương án, tra tình huống tương tự, hoặc ngoài phạm vi.
 
-**Hai — giải đại từ.** Người dùng hỏi *"nó có đạt không?"*. Chữ "nó" là gì? Nếu đem nguyên câu đó đi tìm tài liệu thì tìm ra rác. IntentRouter nhìn ba lượt trước và viết lại thành *"dầm B12 tiết diện 300×600 có đạt điều kiện cắt không"*. **Câu viết lại mới là câu đi tìm.**
+**Hai — giải đại từ.** Người dùng hỏi *"nó có đạt không?"*. Chữ "nó" là gì? Nếu đem nguyên câu đó đi tìm tài liệu thì tìm ra rác. Máy nhìn ba lượt trước và viết lại thành *"dầm B12 tiết diện 300×600 có đạt điều kiện cắt không"*. **Câu viết lại mới là câu đi tìm.**
 
 **Ba — bóc tham số.** Câu *"dầm nhịp 8 mét, bê tông C30/37, có case tương tự không?"* thì nó bóc ra: nhịp = 8 mét, mác bê tông = C30/37. Khối này gọi là `case_hints`, dùng cho nhánh kinh nghiệm.
 
-Có một lựa chọn kiến trúc ở đây đáng giải thích. Ban đầu thiết kế có một bộ **luật cứng** chạy trước: hễ câu hỏi chứa một dãy số dạng điều khoản thì đi thẳng nhánh tài liệu, khỏi gọi mô hình. Nhanh hơn, rẻ hơn.
+Có hai lựa chọn kiến trúc ở đây đáng giải thích.
 
-Luật đó đã bị **bỏ khỏi đường chính**. Lý do: nó phân loại sai đúng loại câu hỏi hay gặp nhất. Câu *"6.2.2 tôi tính rồi, dầm B12 có đạt không?"* có số hiệu điều khoản nên luật ép nó thành câu hỏi tra tài liệu, trong khi ý người dùng là hỏi về kết quả. Và giữ cả hai bộ phân loại song song thì thành hai thứ phải kiểm thử, có thể mâu thuẫn nhau.
+Thứ nhất, ban đầu thiết kế có một bộ **luật cứng** chạy trước: hễ câu hỏi chứa một dãy số dạng điều khoản thì đi thẳng nhánh tài liệu, khỏi gọi mô hình. Nhanh hơn, rẻ hơn. Luật đó đã bị bỏ, vì nó phân loại sai đúng loại câu hỏi hay gặp nhất. Câu *"6.2.2 tôi tính rồi, dầm B12 có đạt không?"* có số hiệu điều khoản nên luật ép nó thành câu hỏi tra tài liệu, trong khi ý người dùng là hỏi về kết quả. Và giữ cả hai bộ phân loại song song thì thành hai thứ phải kiểm thử, có thể mâu thuẫn nhau.
 
-Luật cứng vẫn còn, nhưng chỉ làm **fallback** — đường dự phòng khi IntentRouter lỗi. Lượt chạy bằng fallback được đánh dấu bằng một cờ, để giao diện hiện rõ là lượt này chạy ở chế độ giảm.
+Thứ hai, ba việc trên từng do **một mô hình nhỏ riêng** làm, trước khi chuyển sang mô hình lớn để trả lời. Nay cả ba nằm trong vòng đầu của chính mô hình trả lời. Đổi lại được hai điều: người dùng thấy chữ đầu tiên sớm hơn khoảng nửa giây, và hệ thống bớt một thành phần phải nuôi. Cái mất là **không còn đường dự phòng**: trước đây mô hình nhỏ hỏng thì luật cứng gánh tạm và lượt vẫn chạy ở chế độ giảm; nay bộ máy trả lời hỏng là lượt hỏng hẳn, người dùng nhận thông báo lỗi chứ không nhận câu trả lời kém. Đây là lựa chọn có ý thức: một câu trả lời sai vì thiếu ngữ cảnh nguy hiểm hơn một thông báo lỗi thành thật.
 
 ### Bước 4 — Rẽ nhánh
 

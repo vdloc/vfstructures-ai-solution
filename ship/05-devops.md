@@ -153,7 +153,7 @@ Sự kiện phải đến **rời rạc theo thời gian**, không dồn thành 
 - Execution role có `bedrock:ApplyGuardrail` **giới hạn đúng ARN guardrail đó**, không dùng `bedrock:*`.
 - Mã hóa CloudWatch Logs bằng KMS, đặt thời hạn lưu trữ, giới hạn quyền đọc log.
 - Cờ kill switch trong Parameter Store, có kiểm soát ai gạt được.
-- Ghi rõ: prompt routing của Haiku **cũng phải** kèm guardrail, vì khối Deny trong IAM policy chặn nó.
+- Ghi rõ: vòng đầu của Harness lo việc routing **cũng phải** kèm guardrail, vì khối Deny trong IAM policy chặn nó.
 
 ### Rủi ro
 
@@ -404,9 +404,9 @@ Hệ quả cho thiết kế: thứ **bắt buộc phải bắt đúng tuyệt đ
 
 ### Phải làm
 
-- Xin tăng quota TPM và RPM cho Sonnet 5 và Haiku 4.5 ở `eu-central-1` **trước mọi việc khác** — AWS duyệt 1–3 ngày làm việc.
+- Xin tăng quota TPM và RPM cho Sonnet 5 ở `eu-central-1` **trước mọi việc khác** — AWS duyệt 1–3 ngày làm việc. Từ AD-15 đường chính không gọi Haiku 4.5 nữa, nên quota của mô hình đó không còn chặn.
 - Chạy `get-foundation-model` ngày đầu để đọc trạng thái vòng đời thật (R23).
-- Cảnh báo CloudWatch cho `ThrottlingException` và cho tỉ lệ `degraded_routing`.
+- Cảnh báo CloudWatch cho `ThrottlingException` và cho tỉ lệ lỗi của `InvokeHarness`. Từ AD-15 không còn chế độ giảm, nên lỗi Harness là lượt hỏng hẳn và phải báo ngay.
 - Chuẩn bị quyền và quota cho **Nova Lite** làm ứng viên thay thế mô hình routing.
 
 ### Vì sao quota là việc đầu chứ không phải khi cần
@@ -415,7 +415,7 @@ Quota mặc định của một tài khoản mới có thể là **0**. Nộp mu
 
 ### Rủi ro
 
-**R23 · Haiku 4.5 đã công bố mốc EOL, và model card ghi hai mốc khác nhau.** Cả hai đều ghi "không sớm hơn", nên phải kiểm trạng thái thật bằng `get-foundation-model` chứ không tin dòng chữ. Chuẩn bị sẵn quyền và quota cho mô hình thay thế.
+**R23 · Không còn áp dụng cho đường chính.** Từ AD-15, đường chính không gọi Haiku 4.5 nữa nên mốc EOL của mô hình này thôi là rủi ro triển khai. Rủi ro tương ứng nay nằm ở Sonnet 5, và cách kiểm vẫn thế: `get-foundation-model` chứ không tin dòng chữ trên model card.
 
 **R21 · Quyền dùng mô hình bên thứ ba là điểm chặn có thể xảy ra ngay ngày đầu.** Xem bảng ba loại cổng ở đầu tài liệu.
 
@@ -478,8 +478,8 @@ Instance riêng hay dùng chung là quyết định vận hành theo Q4, không 
 | Mục | Mặc định của AgentCore | Phải đặt | Hậu quả nếu bỏ qua |
 | --- | --- | --- | --- |
 | Mô hình | `global.anthropic.claude-sonnet-4-6` | `eu.anthropic.claude-sonnet-5`, `apiFormat = converse_stream` | Route ra ngoài EU, vi phạm residency (Q1) |
-| Số vòng | **75 vòng** | 5 (thường), 7 (`optimize`) | Một lượt chạy tới khi hết token |
-| Thời gian | **3 600 giây** | 60 giây (thường), 90 (`optimize`) | Một lượt chạy một tiếng |
+| Số vòng | **75 vòng** | **7 cho mọi lượt** | Một lượt chạy tới khi hết token |
+| Thời gian | **3 600 giây** | **90 giây cho mọi lượt** | Một lượt chạy một tiếng |
 | Tool sẵn có | `shell` và `file_operations` **bật sẵn** | `allowedTools` loại cả hai | Tốn ~900 token mỗi request, và cho mô hình quyền chạy lệnh |
 | Memory | Gọi API mà bỏ trống `memory` thì service **tự tạo managed memory** (AgentCore CLI mặc định tắt) | `disabled` | Hai kho hội thoại song song, phí AgentCore Memory, rủi ro dữ liệu (Q3) |
 | Danh tính gọi vào | SigV4 | `CUSTOM_JWT` + **cả** `allowedClients` **và** `allowedAudience` | Tài liệu AWS bắt buộc **ít nhất một** ràng buộc (audience, client, scope hoặc custom claim) và kiểm đủ mọi ràng buộc đã đặt. Đặt cả hai để token hợp lệ của client khác trên cùng Keycloak không gọi được. SigV4 cũng không mang danh tính người dùng xuống Gateway |

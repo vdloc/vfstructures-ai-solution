@@ -217,7 +217,7 @@ Aurora DSQL bị loại (AD-12): không hỗ trợ extension (thiết kế cần
 | Knowledge Base lỗi | `AWS/Bedrock/KnowledgeBases` `ServerErrors`, `Throttles` | > 0 |
 | Ingestion thất bại | Sự kiện ingestion job | Mọi lần thất bại |
 | Tỉ lệ `CompletedUnverified` | Metric ứng dụng, theo ngày và theo intent | Tăng so với tuần trước |
-| Tỉ lệ `degraded_routing` | Metric ứng dụng | > 2% số lượt |
+| Tỉ lệ lỗi `InvokeHarness` | Metric ứng dụng | > 2% số lượt |
 | Chữ đầu tiên p95 | Metric ứng dụng | > 3 giây |
 | Guardrail can thiệp | Metric ứng dụng từ `audit_event` | Thay đổi đột ngột |
 | Aurora gần trần ACU | `AWS/RDS` `ServerlessDatabaseCapacity` | > 80% trần |

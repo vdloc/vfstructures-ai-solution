@@ -31,6 +31,8 @@ ASSUMPTIONS = {
     # Harness có dùng prompt caching hay không CHƯA kiểm chứng → mặc định KHÔNG cache (bảo thủ).
     "tool_loop": {"static": 4000, "history": 1500, "question": 80, "tool_result": 1200,
                   "output_per_round": 350, "final_output": 700, "harness_caches_static": False},
+    # Trần cấu hình là 7 vòng cho mọi lượt (§8.4); các số dưới đây là số vòng THẬT
+    # quan sát được theo intent, dùng để ước chi phí, không phải trần.
     "rounds": {"calc": 3, "mixed": 4, "explain_result": 3, "optimize": 7},
     # Guardrails: policy bật = content filter (gồm prompt attack) + denied topics + PII (paid)
     "guardrail_policies_input": ["content_filter", "denied_topics", "sensitive_info_paid"],
@@ -38,7 +40,11 @@ ASSUMPTIONS = {
     "grounding_on": False,     # contextual grounding là lớp phụ; bật thì cộng thêm
     "rerank": "mkb_managed",   # hoặc "cohere_rerank_3_5" (V-K6)
     "retrieve_calls_rag": 2,   # Retrieve chính + Retrieve chunk lân cận
-    # AgentCore Runtime cho Harness: thời gian CPU hoạt động mỗi lượt tool loop (giả định)
+    # AgentCore Runtime cho Harness: thời gian CPU hoạt động mỗi lượt (giả định).
+    # CHƯA KIỂM CHỨNG: Runtime tính tiền theo đồng hồ treo tường của phiên hay chỉ
+    # lúc chạy thật. 05-devops.md §2A nói chỉ tính theo mức tiêu thụ thật; nếu tính
+    # cả thời gian nằm không tới idleRuntimeSessionTimeout = 900 s thì con số dưới
+    # đây thấp hơn thực tế khoảng 30 lần. Xem 13-chi-phi.md mục "Chưa rõ".
     "harness_active_vcpu_seconds": 8, "harness_GB": 2, "harness_session_seconds": 30,
 }
 
@@ -66,10 +72,12 @@ def gr_cost(chars, policies):
 
 # ---------------------------------------------------------------- chi phí một lượt
 
-def router_cost():
+def routing_cost():
+    """Phân loại + viết lại + bóc case_hints. Từ AD-15 phần này nằm trong vòng
+    đầu của Harness và chạy trên Sonnet 5, không còn lời gọi Haiku riêng."""
     a = ASSUMPTIONS["router"]
-    inp = a["static"] + a["history_3"] + a["question"] + a["page_context"]   # dưới ngưỡng cache 4 096 của Haiku
-    return usd(inp, M["haiku_4_5"]["input"]) + usd(a["output"], M["haiku_4_5"]["output"])
+    inp = a["static"] + a["history_3"] + a["question"] + a["page_context"]
+    return usd(inp, M["sonnet_5"]["input"]) + usd(a["output"], M["sonnet_5"]["output"])
 
 
 def input_guardrail_cost():
@@ -127,17 +135,29 @@ def tool_loop_cost(rounds):
     return {"model": model, "agentcore": gw + rt, "guardrail": gr}
 
 
+def harness_runtime_cost():
+    """Runtime AgentCore cho một lượt. Từ AD-15 mọi lượt đều dựng phiên Harness,
+    kể cả lượt trước đây đi đường RAG cố định."""
+    a = ASSUMPTIONS
+    return (a["harness_active_vcpu_seconds"] / 3600 * P["agentcore"]["runtime_vcpu_hour"]
+            + a["harness_GB"] * a["harness_session_seconds"] / 3600 * P["agentcore"]["runtime_GB_hour"])
+
+
 def turn_cost(intent):
     base = {"router": 0.0, "input_guardrail": input_guardrail_cost()}
-    if intent == "rejected_by_guardrail":          # chặn ở ApplyGuardrail INPUT, không gọi mô hình
+    if intent == "rejected_by_guardrail":          # chặn ở ApplyGuardrail INPUT, không dựng phiên Harness
         return base
-    base["router"] = router_cost()
+    # AD-15: phân loại chạy trên Sonnet 5 trong vòng đầu của Harness.
+    base["router"] = routing_cost()
     if intent == "out_of_scope":
+        base["agentcore"] = harness_runtime_cost()
         return base
     if intent in ("doc_qa", "app_help"):
         base.update(rag_cost())
+        base["agentcore"] = harness_runtime_cost()
     elif intent == "case_lookup":
         base.update(case_cost())
+        base["agentcore"] = harness_runtime_cost()
     else:
         base.update(tool_loop_cost(ASSUMPTIONS["rounds"][intent]))
     return base

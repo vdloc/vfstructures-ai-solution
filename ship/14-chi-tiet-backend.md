@@ -32,7 +32,7 @@ VFSoftware.Assistant.sln
 │   │   ├── Cases/            Case, CaseParams, DedupeKey
 │   │   └── Tools/            ToolManifest, SimilarityKey, Verdict
 │   ├── Assistant.Application/         use case và interface cổng ra ngoài
-│   │   ├── Chat/             ChatOrchestrator, IntentRouter, ConversationWindow
+│   │   ├── Chat/             ChatOrchestrator, HarnessClient, ConversationWindow
 │   │   ├── Retrieval/        RetrievalService, ClauseResolver
 │   │   ├── Cases/            CaseSimilarityScorer
 │   │   ├── Validation/       NumberValidator, CitationValidator, VerificationValidator
@@ -250,8 +250,9 @@ public async Task RunAsync(TurnContext t, SseWriter sse, CancellationToken ct)
     if (guard.Blocked) { await FinishRefusedAsync(t, sse, guard.Reason, ct); return; }
 
     var question = guard.MaskedText;                                      // chỉ dùng bản đã che từ đây
-    var route = await _router.RouteAsync(question, historyTask.Result, t.Request.Context, ct);
-    // … rẽ nhánh theo route.Intent (mục 6, 7, 8)
+    // Vòng đầu của Harness phân loại rồi chạy tiếp trong cùng phiên (AD-15).
+    // Harness lỗi -> sự kiện error, không có chế độ giảm.
+    await _harness.InvokeAsync(question, historyTask.Result, t.Request.Context, sse, ct);
 }
 ```
 
@@ -302,12 +303,12 @@ var req = new ConverseRequest
 
 var res = await _runtime.ConverseAsync(req, ct);
 if (res.StopReason == StopReason.Max_tokens)                       // JSON đứt giữa chừng
-    return RouteResult.Fallback("degraded_routing");
+    throw new HarnessRoutingException("truncated");                // AD-15: không có fallback
 var json = res.Output.Message.Content.Single(c => c.ToolUse != null).ToolUse.Input;
 var route = RouteValidator.Parse(json);                             // System.Text.Json + FluentValidation; enum key/unit từ manifest
 ```
 
-Lỗi, quá thời gian (khởi điểm 2 giây) hoặc JSON không hợp lệ → fallback luật đơn giản, cờ `degraded_routing`, SSE `warning` ([02](02-hop-dong.md) §5).
+Lỗi, quá thời gian hoặc JSON không hợp lệ → SSE `error` kèm `requestId`, lượt kết thúc. Từ AD-15 **không có fallback và không có chế độ giảm**: phân loại nằm cùng phiên với phần trả lời, nên không còn đường nào chạy tiếp ([02](02-hop-dong.md) §7).
 
 ---
 

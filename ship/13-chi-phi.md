@@ -37,7 +37,7 @@ Mọi phép tính chạy bằng script, không tính tay. Đổi một giả đ�
 
 | Lời gọi | Mô hình | Đầu vào | Đầu ra trung bình |
 | --- | --- | --- | --- |
-| Router (bước 5) | Haiku 4.5 | 1 500 tĩnh + 600 lịch sử 3 lượt + 80 câu hỏi + 200 `pageContext`. Không cache: dưới ngưỡng 4 096 token của Haiku | 150 |
+| Phân loại, vòng đầu của Harness | Sonnet 5 | 1 500 tĩnh + 600 lịch sử 3 lượt + 80 câu hỏi + 200 `pageContext`. Không cache, cùng lý do với tool loop ở dòng dưới | 150 |
 | Trả lời RAG (bước 7) | Sonnet 5, thinking tắt | 2 500 tĩnh **đọc từ cache** + 1 500 lịch sử + 12 chunk × 400 + 80 câu hỏi | 600 |
 | So sánh case (bước 7) | Sonnet 5 | 2 500 tĩnh đọc từ cache + 1 500 lịch sử + 5 case × 300 + 80 | 500 |
 | Tool loop (bước 6b) | Sonnet 5 qua Harness | Mỗi vòng: 4 000 tĩnh + 1 500 lịch sử + 80 câu hỏi + kết quả các vòng trước (1 200 + 350 mỗi vòng). **Không cache**, vì Harness có cache hay không chưa kiểm chứng | 350 mỗi vòng, 700 ở vòng cuối |
@@ -172,21 +172,23 @@ Chưa chốt kho nào: đó là V-K7.
 
 | Loại | Guardrail đầu vào | Router | Mô hình | Knowledge Base | Rerank | AgentCore | Guardrail đầu ra | **Tổng** |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `doc_qa` | 0,00040 | 0,00344 | 0,02119 | 0,00200 | 0 | 0 | 0,00920 | **0,03623** |
-| `app_help` | 0,00040 | 0,00344 | 0,02119 | 0,00200 | 0 | 0 | 0,00920 | **0,03623** |
-| `calc` | 0,00040 | 0,00344 | 0,06246 | 0 | 0 | 0,00037 | 0,00120 | **0,06787** |
-| `explain_result` | 0,00040 | 0,00344 | 0,06246 | 0 | 0 | 0,00037 | 0,00120 | **0,06787** |
-| `mixed` | 0,00040 | 0,00344 | 0,08881 | 0 | 0 | 0,00037 | 0,00120 | **0,09423** |
-| `optimize` | 0,00040 | 0,00344 | 0,18834 | 0 | 0 | 0,00039 | 0,00120 | **0,19377** |
-| `case_lookup` | 0,00040 | 0,00344 | 0,01283 | 0 | 0 | 0 | 0,00360 | **0,02027** |
-| `out_of_scope` | 0,00040 | 0,00344 | 0 | 0 | 0 | 0 | 0 | **0,00384** |
+| `doc_qa` | 0,00040 | 0,00689 | 0,02119 | 0,00200 | 0 | 0,00036 | 0,00920 | **0,04003** |
+| `app_help` | 0,00040 | 0,00689 | 0,02119 | 0,00200 | 0 | 0,00036 | 0,00920 | **0,04003** |
+| `calc` | 0,00040 | 0,00689 | 0,06246 | 0 | 0 | 0,00037 | 0,00120 | **0,07131** |
+| `explain_result` | 0,00040 | 0,00689 | 0,06246 | 0 | 0 | 0,00037 | 0,00120 | **0,07131** |
+| `mixed` | 0,00040 | 0,00689 | 0,08881 | 0 | 0 | 0,00037 | 0,00120 | **0,09767** |
+| `optimize` | 0,00040 | 0,00689 | 0,18834 | 0 | 0 | 0,00039 | 0,00120 | **0,19721** |
+| `case_lookup` | 0,00040 | 0,00689 | 0,01283 | 0 | 0 | 0,00036 | 0,00360 | **0,02407** |
+| `out_of_scope` | 0,00040 | 0,00689 | 0 | 0 | 0 | 0,00036 | 0 | **0,00764** |
 | Bị chặn ở guardrail | 0,00040 | 0 | 0 | 0 | 0 | 0 | 0 | **0,00040** |
 
-USD mỗi lượt. Trung bình theo tỉ trọng ở mục 2: **$0,04905 mỗi lượt**.
+USD mỗi lượt. Trung bình theo tỉ trọng ở mục 2: **$0,05255 mỗi lượt**.
 
 **Đọc bảng:**
-- Lượt bị chặn ở `ApplyGuardrail` INPUT chỉ tốn tiền guardrail, không có lời gọi mô hình nào. Đây là lý do soát câu hỏi phải chạy **trước** router.
-- Tool loop đắt vì mỗi vòng gửi lại cả phần tĩnh và kết quả các vòng trước. `optimize` 7 vòng tốn gấp 5,3 lần một lượt hỏi tài liệu.
+- Lượt bị chặn ở `ApplyGuardrail` INPUT chỉ tốn tiền guardrail, không gọi mô hình và không dựng phiên Harness. Đây là lý do soát câu hỏi phải chạy **trước** Harness.
+- Cột Router nay là phần phân loại chạy trong vòng đầu của Harness (AD-15). Nó tăng từ 0,00344 lên 0,00689 vì cùng khoảng 2 380 token ấy chuyển từ Haiku 4.5 sang Sonnet 5, tức đắt gấp đôi.
+- Cột AgentCore nay khác 0 ở cả `doc_qa`, `app_help`, `case_lookup` và `out_of_scope`, vì mọi lượt đều dựng phiên Harness. Khoản này nhỏ; phần đắt là cột Router.
+- Tool loop đắt vì mỗi vòng gửi lại cả phần tĩnh và kết quả các vòng trước. `optimize` 7 vòng tốn gấp 4,9 lần một lượt hỏi tài liệu.
 - AgentCore gần như không đáng kể trong chi phí biến đổi.
 
 ---
@@ -216,9 +218,9 @@ Tám endpoint giả định: `bedrock-runtime`, `bedrock-agent-runtime`, `bedroc
 
 | Kịch bản | Lượt/tháng | Biến đổi | Cố định | **Tổng/tháng** | USD mỗi kỹ sư | Phần cố định |
 | --- | --- | --- | --- | --- | --- | --- |
-| Thí điểm | 3 520 | 172,67 | 355,02 | **527,69** | 26,38 | 67% |
-| Một công ty | 19 800 | 971,29 | 355,02 | **1 326,31** | 22,11 | 27% |
-| Mở rộng | 82 500 | 4 047,03 | 355,02 | **4 402,05** | 17,61 | 8% |
+| Thí điểm | 3 520 | 184,96 | 355,02 | **539,98** | 27,00 | 66% |
+| Một công ty | 19 800 | 1 040,42 | 355,02 | **1 395,44** | 23,26 | 25% |
+| Mở rộng | 82 500 | 4 335,10 | 355,02 | **4 690,12** | 18,76 | 8% |
 
 **Chưa tính:** chạy golden set và eval trong CI (dùng Opus 5 làm giám khảo; batch rẻ bằng một nửa, nhưng Sonnet 5 có thể không hỗ trợ batch, AD-21), shadow eval (gấp đôi tiền mô hình trên phần chạy shadow, [08](08-eval-quan-sat.md)), ingestion tài liệu lần đầu, môi trường staging, truyền dữ liệu ra Internet, thuế.
 
@@ -231,8 +233,11 @@ Tám endpoint giả định: `bedrock-runtime`, `bedrock-agent-runtime`, `bedroc
 | Thay đổi | Tổng mới | Chênh |
 | --- | --- | --- |
 | Harness có prompt caching cho phần tĩnh | 1 141,26 | **−185,04** |
+| Quay lại IntentRouter riêng chạy Haiku 4.5 (bản trước AD-15) | 1 326,31 | −69,14 |
 | Rerank bằng Cohere thay cho reranker của MKB | 1 348,09 | +21,78 |
 | Bật contextual grounding cho mọi câu trả lời | 1 353,12 | +26,81 |
+
+Dòng thứ hai ghi lại cái giá của AD-15. Gộp phân loại vào Harness làm hóa đơn tăng 69,14 $/tháng: bỏ được 64,76 $ tiền Haiku nhưng Sonnet 5 gánh lại phần việc ấy với 129,53 $, cộng 4,38 $ vì mọi lượt nay đều dựng phiên. Khoản tăng được đổi lấy việc bỏ 300–500 ms khỏi thời gian tới chữ đầu tiên và bớt một thành phần phải vận hành. Đây là quyết định đã chốt, không phải đòn bẩy để cân nhắc lại.
 
 **Xếp theo mức tác động:**
 
@@ -241,7 +246,7 @@ Tám endpoint giả định: `bedrock-runtime`, `bedrock-agent-runtime`, `bedroc
 | 1 | **Cache phần tĩnh trong tool loop.** Kiểm Harness có dùng prompt caching không; nếu không, vòng lặp C# (đường thoát của AD-13) đặt `cachePoint` được | Khoảng −14% tổng hóa đơn ở kịch bản Một công ty | Cần một kiểm chứng mới về Harness |
 | 2 | **Soát chunk một lần lúc nạp, không soát lại mỗi lượt.** 12 chunk bọc `guardContent` tốn khoảng $0,008 mỗi lượt hỏi tài liệu, khoảng $87 mỗi tháng ở kịch bản Một công ty, dù nội dung chunk không đổi giữa các lượt. Policy của guardrail áp cho cả lời gọi, không chọn riêng cho từng khối `guardContent`, nên không bật "chỉ content filter cho chunk" trong cùng một lời gọi được. Hướng khả thi: Worker gọi `ApplyGuardrail` trên từng chunk lúc nạp, chunk bị chặn thì không đẩy lên MKB. Skill `amazon-bedrock` cảnh báo: bỏ chunk ra khỏi `guardContent` thì phần lớn filter sẽ không soát nội dung retrieval nữa | Tới −22% chi phí mỗi lượt hỏi tài liệu | Mất lớp soát prompt injection gián tiếp **lúc truy vấn**; chỉ còn lớp lúc nạp. Chỉ làm khi [06](06-bao-mat.md) đồng ý |
 | 3 | **Giữ reranker quản lý sẵn của MKB** (V-K6) | Tránh +$22 mỗi tháng | Chỉ dùng được với embedding `MANAGED` (AD-06) |
-| 4 | **Giảm số vòng tool loop.** Mỗi vòng thêm gửi lại toàn bộ ngữ cảnh | `optimize` 7 vòng tốn gấp 2,86 lần `calc` 3 vòng | Mô tả tool và tham số tốt hơn, không phải nâng trần |
+| 4 | **Giảm số vòng tool loop.** Mỗi vòng thêm gửi lại toàn bộ ngữ cảnh | `optimize` 7 vòng tốn gấp 2,77 lần `calc` 3 vòng | Mô tả tool và tham số tốt hơn, không phải nâng trần |
 | 5 | **Giảm số VPC endpoint**, dùng chung endpoint giữa các môi trường cùng VPC | Mỗi endpoint trên 2 AZ tốn khoảng $17,5 mỗi tháng | Phụ thuộc thiết kế mạng |
 | 6 | **Aurora tự dừng ở môi trường dev** | Dev gần như chỉ còn tiền lưu trữ | Lần truy vấn đầu sau khi dừng phải chờ khởi động |
 
@@ -271,6 +276,7 @@ Sách *Building Gen AI Applications with Amazon Bedrock* ch06 yêu cầu có s�
 | --- | --- | --- |
 | Harness có prompt caching không | −14% tổng ở kịch bản Một công ty | Gọi thử, đọc `cacheReadInputTokens` trong `metadata` |
 | Giá AgentCore Harness và Policy | Hiện giả định bằng giá Runtime; Policy chưa có giá | Trang giá AgentCore, hoặc hóa đơn đầu tiên |
+| **Cách tính phiên AgentCore Runtime** | Tính theo đồng hồ treo tường của phiên hay chỉ lúc chạy thật. [05](05-devops.md) §2A nói Runtime v2 chỉ tính theo mức tiêu thụ thật; nếu tính cả thời gian nằm không tới `idleRuntimeSessionTimeout` 900 giây thì cột AgentCore thấp hơn thực tế khoảng 30 lần. Từ AD-15 mọi lượt đều dựng phiên, nên câu hỏi này nặng hơn trước | Dựng một runtime, gọi một lượt, để nằm không qua 900 giây, đọc Cost Explorer hôm sau |
 | Số ký tự thật mỗi token với tiếng Pháp và tiếng Việt kỹ thuật | Guardrails tính theo ký tự, mô hình tính theo token | Đo trên golden set |
 | Tỉ trọng loại câu hỏi thật | Đổi tỉ trọng `optimize` từ 3% lên 10% làm chi phí trung bình tăng rõ | Đếm `intent` trong `audit_event` sau vài tuần chạy |
 | Kích thước kho Knowledge Base thật (GB) | $5 mỗi GB-tháng | Sau lần ingestion đầu |

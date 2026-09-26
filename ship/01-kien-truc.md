@@ -221,7 +221,7 @@ Khác với §3.3: những thứ dưới đây **làm được** và có ngườ
 | Tính toán | Tool calling vào engine .NET hiện có, không để mô hình tính | AD-08, P2 |
 | Tra case | Lọc cứng SQL rồi chấm điểm khoảng cách số học; tie-break bằng số lần dùng, không dùng vector | AD-28, AD-16 |
 | Tool loop | AgentCore Harness; ToolGate đặt ở facade C#, nơi lời gọi tool thật sự chạy (§8.5) | AD-13 |
-| Routing | Một lần gọi Haiku cho mọi lượt; luật chỉ là fallback | AD-15 |
+| Routing | Phân loại nằm trong vòng đầu của Harness, không có lời gọi riêng và không có fallback | AD-15 |
 | Chống bịa | Post-validation sau stream, gắn cờ thay vì xóa chữ | F6 |
 | Streaming | SSE một chiều, BFF chuyển tiếp nguyên dạng | AD-07 |
 
@@ -310,7 +310,7 @@ flowchart TB
 | Thành phần | Trách nhiệm |
 | --- | --- |
 | `ChatOrchestrator` | State machine của lượt, phát sự kiện SSE |
-| `IntentRouter` | Gọi Haiku, trả `intent`, `search_query`, `instruction`, `case_hints` |
+| `HarnessClient` | Gọi `InvokeHarness`, đọc cấu trúc vòng đầu (`intent`, `search_query`, `instruction`, `case_hints`) rồi dịch stream sang SSE |
 | `ScopedKnowledgeBaseClient` | Lớp **duy nhất** được gọi `Retrieve`; scope là tham số khởi tạo bắt buộc; dựng `filter`, đặt `numberOfResults` |
 | `ClauseResolver` | Regex bóc mã điều khoản; khớp đúng mã rồi khớp dãy chữ số trong tài liệu thuộc phạm vi; không ra đúng một mã thì hỏi lại (AD-29) |
 | `AccessScopeResolver` | Tính `scope_key`, cache trong tiến trình 60 giây |
@@ -476,19 +476,20 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
- Q["Câu hỏi + pageContext<br/>(hasResult, resultKind, calcAt)"] --> LLMR["Haiku: phân loại + viết lại + bóc case_hints<br/>structured output, temperature 0<br/>prompt nhúng similarity_keys từ manifest"]
- LLMR -.->|"lỗi / timeout / stopReason = max_tokens"| FB["Fallback: luật nhanh → doc_qa<br/>cờ degraded_routing"]
- LLMR --> CLS{"intent"}
+ Q["Câu hỏi + pageContext<br/>(hasResult, resultKind, calcAt)"] --> H["AgentCore Harness — vòng đầu<br/>Sonnet 5 phân loại + viết lại + bóc case_hints"]
+ H -.->|"lỗi / timeout"| ERR["Trả lỗi cho người dùng<br/>sự kiện error, không có chế độ giảm"]
+ H --> CLS{"intent"}
  CLS -->|"doc_qa, app_help"| P1["Đường RAG cố định, 1 lần gọi Sonnet"]
- CLS -->|"calc, mixed, explain_result, optimize"| P2["Tool loop"]
+ CLS -->|"calc, mixed, explain_result, optimize"| P2["Tool loop, cùng phiên Harness"]
  CLS -->|"case_lookup"| HINT{"≥ 2 tham số số học?"}
  CLS -->|"out_of_scope, smalltalk"| P4["Từ chối kèm gợi ý phạm vi"]
  HINT -->|"có"| P3["Tra case, 1 lần gọi Sonnet"]
  HINT -->|"không"| ASK["Hỏi lại tham số thiếu"]
- FB --> P1
 ```
 
-**Hợp đồng đầu ra của router**
+Vòng đầu của Harness sinh ra đúng cấu trúc mà đường phía sau cần, và cấu trúc đó không phơi ra Frontend. Harness hỏng thì lượt kết thúc bằng sự kiện `error`; không còn đường lùi nào chạy tiếp bằng luật.
+
+**Cấu trúc vòng đầu của Harness**
 
 ```json
 {
@@ -550,7 +551,8 @@ sequenceDiagram
  participant G as AgentCore Gateway
  participant F as Tool facade C#
  participant M as Main API
- A->>H: InvokeHarness (runtimeSessionId 33-100 ký tự, messages)
+ A->>H: InvokeHarness (runtimeSessionId 33-100 ký tự, messages, pageContext)
+ H->>H: Sonnet 5 phân loại, viết lại câu hỏi, bóc case_hints
  H->>H: Sonnet 5 phát toolUse
  H->>G: Gọi tool
  G->>G: Cedar Policy + token exchange RFC 8693
@@ -672,7 +674,7 @@ sequenceDiagram
  participant L as Tool loop
  participant T as Tool facade + engine
  E->>A: Gợi ý cách giảm cốt thép cho dầm này
- A->>A: IntentRouter trả optimize
+ A->>L: Vòng đầu Harness phân loại là optimize
  A->>L: Bắt đầu tool loop
  L->>T: project.get_member_result
  T-->>L: Tham số và kết quả hiện tại
@@ -833,9 +835,8 @@ Mọi lần gọi đặt `MaxTokens` tường minh. Bỏ trống là lấy trầ
 
 | Tác vụ | Mô hình | `MaxTokens` | Thinking | Nhiệt độ |
 | --- | --- | --- | --- | --- |
-| Routing, viết lại câu hỏi, `case_hints` | Haiku 4.5 | 300–400 | — | 0 |
 | Trả lời RAG | Sonnet 5 | ~1 500 | Tắt | 0–0,2 |
-| Tool loop | Sonnet 5 | ~4 000 mỗi vòng (thinking tính vào `MaxTokens`) | `adaptive` + `output_config.effort = low`, truyền qua `additionalModelRequestFields` | Thấp |
+| Tool loop, gồm cả routing, viết lại câu hỏi và `case_hints` ở vòng đầu | Sonnet 5 | ~4 000 mỗi vòng (thinking tính vào `MaxTokens`) | `adaptive` + `output_config.effort = low`, truyền qua `additionalModelRequestFields` | Thấp |
 | So sánh case | Sonnet 5 | ~1 500 | Tắt | 0–0,2 |
 
 Hạn chế tham số lấy mẫu của Sonnet 5 khi bật thinking chưa có trên trang AWS; kiểm ở giai đoạn đầu.
@@ -847,13 +848,15 @@ Hạn chế tham số lấy mẫu của Sonnet 5 khi bật thinking chưa có tr
 | Tham số | Mặc định | Đặt thành | Bỏ qua thì |
 | --- | --- | --- | --- |
 | Model | `global.anthropic.claude-sonnet-4-6` | `eu.anthropic.claude-sonnet-5` + `converse_stream` | Request route ra ngoài EU, vi phạm residency (Q1) |
-| `maxIterations` | 75 | 5 (`explain_result`) / 7 (`calc`, `mixed`) | Một lượt chạy tới khi hết token |
-| `timeoutSeconds` | 3600 | 60 / 90 | Một lượt chạy một tiếng |
+| `maxIterations` | 75 | **7 cho mọi lượt** | Một lượt chạy tới khi hết token |
+| `timeoutSeconds` | 3600 | **90 cho mọi lượt** | Một lượt chạy một tiếng |
 | `shell`, `file_operations` | Bật | Loại khỏi danh sách tool | Tốn ~900 token mỗi request, và cho mô hình quyền chạy lệnh |
 | Memory | Gọi API mà bỏ trống `memory` thì service tạo managed memory (AgentCore CLI mặc định tắt) | `disabled` | Hai kho hội thoại song song, phí AgentCore Memory |
 | Xác thực | SigV4 | `CUSTOM_JWT`. AWS bắt buộc ít nhất một ràng buộc (audience, client, scope hoặc custom claim) và kiểm đủ mọi ràng buộc đã đặt. Thiết kế này đặt **cả** `allowedClients` và `allowedAudience` | Chỉ đặt một ràng buộc thì token hợp lệ của client hoặc audience khác vẫn qua được |
 
 Không đụng vào sáu chỗ này thì hệ thống **vẫn chạy** — chỉ là chạy sai, và không có lỗi nào báo ra để biết. Đây là loại lỗi khó phát hiện nhất: mọi thứ trông bình thường cho tới khi có sự cố hoặc audit.
+
+Hai trần này là **một con số chung cho mọi lượt**, không chia theo intent như bản trước. Lý do nằm ở AD-15: phân loại nay diễn ra trong chính vòng đầu của Harness, nên lúc đặt trần thì intent chưa tồn tại. Cả hai lấy giá trị cao nhất trong dải cũ, tức 7 vòng và 90 giây, vì hạ trần giữa chừng không có đường làm. Hệ quả là lượt `explain_result` mất phanh 5 vòng mà bản trước có; bù lại, số vòng thật của từng intent ghi vào `audit_event` nên chỉnh được bằng số đo.
 
 `runtimeSessionId`: 33–100 ký tự. `idleRuntimeSessionTimeout`: 900 giây.
 
@@ -1068,7 +1071,7 @@ Frontend chỉ biết 11 sự kiện ở [02](02-hop-dong.md) §4. Harness phát
 | AD-01 | Service.NET 8 mới `VFSoftware.Assistant.Api` sau BFF proxy | Route API trong Next.js | Thêm một service phải vận hành |
 | AD-02 | Gọi Bedrock trực tiếp bằng AWS SDK sau `ILlmClient`, `IEmbeddingClient`, `IReranker` | Bedrock Agents classic | Tự viết retry, cache, guardrail. **Xác nhận đúng hướng (fetch 21/09/2026):** Bedrock Agents Classic ngừng nhận khách hàng mới từ 30/07/2026, ở chế độ maintenance, AWS khuyến nghị chuyển sang AgentCore — dự án này chưa từng dùng Bedrock Agents classic nên không bị ảnh hưởng, và việc chọn thẳng AgentCore (AD-13) khớp hướng khuyến nghị hiện tại của AWS |
 | AD-03 | Region chính `eu-central-1`, inference profile `eu.*` | `bedrock-mantle` in-region; Paris | Request route trong **8 region EU** (Frankfurt, Zurich, Stockholm, Milan, Spain, Ireland, London, Paris — model card 22/09/2026), không single-region |
-| AD-05 | Ba tầng mô hình: Haiku (routing), Sonnet 5 (trả lời), Sonnet 4.6 (fallback) | Một mô hình cho mọi việc | Ba đường phải đo riêng |
+| AD-05 | Hai tầng mô hình: Sonnet 5 (phân loại và trả lời), Sonnet 4.6 (fallback). Tầng Haiku cho routing bị bỏ khi AD-15 gộp phân loại vào Harness | Một mô hình cho mọi việc; giữ ba tầng có Haiku | Bỏ một tầng thì bớt một đường phải đo, nhưng mất luôn chỗ rẻ nhất của hệ thống: cùng phần việc phân loại, Sonnet 5 đắt gấp đôi Haiku 4.5 |
 | AD-06 | Mô hình embedding chốt bằng đo trên bộ 50 câu, trước khi tạo KB. **Sau khi AD-17 chuyển sang customer-managed, chỉ còn một nhánh: chọn embedding riêng** (`embeddingModelArn`), vì customer-managed KB không có embedding quản lý sẵn | Chọn theo cảm tính; nhánh `MANAGED` cũ | Không đổi được sau khi tạo KB; đổi ý là tạo KB mới và ingest lại. Role của KB cần `bedrock:InvokeModel` trên đúng ARN mô hình. **Trần kích thước chunk = giới hạn token đầu vào của mô hình embedding** — với `chunkingStrategy: NONE`, mỗi chunk được nhúng nguyên khối, nên Worker phải tự ép trần này lúc cắt |
 | AD-07 | Streaming bằng SSE, BFF chuyển tiếp nguyên dạng | SignalR; WebSocket | Phải kiểm qua chuỗi nginx + gateway production |
 | AD-08 | Tool registry trong tiến trình, sinh từ OpenAPI rồi chỉnh tay | MCP server riêng; AI sinh SQL | Manifest phải review như code |
@@ -1078,8 +1081,8 @@ Frontend chỉ biết 11 sự kiện ở [02](02-hop-dong.md) §4. Harness phát
 | AD-12 | Logical database `assistant` riêng; không dùng Aurora DSQL | Dùng chung schema với VFSoftware | Instance vật lý riêng nay là tùy chọn: lý do cũ là tải của chỉ mục HNSW, mà vector store đã sang MKB. **Xác nhận đúng hướng, lý do mạnh hơn (fetch 21/09/2026):** Aurora DSQL không hỗ trợ PL/pgSQL (chỉ SQL function), **một transaction chỉ sửa được tối đa 3 000 dòng** bất kể có bao nhiêu index phụ, DDL và DML phải tách thành hai transaction riêng, mỗi cluster chỉ có đúng một database tên `postgres`, và dùng optimistic concurrency control (xung đột trả lỗi serialization, phải tự viết retry thay vì chờ lock). Bất kỳ lý do nào ở trên cũng đủ loại Aurora DSQL khỏi vai trò lưu `message`/`tool_run`/`case` của dự án này, không chỉ vì HNSW |
 | AD-13 | Tool loop là AgentCore Harness | Vòng lặp C# thuần | ToolGate đặt ở facade vì hook của Harness không mang danh tính người dùng và không thấy phản hồi Main API (§8.5); phải dịch stream sang SSE; ba hạ tầng AWS mới cùng lúc |
 | AD-14 | Vùng chạy `eu-central-1` | APAC; hai vùng | Kỹ sư tại Việt Nam cộng 250–320 ms; nghĩa vụ hồ sơ theo luật Việt Nam (Luật 91/2025/QH15 + Nghị định 356 — xem [10](10-rui-ro.md) Q1); **cần luật sư xác nhận phạm vi áp dụng** |
-| AD-15 | Bỏ luật nhanh khỏi đường routing chính; mọi lượt qua IntentRouter | Giữ luật nhanh ở đường chính | Mọi lượt cộng 300–500 ms; router thành điểm chết đơn (R44) |
-| AD-16 | IntentRouter bóc luôn `case_hints`; ưu tiên `tool_run` > `pageContext` > `case_hints` | Lọc case thuần bằng vector; bắt nhập qua form | Bóc sai thì kỹ sư nhận tiền lệ sai (R45); `MaxTokens` router lên 300–400 |
+| AD-15 | **Phân loại nằm trong vòng đầu của Harness.** Không còn lời gọi mô hình riêng ở đầu lượt: Sonnet 5 phân loại, giải đại từ và bóc `case_hints` ngay trong vòng đầu, rồi đi thẳng vào tool loop cùng một phiên. Không có luật nhanh và không có chế độ giảm — Harness lỗi thì lượt kết thúc bằng sự kiện `error` | IntentRouter riêng chạy Haiku 4.5 (bản trước của chính AD này); giữ luật nhanh ở đường chính | Bỏ được 300–500 ms khỏi thời gian tới chữ đầu tiên và bớt một thành phần phải vận hành. Đổi lại: **mất hẳn đường lùi** (R44), trần vòng lặp không đặt theo intent được nữa nên `explain_result` mất phanh 5 vòng (§8.4), và chi phí tăng khoảng 69 $/tháng ở kịch bản Một công ty vì Sonnet 5 đắt gấp đôi Haiku cho cùng phần việc phân loại ([13](13-chi-phi.md) §6) |
+| AD-16 | Vòng đầu của Harness bóc luôn `case_hints`; ưu tiên `tool_run` > `pageContext` > `case_hints` | Lọc case thuần bằng vector; bắt nhập qua form | Bóc sai thì kỹ sư nhận tiền lệ sai (R45). Thứ tự ưu tiên và việc ghi đè theo từng key là mã của `ChatOrchestrator`, không phải việc của mô hình, nên AD-15 không đụng tới nó |
 | AD-17 | **Retrieval tài liệu chạy trên Customer-managed Knowledge Base, `chunkingStrategy: NONE`.** Worker parse, chunking theo điều khoản, giữ tiêu đề cột, rồi nạp mỗi chunk thành một tài liệu kèm metadata. Bedrock **không parse và không cắt lại**. Lọc quyền là `filter` trên `scope_key` và `status`. ClauseResolver phân giải mã điều khoản trước khi gọi `Retrieve` (AD-29) | Managed KB (MKB); tự xây hybrid trên PostgreSQL + pgvector với RRF; `AgenticRetrieveStream`; Elasticsearch tự dựng | **MKB bị loại vì không cho tự cắt chunk**: bảng so sánh của AWS ghi MKB *Data parsing* là "Built-in parser" và *Chunking* chỉ có "built-in (default) or fixed-size", không có `NONE`. Đổi lại, customer-managed **mất agentic retrieval, mất embedding quản lý sẵn và mất reranker miễn phí** (AWS ghi thẳng "None" cho cả hai), nên AD-06 phải chọn embedding riêng và rerank phải trả tiền. Thêm một vector store phải tự vận hành và trả tiền theo giờ. Worker **không** biến mất |
 | AD-18 | Bedrock Evaluation chạy song song golden set trong CI | Chỉ golden set tự chấm | Thêm một nguồn chấm phải hiểu và đối chiếu. **Xác nhận (fetch 21/09/2026, đọc trực tiếp bằng trình duyệt, URL đúng là `evaluation.html` không phải `model-evaluation.html`):** dịch vụ có tên chính thức "Amazon Bedrock evaluations", hỗ trợ đúng ba dạng dự án cần — "Model evaluation jobs that use a judge model" (chấm bằng LLM thứ hai), đánh giá tự động theo dataset tùy biến hoặc built-in, và "RAG evaluations that use LLMs" (chấm knowledge base theo ground truth). Nâng từ "Proposed" lên đã xác nhận tồn tại đúng như mô tả |
 | AD-19 | Prompt router và prompt trả lời giữ trong Bedrock Prompt Management | Prompt hằng trong mã C# | Thêm một nơi phải kiểm soát phiên bản. **Xác nhận (fetch 21/09/2026):** Prompt Management cho tạo, lưu version, và dùng lại prompt lúc gọi inference hoặc qua Bedrock Flows — khớp mô tả AD-19 |
@@ -1120,7 +1123,7 @@ Mục tiêu chất lượng nằm ở §1.2. Mục này là các kịch bản ch
 | Kịch bản | Kích thích | Phản ứng yêu cầu |
 | --- | --- | --- |
 | Retrieval yếu | `score` cao nhất dưới ngưỡng từ chối (khởi điểm 0.5, hiệu chỉnh bằng golden set) | `refusal` trước khi gọi Sonnet, không đoán |
-| Router lỗi | Haiku timeout, lỗi, hoặc `stopReason = max_tokens` | Fallback luật nhanh, cờ `degraded_routing`, lượt vẫn hoàn thành |
+| Harness lỗi | `InvokeHarness` timeout, lỗi, hoặc phiên đứt | Sự kiện `error` kèm `requestId`, lượt kết thúc. **Không có chế độ giảm** — phân loại và trả lời cùng nằm trên Harness nên không còn đường nào chạy tiếp (AD-15, R44) |
 | Tool lỗi hai lần | Engine trả lỗi | Trạng thái `Degraded`, không lặp tiếp |
 | Số không truy được nguồn | `NumberValidator` trượt | `warning`, `CompletedUnverified`, giữ chữ đã hiện |
 | Tham số case thiếu | Dưới 2 key giải được | Hỏi lại, không trả 5 case yếu |
@@ -1184,7 +1187,7 @@ V-A1 hoặc V-A6 trượt thì rơi về tool loop C# ngay.
 | R9 | `ApiResult.Code = Forbidden` nằm trong HTTP 200; Gateway không thấy body | C | C |
 | R12 | Prompt injection từ chunk tài liệu bên thứ ba | V | C |
 | R26 | Kho case chứa cấu hình chạy thử hoặc tính theo phiên bản engine cũ (AD-28) | C | V |
-| R23 | Haiku 4.5 đã công bố mốc EOL | C | V |
+| R23 | ~~Haiku 4.5 đã công bố mốc EOL~~ **Không còn áp dụng** từ AD-15: đường chính không gọi Haiku nữa | — | — |
 | R27 | ToolGate bị dời vào lifecycle hook của Harness, mất danh tính người dùng và phản hồi Main API | C | C |
 | R29 | Có thể phải tự viết bộ đọc event stream cho Bearer JWT | V | C |
 | R30 | `GuardrailVersion` thiếu thì guardrail không chạy và không báo lỗi | V | C |
@@ -1196,7 +1199,7 @@ V-A1 hoặc V-A6 trượt thì rơi về tool loop C# ngay.
 | R41 | Kỹ sư tại Việt Nam cộng 250–320 ms mỗi lượt | C | T |
 | R42 | Truy vấn xuyên ngôn ngữ: câu hỏi tiếng Anh trên kho tài liệu tiếng Pháp | V | V |
 | R43 | Quyền gọi mô hình có ba cổng chặn độc lập, thời gian chờ khó đoán | V | C |
-| R44 | AD-15 biến IntentRouter thành điểm chết đơn | C | C |
+| R44 | AD-15 biến AgentCore Harness thành điểm chết đơn, và không còn chế độ giảm | C | C |
 | R45 | AD-16: bóc sai tham số thì kỹ sư nhận tiền lệ sai, và sai đó không để lại dấu vết trong câu trả lời | V | C |
 | R46 | AD-17: biên phân quyền rời khỏi câu SQL thành tham số API (`managedSearchConfiguration.filter`). Gọi `Retrieve` thiếu filter trả về tài liệu của mọi organization, đúng định dạng, không lỗi | V | C |
 | R47 | AD-17: metadata filter có ba đường có thể hỏng im lặng — thuộc tính không có trong sidecar (có thể rỗng), `startsWith`/`stringContains` không được hỗ trợ (lỗi hay bị bỏ qua: chưa kiểm chứng), `numberOfResults` bỏ trống. Hành vi cụ thể của đường 1 và 2 trên MKB do V-K4 xác định | C | C |
@@ -1214,7 +1217,7 @@ X = xác suất, T = tác động. T/V/C = thấp/vừa/cao. Bảng đầy đủ
 | Topology production chưa chốt (GĐ-7) | Chờ công ty |
 | Gộp định kỳ case gần trùng | Sau beta |
 | Cache scope chỉ trong bộ nhớ tiến trình, không dùng chung giữa instance | Chấp nhận, TTL 60 giây |
-| So sánh Nova Lite với Haiku 4.5 | Bắt buộc (R44) |
+| ~~So sánh Nova Lite với Haiku 4.5~~ Không còn đối tượng từ AD-15; việc thay thế là **chốt cách xử lý khi Harness lỗi** | Bắt buộc (R44) |
 | Đơn giá mô hình chưa tra được | Dùng AWS Pricing Calculator khi lập dự toán |
 
 ---
@@ -1235,7 +1238,7 @@ X = xác suất, T = tác động. T/V/C = thấp/vừa/cao. Bảng đầy đủ
 | `tool_run` | Bản ghi một lần chạy engine: tool, phiên bản, tham số vào, kết quả ra, đơn vị |
 | `case` | Bộ thông số JSON của một cấu kiện đã được engine tính đạt, thuộc một `org_id` (AD-28) |
 | `similarity_keys` | Danh sách tham số đo độ tương tự của một tool, khai báo trong `tools.manifest.yaml` |
-| `case_hints` | Khối tham số số học do IntentRouter bóc từ câu hỏi (AD-16) |
+| `case_hints` | Khối tham số số học do vòng đầu của Harness bóc từ câu hỏi (AD-16) |
 | `dedupe_key` | `hash(tool_id, tool_version, input đã chuẩn hóa)` |
 | ToolGate | Sáu lớp kiểm chạy trong facade C# trước khi gọi engine |
 | Harness | Vòng lặp agent quản lý sẵn của AgentCore; có lifecycle hook gọi Lambda để allow/deny |
@@ -1245,7 +1248,6 @@ X = xác suất, T = tác động. T/V/C = thấp/vừa/cao. Bảng đầy đủ
 | Managed Knowledge Base (MKB) | Dịch vụ RAG quản lý sẵn của Bedrock: embedding, vector store và `Retrieve`. Ingest từ S3 qua managed connector |
 | Metadata sidecar | Tệp `.metadata.json` đi kèm mỗi chunk trên S3, mang `clause_path`, `page`, `scope_key`, `status` |
 | `ScopedKnowledgeBaseClient` | Lớp duy nhất được phép gọi `Retrieve`; scope là tham số khởi tạo bắt buộc |
-| `degraded_routing` | Cờ đánh dấu lượt đi qua fallback routing |
 | `CompletedUnverified` | Trạng thái kết thúc khi post-validation trượt; chữ vẫn hiện, kèm cảnh báo |
 | `Aborted` | Trạng thái kết thúc khi client ngắt kết nối; giữ phần đã sinh, không chạy post-validation |
 | Verdict | Kết luận đạt/không đạt do engine trả, khai báo trong manifest; mô hình không tự kết luận (AD-24) |

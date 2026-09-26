@@ -19,7 +19,7 @@ Thiết kế đằng sau hợp đồng ở [01](01-kien-truc.md).
 5. Mã `warning`
 6. Mã HTTP và mã `error`
 7. Transport — ba cái bẫy
-8. Output của IntentRouter — hợp đồng nội bộ
+8. Cấu trúc vòng đầu của Harness — hợp đồng nội bộ
 9. Ai chặn ai
 10. Luật không bao giờ vi phạm
 
@@ -84,7 +84,7 @@ Response JSON theo `ApiResponse<T>` của Payment API.
 | `activeView` | trạng thái UI | Phân biệt câu hỏi giải thích kết quả với câu hỏi tra cứu |
 | `unitSystem` | cài đặt người dùng | Ảnh hưởng mọi con số |
 | `codeStandard` | cài đặt dự án | EC2, EC3, DTU… |
-| `hasResult`, `resultKind`, `calcAt` | bảng kết quả đã tính | **Bắt buộc từ AD-15.** IntentRouter dựa vào đây để ra intent `explain_result`; thiếu thì intent đó không bao giờ xuất hiện |
+| `hasResult`, `resultKind`, `calcAt` | bảng kết quả đã tính | **Bắt buộc từ AD-15.** Vòng đầu của Harness dựa vào đây để ra intent `explain_result`; thiếu thì intent đó không bao giờ xuất hiện. `pageContext` vì vậy phải đi tới Harness, không dừng ở `Assistant.Api` |
 | `inputs`, `outputs` | bảng kết quả đã tính | **Chỉ để phát hiện lệch** với bản đã lưu ở server. Không dùng làm input cho engine |
 
 FE **không có ô nhập tay** cho `projectId` hay `memberId`. Đọc từ store của app.
@@ -139,9 +139,10 @@ Mock stream phải phát lại **với độ trễ thật**, không phát một 
 | `unverified_citation` | Một `[n]` không ứng với chunk nào | "Một citation chưa xác minh được" |
 | `standard_version_mismatch` | Engine và tài liệu khác version tiêu chuẩn | "Bộ tính dùng EC2:2004, citation từ bản 2023" |
 | `degraded_retrieval_only` | Model không dùng được | "Chưa tạo được câu trả lời. Đây là các tài liệu liên quan." |
-| `degraded_routing` | IntentRouter lỗi, lượt chạy bằng luật fallback | "Lượt này chạy ở chế độ giảm" |
 | `truncated` | Chạm trần `max_iterations`, `max_output_tokens` hoặc `timeout` | "Chưa trả lời xong trong giới hạn". **Không** trình bày kết quả dở dang như câu trả lời hoàn chỉnh |
 | `unverified_verdict` | Văn bản kết luận đạt/không đạt trái với verdict của engine, hoặc kết luận cho tool chưa khai báo verdict (AD-24) | "Kết luận trong câu trả lời chưa khớp kết quả bộ tính. Xem thẻ kết quả." |
+
+**Gỡ ở v1.2, cần hai đội ký lại:** mã `degraded_routing` **bị bỏ**. Từ AD-15, phân loại nằm trong vòng đầu của Harness và không còn đường lùi nào chạy tiếp bằng luật, nên trạng thái mà mã này mô tả không còn tồn tại. Harness lỗi thì lượt kết thúc bằng sự kiện `error` kèm `requestId`, không phải `warning`. Frontend gỡ nhánh xử lý mã này; luật "gặp mã lạ thì hiện banner chung" ở dưới vẫn bảo vệ trường hợp một bên triển khai trước.
 
 **Bổ sung v1.1, cần hai đội ký lại:** mã `unverified_verdict` là mã mới. Thêm mã `warning` là thay đổi cộng thêm, không breaking, nhưng chỉ an toàn khi FE xử lý mã lạ. Luật từ bản này: **FE gặp mã `warning` không biết thì hiện banner chung** "Một phần câu trả lời chưa đối chiếu được", không bỏ qua và không làm hỏng giao diện.
 
@@ -233,9 +234,11 @@ Nghiệm thu: mở stream bằng `curl -N` qua đúng tuyến production, `Ctrl+
 
 ---
 
-## 8. Output của IntentRouter — hợp đồng nội bộ
+## 8. Cấu trúc vòng đầu của Harness — hợp đồng nội bộ
 
 Không phơi ra FE, nhưng cả hai đội cần biết vì nó quyết định `retrieval.params`.
+
+Từ AD-15, cấu trúc này do vòng đầu của AgentCore Harness sinh ra, không còn là đầu ra của một lời gọi mô hình riêng. Hình dạng giữ nguyên; chỗ đổi là nơi nó được tạo và cách ép khuôn.
 
 ```jsonc
 {
@@ -250,7 +253,7 @@ Không phơi ra FE, nhưng cả hai đội cần biết vì nó quyết định 
 }
 ```
 
-Structured output, `temperature = 0`, `MaxTokens = 400`. Backend assert `stopReason != "max_tokens"` sau mỗi lần gọi.
+Sonnet 5 trên Bedrock không có structured output, nên khuôn được ép bằng tool use với JSON Schema rồi kiểm lại bằng `System.Text.Json` và FluentValidation ([01](01-kien-truc.md) §8.3). Trần vòng lặp và thời gian chờ là của cả phiên Harness, tức 7 vòng và 90 giây, chứ không còn `MaxTokens` riêng cho bước này. Chạm trần thì lượt mang `truncated`.
 
 Thứ tự ưu tiên nguồn tham số, cố định: **`tool_run` > `pageContext` > `case_hints`**. Ghi đè theo từng key, không theo cả khối. Key chỉ có nguồn `case_hints` mang `confirmed: false` và FE **bắt buộc** hiện thành chip sửa được.
 

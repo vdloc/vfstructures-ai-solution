@@ -949,12 +949,12 @@ because no identity-based policy allows the iam:CreateRole action
 <tr>
 <td><strong>Max Iterations</strong></td>
 <td><strong>75</strong></td>
-<td>5 cho lượt thường và 7 cho <code>optimize</code></td>
+<td>7 cho mọi lượt</td>
 </tr>
 <tr>
 <td><strong>Timeout duration</strong></td>
 <td><strong>60 phút</strong> (trần 480)</td>
-<td>60 giây cho lượt thường và 90 giây cho <code>optimize</code></td>
+<td>90 giây cho mọi lượt</td>
 </tr>
 <tr>
 <td><strong>Allowed tools</strong></td>
@@ -963,6 +963,7 @@ because no identity-based policy allows the iam:CreateRole action
 </tr>
 </tbody>
 </table>
+<p>Hai trần này là một con số chung cho mọi lượt chứ không chia theo loại câu hỏi. Lý do nằm ở AD-15: phân loại nay diễn ra trong chính vòng đầu của Harness, nên lúc đặt trần thì chưa biết lượt này thuộc loại nào. Cả hai lấy giá trị cao nhất trong dải cũ, vì hạ trần giữa chừng không có đường làm trên console.</p>
 <h3 id="e2-inbound-auth--danh-tính-gọi-vào">E.2 Inbound Auth — danh tính gọi vào</h3>
 <p><img alt="Inbound Auth của Harness" src="anh/agentcore-06-inbound-auth.png" /></p>
 <p>Cấu hình cần chọn <strong>Use JSON Web Tokens (JWT)</strong> → <strong>Use existing Identity provider configurations</strong> (không dùng Quick create Cognito), rồi điền Discovery URL của Keycloak.</p>
